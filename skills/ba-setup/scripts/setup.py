@@ -33,7 +33,9 @@ TEMPLATE = TOOLS / "skills/ba-spec/assets/spec-template.md"
 HOME = Path.home()
 CLAUDE = HOME / ".claude"
 STAMP = CLAUDE / "ba-tools" / "setup.json"
-GMAIL_TOKEN = CLAUDE / "skills/fetch-gmail/state/token.json"
+GMAIL_TOKEN = next((p for p in (CLAUDE / "ba-tools/state/gmail-token.json",
+                                 CLAUDE / "skills/fetch-gmail/state/token.json") if p.exists()),
+                   CLAUDE / "ba-tools/state/gmail-token.json")
 MARK_START = "<!-- ba-tools:starter-instructions -->"
 MARK_END = "<!-- /ba-tools:starter-instructions -->"
 
@@ -253,6 +255,17 @@ def cmd_check_project(root):
             gaps.append("figma.ds_library_key")
         rows.append(row(f"design profile: {pr.get('key')}", "ok" if not gaps else "warn",
                         "complete" if not gaps else f"not filled: {', '.join(gaps)}", "ba-setup design"))
+    places = ([Path(os.environ["BA_TOOLS_HOME"])] if os.environ.get("BA_TOOLS_HOME") else []) +              [Path("C:/dev/ba-tools"), HOME / "dev/ba-tools"]   # where the ba-tools clone usually lives
+    clone = next((c for c in places if (c / "scripts/install.py").exists()), None)
+    if clone:
+        try:
+            newest = yaml.safe_load((clone / "skills/ba-spec/assets/spec-template.md").read_text(encoding="utf-8")
+                                    .split("---")[1])["ba_tools_version"]
+            if newest != tools_version():
+                rows.append(row("ba-tools update", "warn", f"this project has {tools_version()}, your ba-tools clone has {newest}",
+                                f"uv run --with pyyaml python {clone.as_posix()}/scripts/install.py {root.as_posix()}"))
+        except Exception:
+            pass
     tv = tools_version()
     if prof.get("ba_tools_version") != tv:
         rows.append(row("ba-tools version", "warn", f"profile says {prof.get('ba_tools_version')}, installed is {tv}",

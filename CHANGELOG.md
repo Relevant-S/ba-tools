@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.4.0 — 2026-09-24
+
+Every BA skill now lives in ba-tools and reads the project profile.
+
+- **Moved in** from the lead BA's personal config: `fetch-fireflies`, `fetch-gmail`, `fetch-slack`,
+  `fetch-jira-backlog`, `intake-and-triage`, `jira`, `confluence`, `feature-brief` — and the
+  clarification-page generator as a new skill, `clarification-page`. No personal paths left; each
+  skill starts with the setup check and reads its area from the profile.
+- **Fetchers read the profile.** Fireflies keeps only calls with a client participant
+  (`--clients`); Gmail lists client threads straight from `tools.client_emails` with no label or
+  saved config; Slack takes `tools.slack.channels` as `--channels`. The old per-tool config files
+  still work as a fallback. `project_slug` is no longer needed.
+- **Gmail sign-in moved** to `~/.claude/ba-tools/state/gmail-token.json` — never inside a skill folder
+  a project commits. The old location is still read.
+- **Jira scripts** take `--projects KEY=folder,…` instead of the hard-coded ACME/BOND. `jira file-spec`
+  is retired (it pasted the spec into the ticket and blanked header lists) — `ba-spec` files tickets.
+  `jira` gained its missing name/description header.
+- **Triage fixes**: a spec counts as approved when its status is `ready` or `filed` (the "goes against
+  something approved" check could never fire on template specs); Jira is read with the `jira` skill;
+  the pointer to a missing design document, the stale "test mode only" status and the retired
+  downstream skills are gone; it reminds the BA that the dashboard page is updated by hand.
+- **`feature-brief`** is generic (no NWE wording) and records that the brief is how the client sees
+  the requirements, while the clarification page is where they answer.
+- **`scripts/install.py`** installs or updates everything in a project; `ba-setup check` warns when a
+  project is behind the local ba-tools clone and prints the command.
+
 ## 0.3.1 — 2026-09-24
 
 - **Default: the design system lives inside the product's own Figma file** — components on their own

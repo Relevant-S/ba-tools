@@ -1,0 +1,229 @@
+slug: probate-decisions
+product: bond-portal
+spec: docs/BA/specs/bond-portal/backlog/pause-share-certificates-on-shareholder-death.md
+doc_title: Probate Decisions
+eyebrow: Bond Portal &middot; Design review &middot; V4
+title: Three loose ends on probate
+standfirst: |-
+  <strong>You answered all three questions on 11 September, so everything we had asked you is now
+  settled.</strong> Eleven decisions are written into the spec with your wording. What is below is
+  not a re-ask &mdash; each of your three answers left one narrow gap that we cannot close
+  ourselves. <strong>Only question 1 blocks anything</strong>: without it the release screen shows
+  two different lists of heirs and the Admin has to guess.
+design:
+  label: What this feature is
+  more_label: The rest of the design, and where it has got to
+  summary: |-
+    <p>When a shareholder dies, money stops leaving their holdings until the executor produces
+    the grant of probate &mdash; and then <strong>one release pays out everything that was
+    withheld</strong>. Death is recorded once on the person, not on each certificate, so every
+    holding that death affects pauses together.</p>
+    <p>Seven screens are drawn and thirty-four acceptance criteria are written. The three
+    questions below are the only things still open.</p>
+  detail: |-
+    <p>The design deliberately keeps the executor out of the platform. There is no executor
+    login: an Admin keys the split from the executor&rsquo;s written instruction, and that
+    instruction is filed alongside the grant of probate, so the record shows what was keyed, by
+    whom, and against what.</p>
+    <p>Interest keeps accruing through the hold. A joint holding only pauses once every holder
+    has died &mdash; where rights of survivorship apply the surviving holder takes the shares
+    directly and no hold should fire at all.</p>
+  figma_file: SampleFileKey02AbCdEfG
+  figma_page: _Concept · Investors · Probate initiation
+  screens:
+  - node: '355:2271'
+    frame: v14 · Release from probate
+    src: screens/probate-355-2271.png
+    cap: >-
+      The release screen. Question 1 is about this form: it shows the transferee named at
+      onboarding, and the executor's instruction may name four different people.
+    hero: true
+  - node: '356:4676'
+    frame: v19 · The deceased's own login
+    src: screens/probate-356-4676.png
+    cap: >-
+      What a relative sees using the dead person's credentials — everything readable, nothing
+      changeable, and no notice that a hold is on. Question 2 is about this screen.
+  - node: '356:5259'
+    frame: v22 · Estate winding down
+    src: screens/probate-356-5259.png
+    cap: >-
+      After release. No reinvestments and no new shares, ever. Question 3 asks who empties the
+      wallet once the last certificate matures.
+stages_label: What has been designed so far
+stages:
+- title: Holding is active
+  detail: Interest is disbursed normally, period after period.
+- title: Death is recorded
+  detail: |-
+    Marked once on the person, not on each holding. Everything that death affects pauses together.
+- title: In probate
+  detail: |-
+    Money stops leaving. Interest keeps accruing. A joint holding only pauses once every holder has died.
+- title: Released
+  detail: |-
+    The executor produces the grant of probate. One release covers the whole estate, and everything withheld is paid out.
+- title: The estate winds down
+  detail: |-
+    An Admin splits the money to the heirs. No new shares, ever. The wallet is emptied at the end.
+- title: Three loose ends
+  hold: true
+  detail: |-
+    Whose list of heirs wins, whether compliance should see the login decision, and who empties the last wallet.
+close_title: That is all three
+close_body: |
+  <p>
+    Your answers are held in this browser as you go, so you can close the tab and pick it up later.
+    They are not sent anywhere on their own.
+  </p>
+  <p>
+    When you are ready, press <strong>Copy all answers</strong> and paste the result into Slack or
+    an email back to Vadim. Partial is fine &mdash; anything still blank comes back marked as not
+    answered.
+  </p>
+  <p>
+    <strong>Question 1 is the only one holding a screen up.</strong> Question 2 changes nothing we
+    build &mdash; it asks whether your answer should be recorded somewhere beyond a design
+    document. Question 3 decides whether anything reminds us the last of the money is sitting
+    there.
+  </p>
+settled:
+- >
+  <strong>Settled on 11 September &mdash; the last three, and you will not be asked these
+  again.</strong> Recorded in the spec as decisions D-18, D-19 and D-20, with your wording.
+- >
+  <strong>Who keys the heirs.</strong> An Admin keys the split from the executor's written
+  instruction, and that instruction is uploaded and filed alongside the grant of probate. No
+  executor login is built. The release record then shows what was keyed, by whom, and against what.
+- >
+  <strong>The dead person's login.</strong> Left open but read-only &mdash; relatives can still see
+  the account and can no longer do anything to it. <em>This was not the option we recommended</em>,
+  so the trade-off is on the record: someone holding a dead person's credentials can still read
+  statements, holdings and personal details. Question 2 below is the only thing we would still like
+  from you on it.
+- >
+  <strong>The end of the estate.</strong> The bar on reinvestments and new shares is permanent
+  &mdash; there is no point at which a deceased investor becomes an ordinary one again. And the
+  wallet is emptied at the end rather than left sitting with a balance nobody is watching.
+- >
+  <strong>Settled on 10 September &mdash; the first eight.</strong> Recorded as decisions D-6 to
+  D-12, with your wording.
+- >
+  <strong>Executor documents.</strong> The two we had are the whole list &mdash; death certificate,
+  and the grant of probate or letters of administration. Nothing else. This also closes the
+  compliance checklist question that had been open since 25 August.
+- >
+  <strong>Where the released payment shows.</strong> On each shareholder's Transactions tab, per
+  holding. Not once on the investor.
+- >
+  <strong>The probate message on the investor side.</strong> Dropped. Two screens we had drawn are
+  cancelled rather than built &mdash; your reason was that family members sometimes have a dead
+  person's credentials, which is exactly who would have seen it.
+- >
+  <strong>Early redemption.</strong> An estate may redeem early and the fee still applies. After
+  release: existing shares stay active to maturity; early redemption is Admin-triggered only;
+  interest goes to the bank account captured on the release screen; and no reinvestments or new
+  shares.
+- >
+  <strong>Changes during the hold.</strong> Everything frozen except the release form. No staff
+  exception.
+- >
+  <strong>Incomplete profiles.</strong> Probate is available on any investor, whatever state they
+  are in. Their money goes to a wallet and is released through the same process.
+- >
+  <strong>Half-finished applications.</strong> Cancelled, money back to the estate, into a wallet
+  &mdash; one rule for all four states.
+- >
+  <strong>Heirs' wallets &mdash; settled on the 10 September call.</strong> The <em>executor</em> is
+  the signatory, so the problem of needing a dead person's signature goes away. The grant of probate
+  still gates the release. The money can go to a bank account, to other investors' wallets, or to
+  both. And we reuse the wallet-transfer flow already in QA rather than building a second one.
+- >
+  <strong>Still true, and still the biggest thing under this feature.</strong> Several of your
+  answers send estate money into a <em>wallet</em>, and withdrawing from a wallet has never been
+  built &mdash; every wallet balance is zero today. Your answer on the end of the estate adds to
+  it: emptying the wallet at the end needs that same missing capability. We are sizing it before
+  estimating the work.
+store_key: probate-decisions-v4
+copy_header: Probate — loose ends
+copy_noun: decisions
+questions:
+- id: q1-transferee-vs-grant
+  spec_ref: O-D
+  section: A — The one that holds a screen up
+  title: Whose list of heirs wins — the one they chose at sign-up, or the grant of probate?
+  meta: Decides — what the release screen does when the two disagree
+  body: |-
+    <p class="lead">Your answer on 11 September settled <em>who</em> types the split in: an Admin, working from the executor's written instruction. This is the thing sitting underneath it.</p>
+    <p>When an investor signs up they name a <strong>single transferee</strong> &mdash; one person, &ldquo;in the event of death&rdquo;. We already hold that on the record and the release screen shows it. A <strong>grant of probate</strong> can name <strong>several</strong> heirs in different shares, and it does not have to agree with a nomination made years earlier.</p>
+    <p>So when the screen shows one name and the executor's instruction says four people at 25% each, <strong>which does the Admin follow?</strong></p>
+  snag: |-
+    <p><strong>Our reading is that the grant wins</strong> &mdash; it is the legal instrument and it is current, where the nomination is a preference recorded years before. But we do not want to build that in quietly. The nomination is a field the investor filled in deliberately, it will still be on the screen, and an Admin who sees two answers and no rule will pick one.</p>
+  options:
+  - v: grant-wins
+    t: The grant of probate wins, always
+    d: Our suggestion. The nomination stays on screen for context but never decides anything, and we label it so an Admin cannot mistake it for an instruction.
+    rec: true
+  - v: nomination-if-matches
+    t: Follow the nomination when it agrees with the grant, flag it when it does not
+    d: Feels safer, but the system cannot do that comparison reliably — a name match is not proof, and a part-match needs a human anyway. In practice it becomes the option above with extra steps.
+  - v: drop-nomination
+    t: Stop showing the nomination on the release screen at all
+    d: Cleanest screen and no ambiguity, but you lose a fact the investor recorded on purpose, and it may still matter in cases where no grant has been produced yet.
+  - v: other
+    t: Something else
+    d: Describe it in the box below.
+  note: If the grant always decides, is there still a reason to collect the nominated transferee at sign-up?
+  note_placeholder: Optional…
+- id: q2-readonly-compliance
+  spec_ref: O-E
+  section: B — Not a build question
+  title: Does anyone outside this project need to see the read-only login decision?
+  meta: Decides — whether this is recorded beyond a design document
+  body: |-
+    <p class="lead">Nothing here is blocked and we are not asking you to change your answer. We are asking where it should be written down.</p>
+    <p>You chose to leave a dead person's login open but read-only. That is in the spec and it is buildable as it stands.</p>
+    <p>The part that came back blank was the other half: <strong>does compliance already know</strong> that relatives use a dead person's credentials? Read-only stops them changing anything, but they can still read statements, holdings and personal details belonging to someone who has died. That is a data-protection matter rather than a probate one, which is why we would rather ask than assume.</p>
+  snag: |-
+    <p><strong>Why we are asking at all.</strong> If this is known and accepted, one sentence from you puts it on the record as a decision rather than leaving it looking like something nobody noticed. If it is not known, it is better found now than during an audit.</p>
+  options:
+  - v: known-accepted
+    t: It is known and accepted — record it and move on
+    d: Our suggestion if that is the case. We note it in the spec as a deliberate decision with your name against it, and build the read-only rule as answered. Nothing else changes.
+    rec: true
+  - v: raise-with-compliance
+    t: Raise it with compliance before we build the rule
+    d: We hold the read-only behaviour until you come back. Everything else in probate carries on — this is the only piece that would wait.
+  - v: revisit
+    t: Change the answer — disable the login after all
+    d: Small to swap. Read-only becomes a hard block, and the estate is served by an Admin from the moment death is recorded.
+  - v: other
+    t: Something else
+    d: Describe it in the box below.
+  note: Is this worth a line in the privacy policy or the investor agreement rather than only our spec?
+  note_placeholder: Optional…
+- id: q3-empty-the-wallet
+  spec_ref: O-F
+  section: C — The last of the money
+  title: Who empties the estate's wallet, and is an estate ever formally finished?
+  meta: Decides — whether anything reminds us the money is there
+  body: |-
+    <p class="lead">You said the wallet must be emptied at the end rather than left to sit. Agreed, and written down. What is not settled is <strong>who notices</strong>.</p>
+    <p>When the last certificate matures, the principal lands in the estate's wallet. Today <strong>nothing tells anyone it is there</strong> &mdash; and by then the estate may have been quiet for a year.</p>
+    <p>There is also no state on the record that says an estate is finished. That means nobody can answer &ldquo;which estates are still holding money?&rdquo; without going through them one at a time.</p>
+  options:
+  - v: admin-prompted
+    t: The system flags it, an Admin pays it out
+    d: Our suggestion. A deceased investor with a wallet balance and no live certificates appears on a list, and an Admin clears it to the bank account already captured at release. Small to build, and it answers the reporting question at the same time.
+    rec: true
+  - v: admin-manual
+    t: An Admin does it when they notice
+    d: Nothing to build. It relies on someone remembering months after the estate went quiet, which is exactly how dormant balances happen.
+  - v: close-the-estate
+    t: Add a proper "estate closed" step that pays out and locks the record
+    d: Most to build, but you get a real answer to whether an estate is done, and a report of the ones that are not.
+  - v: other
+    t: Something else
+    d: Describe it in the box below.
+  note: Is there a legal point at which an estate is wound up that we should be recording against the investor?
+  note_placeholder: Optional…

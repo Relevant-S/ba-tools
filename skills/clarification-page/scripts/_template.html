@@ -1,0 +1,522 @@
+<title>{{DOC_TITLE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground:#F2F5F5; --surface:#FFFFFF; --surface-2:#E9EFEE;
+    --ink:#101F1E; --ink-2:#334745; --muted:#5B6C6A; --faint:#687977;
+    --rule:#DCE5E4; --rule-strong:#C3D1CF;
+    --accent:#00819B; --accent-ink:#00647A; --accent-wash:#E2F0F3;
+    --on-accent:#FFFFFF;
+    --amber:#A9601A; --amber-wash:#FBF0E2; --amber-rule:#E8C99C;
+    --green:#2C7A52;
+    --shadow:0 1px 2px rgba(16,31,30,.05), 0 8px 24px -12px rgba(16,31,30,.14);
+    --serif:"Spectral", Georgia, "Times New Roman", serif;
+    --sans:"Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#0D1514; --surface:#151F1E; --surface-2:#1D2A28;
+      --ink:#E7EDEC; --ink-2:#C2CFCD; --muted:#8FA09E; --faint:#7D8E8C;
+      --rule:#243230; --rule-strong:#31423F;
+      --accent:#3FB6CE; --accent-ink:#7BD2E4; --accent-wash:#102E35;
+      --on-accent:#07201F;
+      --amber:#D9974E; --amber-wash:#2A1F11; --amber-rule:#5C441F;
+      --green:#5EB183;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#0D1514; --surface:#151F1E; --surface-2:#1D2A28;
+    --ink:#E7EDEC; --ink-2:#C2CFCD; --muted:#8FA09E; --faint:#7D8E8C;
+    --rule:#243230; --rule-strong:#31423F;
+    --accent:#3FB6CE; --accent-ink:#7BD2E4; --accent-wash:#102E35;
+    --on-accent:#07201F;
+    --amber:#D9974E; --amber-wash:#2A1F11; --amber-rule:#5C441F;
+    --green:#5EB183;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing:border-box; }
+  body {
+    background:var(--ground); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:920px; margin:0 auto; padding:0 24px 96px; }
+
+  .masthead { padding:56px 0 0; }
+  .eyebrow {
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--accent-ink); margin:0 0 18px;
+  }
+  h1 {
+    font-family:var(--serif); font-weight:600; font-size:clamp(34px,5vw,48px);
+    line-height:1.1; letter-spacing:-.015em; margin:0 0 18px; text-wrap:balance;
+  }
+  .standfirst {
+    font-family:var(--serif); font-size:19px; line-height:1.55; color:var(--ink-2);
+    max-width:62ch; margin:0 0 28px;
+  }
+  .standfirst em { color:var(--ink); font-style:italic; }
+
+  .status {
+    display:flex; flex-wrap:wrap; align-items:center; gap:14px 22px;
+    padding:14px 18px; background:var(--surface); border:1px solid var(--rule);
+    border-radius:4px; box-shadow:var(--shadow); position:sticky; top:0; z-index:20;
+  }
+  .status-count {
+    font-family:var(--mono); font-size:13px; font-weight:500; color:var(--ink);
+    display:flex; align-items:center; gap:10px;
+  }
+  .pips { display:flex; gap:5px; }
+  .pip { width:22px; height:5px; border-radius:1px; background:var(--rule-strong); transition:background .18s; }
+  .pip.done { background:var(--green); }
+  .status-save { font-family:var(--mono); font-size:12px; color:var(--muted); margin-left:auto; }
+  .status-save.warn { color:var(--amber); }
+
+  .btn {
+    font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.01em;
+    padding:9px 16px; border-radius:3px; border:1px solid var(--rule-strong);
+    background:var(--surface); color:var(--ink); cursor:pointer;
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .btn:hover { border-color:var(--accent); color:var(--accent-ink); }
+  .btn-primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  .btn-primary:hover { background:var(--accent-ink); border-color:var(--accent-ink); color:var(--on-accent); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* --- the opener: what this feature is ---------------------------------------
+     A reader who has never seen the feature needs one paragraph and one picture
+     before the questions make sense. Those two stay visible. Everything that grows
+     with each round — the rest of the gallery, the longer detail, the lifecycle
+     strip — sits behind the disclosure, collapsed once the reader has been here. */
+  .design { margin:38px 0 8px; }
+  .design-sum { font-size:16px; line-height:1.6; color:var(--ink-2); max-width:66ch; }
+  .design-sum p { margin:0 0 12px; max-width:66ch; }
+  .design-sum p:last-child { margin-bottom:0; }
+  .design-sum strong { color:var(--ink); font-weight:600; }
+  .design .hero { margin:22px 0 4px; }
+  .design-detail { margin:0 0 6px; }
+  .design-detail p { margin:0 0 12px; max-width:66ch; color:var(--ink-2); font-size:15px; }
+  .design-detail strong { color:var(--ink); font-weight:600; }
+  .design-where { margin:0 0 18px; font-family:var(--mono); font-size:12px; color:var(--faint); }
+  .design-where b { color:var(--muted); font-weight:500; }
+  /* Same disclosure as the journey map, so the two read as one family. */
+  .disc {
+    display:inline-flex; align-items:center; gap:8px; margin-top:16px;
+    padding:8px 15px; background:var(--surface); color:var(--accent-ink);
+    border:1px solid var(--rule-strong); border-radius:999px;
+    font-family:var(--sans); font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .disc:hover { border-color:var(--accent); background:var(--accent-wash); }
+  .disc .caret { transition:transform .18s cubic-bezier(.16,1,.3,1); }
+  .disc[aria-expanded="true"] .caret { transform:rotate(180deg); }
+  .dpanel { margin-top:20px; padding-top:4px; }
+  .dpanel .lifecycle { margin-top:26px; }
+
+  .lifecycle { margin:38px 0 8px; }
+  .section-label {
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--faint); margin:0 0 16px; padding-bottom:8px; border-bottom:1px solid var(--rule);
+  }
+  .stages {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+    background:var(--rule); border:1px solid var(--rule); border-radius:4px; overflow:hidden;
+  }
+  .stage { background:var(--surface); padding:16px 16px 18px; }
+  .stage-n { font-family:var(--mono); font-size:11px; color:var(--faint); letter-spacing:.1em; }
+  .stage-t { font-family:var(--sans); font-weight:600; font-size:14.5px; margin:6px 0 5px; color:var(--ink); }
+  .stage-d { font-size:13px; line-height:1.5; color:var(--muted); margin:0; }
+  .stage.hold { background:var(--amber-wash); }
+  .stage.hold .stage-t { color:var(--amber); }
+  @media (max-width:720px) { .stages { grid-template-columns:1fr 1fr; } }
+  @media (max-width:460px) { .stages { grid-template-columns:1fr; } }
+
+  .q { padding:44px 0 8px; border-top:1px solid var(--rule); margin-top:44px; }
+  .q-section {
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--faint); margin:0 0 26px; padding-bottom:8px; border-bottom:1px solid var(--rule);
+  }
+  .q-head { display:grid; grid-template-columns:52px 1fr; gap:0 10px; align-items:start; }
+  .q-num {
+    font-family:var(--mono); font-size:13px; font-weight:500; color:var(--accent);
+    padding-top:9px; letter-spacing:.04em;
+  }
+  .q-title {
+    font-family:var(--serif); font-weight:600; font-size:27px; line-height:1.25;
+    margin:0 0 4px; letter-spacing:-.01em; text-wrap:balance;
+  }
+  .q-meta {
+    font-family:var(--mono); font-size:11.5px; color:var(--faint);
+    letter-spacing:.06em; text-transform:uppercase; margin:0 0 20px;
+  }
+  .q-body { grid-column:2; }
+  @media (max-width:600px) {
+    .q-head { grid-template-columns:1fr; }
+    .q-body { grid-column:1; }
+    .q-num { padding-top:0; margin-bottom:6px; }
+  }
+  .q-body p { max-width:66ch; margin:0 0 14px; color:var(--ink-2); }
+  .q-body p.lead { color:var(--ink); }
+  .q-body strong { color:var(--ink); font-weight:600; }
+  blockquote {
+    margin:18px 0; padding:2px 0 2px 18px; border-left:2px solid var(--rule-strong);
+    font-family:var(--serif); font-style:italic; font-size:17px; line-height:1.5;
+    color:var(--ink-2); max-width:60ch;
+  }
+  blockquote cite {
+    display:block; font-style:normal; font-family:var(--mono); font-size:11.5px;
+    color:var(--faint); margin-top:8px; letter-spacing:.04em;
+  }
+  .snag {
+    background:var(--amber-wash); border:1px solid var(--amber-rule); border-radius:4px;
+    padding:14px 16px; margin:20px 0; max-width:66ch;
+  }
+  .snag p { margin:0; color:var(--ink); font-size:14.5px; max-width:none; }
+  .snag strong { color:var(--amber); }
+
+  figure { margin:24px 0 26px; }
+  .screen {
+    border:1px solid var(--rule-strong); border-radius:4px; overflow:hidden;
+    background:var(--surface-2); box-shadow:var(--shadow);
+  }
+  .screen img { display:block; width:100%; height:auto; }
+  figcaption { font-family:var(--mono); font-size:11.5px; color:var(--faint); margin-top:9px; letter-spacing:.03em; line-height:1.5; }
+
+  .answer { margin:26px 0 0; padding:22px; background:var(--surface); border:1px solid var(--rule); border-radius:4px; }
+  .answer-label {
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent-ink); margin:0 0 14px;
+  }
+  .opts { display:flex; flex-direction:column; gap:8px; margin-bottom:18px; }
+  .opt {
+    display:flex; gap:12px; align-items:flex-start; padding:12px 14px;
+    border:1px solid var(--rule); border-radius:3px; cursor:pointer; background:var(--ground);
+    transition:border-color .15s, background .15s;
+  }
+  .opt:hover { border-color:var(--rule-strong); }
+  .opt input { margin:5px 0 0; accent-color:var(--accent); flex:none; }
+  .opt-text { font-size:14.5px; line-height:1.5; color:var(--ink-2); }
+  .opt-text b { display:block; font-weight:600; color:var(--ink); margin-bottom:2px; }
+  .opt.sel { border-color:var(--accent); background:var(--accent-wash); }
+  .opt.sel .opt-text b { color:var(--accent-ink); }
+  .hint { font-size:13px; color:var(--muted); margin:0 0 8px; }
+  textarea {
+    width:100%; min-height:84px; resize:vertical; padding:11px 13px;
+    font-family:var(--sans); font-size:14.5px; line-height:1.55; color:var(--ink);
+    background:var(--ground); border:1px solid var(--rule); border-radius:3px;
+  }
+  textarea:focus { border-color:var(--accent); outline:none; box-shadow:0 0 0 3px var(--accent-wash); }
+  textarea::placeholder { color:var(--faint); }
+
+  .close { margin-top:52px; padding-top:32px; border-top:2px solid var(--rule-strong); }
+  .close h2 { font-family:var(--serif); font-size:24px; font-weight:600; margin:0 0 12px; }
+  .close p { color:var(--ink-2); max-width:64ch; margin:0 0 14px; }
+  .actions { display:flex; flex-wrap:wrap; gap:14px; margin-top:22px; align-items:center; }
+  .toast { font-family:var(--mono); font-size:12px; color:var(--green); opacity:0; transition:opacity .2s; }
+  .toast.on { opacity:1; }
+  .offline {
+    margin-top:24px; padding:14px 16px; border:1px dashed var(--rule-strong);
+    border-radius:4px; font-size:13.5px; line-height:1.55; color:var(--muted); display:none;
+  }
+  .offline.on { display:block; }
+  .offline strong { color:var(--ink); }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
+</style>
+<style>
+/* generator additions: recommendation badge, and a Figma link under a screen */
+.opt-rec{display:inline-block;margin-left:.5rem;padding:.1rem .4rem;border-radius:3px;
+  background:#eef2f6;color:#1b4a6b;font:600 .68rem/1.4 "Public Sans",system-ui,sans-serif;
+  letter-spacing:.04em;text-transform:uppercase;vertical-align:.08em}
+.screen-link{display:block;margin-top:.3rem;font:500 .74rem/1.5 "Public Sans",system-ui,sans-serif}
+.screen-link a{color:#1b4a6b}
+</style>
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">{{EYEBROW}}</p>
+    <h1>{{H1}}</h1>
+    <p class="standfirst">{{STANDFIRST}}</p>
+    <div class="status">
+      <div class="status-count">
+        <span id="count">{{COUNT_INIT}}</span>
+        <span class="pips" id="pips"></span>
+      </div>
+      <span class="status-save" id="save">&nbsp;</span>
+    </div>
+  </header>
+
+{{DESIGN}}
+
+{{STAGES}}
+
+  <div id="questions"></div>
+
+  <section class="close">
+    <h2>{{CLOSE_H2}}</h2>
+    {{CLOSE_BODY}}
+    {{OFFLINE}}
+    <div class="actions">
+      {{ACTIONS}}
+    </div>
+  </section>
+</div>
+<script>
+(function () {
+  "use strict";
+
+  var QUESTIONS = {{QUESTIONS_JSON}};
+  var STORE_KEY = {{STORE_KEY}};
+  var COPY_HEADER = {{COPY_HEADER}};
+  var COPY_NOUN = {{COPY_NOUN}};
+  var DB_DOC = {{DB_DOC}};
+
+  var state = {};
+  QUESTIONS.forEach(function (q) { state[q.id] = { choice: null, notes: "" }; });
+
+  var saveTimers = {};
+  var elCount = document.getElementById("count");
+  var elPips = document.getElementById("pips");
+  var elSave = document.getElementById("save");
+  var host = document.getElementById("questions");
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function buildQuestion(q, i) {
+    var s = document.createElement("section");
+    s.className = "q";
+    var h = q.section ? '<p class="q-section">' + esc(q.section) + '</p>' : '';
+    h += '<div class="q-head"><div class="q-num">' + (i + 1) + '</div>' +
+            '<div><h2 class="q-title">' + esc(q.title) + '</h2>' +
+            '<p class="q-meta">' + esc(q.meta) + '</p></div>' +
+            '<div class="q-body">' + q.body;
+    if (q.quote) {
+      h += '<blockquote>&ldquo;' + esc(q.quote.text) + '&rdquo;<cite>' + esc(q.quote.cite) + '</cite></blockquote>';
+    }
+    if (q.body2) { h += q.body2; }
+    if (q.snag) { h += '<div class="snag">' + q.snag + '</div>'; }
+    (q.screens || []).forEach(function (scr) {
+      h += '<figure><div class="screen"><img src="' + scr.src + '" alt="' + esc(scr.cap) + '"></div>' +
+           '<figcaption>' + esc(scr.cap);
+      if (scr.figma) {
+        h += '<span class="screen-link"><a href="' + esc(scr.figma) + '" target="_blank" rel="noopener">' +
+             'Open this screen in Figma &rarr;</a></span>';
+      }
+      h += '</figcaption></figure>';
+    });
+    h += '<div class="answer"><p class="answer-label">Your answer</p>' +
+         '<div class="opts" role="radiogroup" aria-label="' + esc(q.title) + '">';
+    q.options.forEach(function (o) {
+      h += '<label class="opt"><input type="radio" name="' + esc(q.id) + '" value="' + esc(o.v) + '">' +
+           '<span class="opt-text"><b>' + esc(o.t) +
+           (o.rec ? '<span class="opt-rec">what we think you meant</span>' : '') +
+           '</b>' + esc(o.d) + '</span></label>';
+    });
+    h += '</div><p class="hint">' + esc(q.note) + '</p>' +
+         '<textarea data-note="' + esc(q.id) + '" placeholder="' + esc(q.notePlaceholder) + '"></textarea>' +
+         '</div></div></div>';
+    s.innerHTML = h;
+    return s;
+  }
+
+  QUESTIONS.forEach(function (q, i) { host.appendChild(buildQuestion(q, i)); });
+
+  function paint() {
+    QUESTIONS.forEach(function (q) {
+      var cur = state[q.id];
+      var inputs = host.querySelectorAll('input[name="' + q.id + '"]');
+      Array.prototype.forEach.call(inputs, function (input) {
+        var on = input.value === cur.choice;
+        input.checked = on;
+        input.parentNode.classList.toggle("sel", on);
+      });
+      var ta = host.querySelector('textarea[data-note="' + q.id + '"]');
+      if (ta && document.activeElement !== ta && ta.value !== cur.notes) { ta.value = cur.notes; }
+    });
+    var done = QUESTIONS.filter(function (q) { return !!state[q.id].choice; }).length;
+    elCount.textContent = done + " of " + QUESTIONS.length + " answered";
+    elPips.innerHTML = QUESTIONS.map(function (q) {
+      return '<span class="pip' + (state[q.id].choice ? " done" : "") + '"></span>';
+    }).join("");
+  }
+  paint();
+
+  function stamp(msg, warn) {
+    elSave.textContent = msg;
+    elSave.classList.toggle("warn", !!warn);
+  }
+
+  function persist() {
+    try {
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      stamp("Kept in this browser");
+    } catch (err) {
+      stamp("Copy your answers before closing this tab", true);
+    }
+  }
+
+  function restore() {
+    var raw = null;
+    try { raw = window.localStorage.getItem(STORE_KEY); } catch (err) { return; }
+    if (!raw) { return; }
+    try {
+      var saved = JSON.parse(raw);
+      QUESTIONS.forEach(function (q) {
+        if (!saved[q.id]) { return; }
+        state[q.id].choice = saved[q.id].choice || null;
+        state[q.id].notes = typeof saved[q.id].notes === "string" ? saved[q.id].notes : "";
+      });
+    } catch (err) { /* a corrupt value just means starting fresh */ }
+  }
+
+  function queue(id, wait) {
+    clearTimeout(saveTimers[id]);
+    saveTimers[id] = setTimeout(persist, wait);
+  }
+
+  host.addEventListener("change", function (e) {
+    if (!e.target || e.target.type !== "radio") { return; }
+    state[e.target.name].choice = e.target.value;
+    paint();
+    queue(e.target.name, 120);
+  });
+
+  host.addEventListener("input", function (e) {
+    var id = e.target && e.target.getAttribute ? e.target.getAttribute("data-note") : null;
+    if (!id) { return; }
+    state[id].notes = e.target.value;
+    queue(id, 800);
+  });
+
+  function answersText() {
+    var out = [COPY_HEADER + " \u2014 " + QUESTIONS.length + " questions",
+               "Answered " + new Date().toLocaleDateString(), ""];
+    QUESTIONS.forEach(function (q, i) {
+      var cur = state[q.id];
+      var pick = q.options.filter(function (o) { return o.v === cur.choice; })[0];
+      out.push((i + 1) + ". " + q.title);
+      out.push("   Answer: " + (pick ? pick.t : "\u2014 not answered \u2014"));
+      if (cur.notes.trim()) { out.push("   Notes: " + cur.notes.trim()); }
+      out.push("");
+    });
+    return out.join("\n");
+  }
+
+  var toast = document.getElementById("toast");
+  function flash(msg) {
+    if (msg) { toast.textContent = msg; }
+    toast.classList.add("on");
+    setTimeout(function () { toast.classList.remove("on"); }, 2400);
+  }
+
+  function toClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    window.prompt("Copy the answers below", text);
+    return Promise.reject(new Error("no clipboard api"));
+  }
+
+  document.getElementById("copy").addEventListener("click", function () {
+    toClipboard(answersText()).then(function () { flash("Copied to clipboard"); }, function () {});
+  });
+
+  // The structured twin of answersText(). Clipboard text is for a human to read in
+  // Slack; this is for Claude to read back out of the artifact's store, so it keeps the
+  // question id and the option value rather than only the prose, and it keeps the
+  // unanswered rows too — what is still open matters as much as what was decided.
+  function answersPayload() {
+    var rows = QUESTIONS.map(function (q, i) {
+      var cur = state[q.id];
+      var pick = q.options.filter(function (o) { return o.v === cur.choice; })[0];
+      return {
+        n: i + 1,
+        id: q.id,
+        spec_ref: q.spec_ref || null,
+        question: q.title,
+        answer: pick ? pick.t : null,
+        answer_value: cur.choice || null,
+        notes: cur.notes.trim() || null
+      };
+    });
+    return {
+      page: DB_DOC,
+      title: COPY_HEADER,
+      saved_at: new Date().toISOString(),
+      answered: rows.filter(function (r) { return r.answer; }).length,
+      total: rows.length,
+      answers: rows
+    };
+  }
+
+  // Hidden until the store answers. `use` resolves late and never on the first run, so
+  // the page must render complete without it; a local file has no window.claude at all.
+  var elSend = document.getElementById("send");
+  if (elSend && window.claude && typeof window.claude.use === "function") {
+    window.claude.use("db").then(function (db) {
+      if (!db) { return; }
+      elSend.hidden = false;
+      elSend.addEventListener("click", function () {
+        var label = elSend.textContent;
+        elSend.disabled = true;
+        elSend.textContent = "Sending…";
+        function done(msg, warn) {
+          elSend.disabled = false;
+          elSend.textContent = label;
+          flash(msg);
+          stamp(msg, warn);
+        }
+        // The failure text carries the store's error code. Nobody reads this page with
+        // devtools open — on a client call the stamp is the only place a failure can
+        // show, so it has to say enough to act on rather than just that it went wrong.
+        db.doc("answers/latest").set(answersPayload()).then(
+          function () { done("Sent to Claude — " + new Date().toLocaleTimeString(), false); },
+          function (err) {
+            var code = (err && err.code) ? err.code : "unknown";
+            done("Could not send (" + code + ") — use Copy all answers", true);
+          }
+        );
+      });
+    }, function () {});
+  }
+
+  restore();
+  paint();
+  var returning = QUESTIONS.some(function (q) {
+    return state[q.id].choice || state[q.id].notes;
+  });
+  if (returning) { stamp("Kept in this browser"); }
+
+  /* The design disclosure. Open for a first-time reader, collapsed for someone who
+     has already answered here — the context is worth a screen once and is then in
+     the way. An explicit toggle is remembered and beats the guess. */
+  (function () {
+    var btn = document.getElementById("dmore");
+    var panel = document.getElementById("dpanel");
+    if (!btn || !panel) { return; }
+    var KEY = STORE_KEY + "-design";
+
+    function set(open, remember) {
+      panel.hidden = !open;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (remember) {
+        try { window.localStorage.setItem(KEY, open ? "1" : "0"); } catch (err) {}
+      }
+    }
+
+    var saved = null;
+    try { saved = window.localStorage.getItem(KEY); } catch (err) {}
+    if (saved === "1") { set(true, false); }
+    else if (saved === "0") { set(false, false); }
+    else { set(!returning, false); }
+
+    btn.addEventListener("click", function () { set(panel.hidden, true); });
+  })();
+})();
+</script>

@@ -22,14 +22,19 @@ everywhere.
 |---|---|
 | `skills/ba-setup/` | Setup, check and repair: your own keys and connectors (`me`), the project's area in each tool (`project`), and a green/red table of both (`check`). Also installs starter defaults for newcomers. |
 | `skills/figma-build/` | Builds in Figma: reproduces shipped screens, designs new features as concepts, sets up and changes design systems. Reads the product's design profile. |
+| `skills/fetch-fireflies/`, `fetch-gmail/`, `fetch-slack/` | Pull client calls, emails and Slack threads into `docs/BA/intake/` — only the project's own, using the client emails and channels in the profile. |
+| `skills/intake-and-triage/` | Turns intake into a triage report: new specs, Jira edits, dashboard items, notes — and carries out what the BA approves. |
+| `skills/fetch-jira-backlog/` | Turns existing open tickets into spec stubs for `ba-spec`. |
+| `skills/clarification-page/` | Builds and publishes the page the client answers questions on. |
+| `skills/jira/`, `skills/confluence/`, `skills/feature-brief/` | Jira helpers (comment, search, field edit, release folders), Confluence publishing, and client briefs on Confluence. |
 | `skills/ba-spec/` | Writes one spec in the template and takes it through the ready gate to its hand-off (Jira ticket or PRD). |
 | `skills/ba-spec/assets/spec-template.md` | The spec template — the only copy that is ever edited. |
 | `profile/` | The profile layout, a blank example, the real project profiles for Acme Lending and NWE, and their design profiles (`examples/design/`). |
 | `docs/` | How the BA work runs: first day, a new project, and the day-to-day loop. |
 
-Still to move in: `intake-and-triage`, the fetchers (`fetch-fireflies`, `fetch-gmail`, `fetch-slack`,
-`fetch-jira-backlog`), `jira`, `confluence`, `feature-brief`, and the clarification-page generator.
-Then package it all as a BMad module with its own installer.
+| `scripts/install.py` | Installs or updates every skill and the template in a project. |
+
+Still to do: package it as a BMad module, so it installs like the rest of BMad.
 
 ## First day
 
@@ -37,13 +42,23 @@ Read [`docs/new-ba-onboarding.md`](docs/new-ba-onboarding.md). In short:
 
 1. Install Claude Code, Git, Node 22 and uv.
 2. Clone this repo, e.g. to `C:\dev\ba-tools`.
-3. In your project, copy `skills/ba-setup/`, `skills/ba-spec/` and `skills/figma-build/` into `.claude/skills/`.
+3. Install it into your project: `uv run --with pyyaml python C:/dev/ba-tools/scripts/install.py <project folder>`.
 4. Start Claude Code in the project and say **"ba-setup"**. It checks everything and tells you what to
    do next.
+
+## Getting an update into a project
+
+1. `git -C C:/dev/ba-tools pull`
+2. `uv run --with pyyaml python C:/dev/ba-tools/scripts/install.py <project folder>` — replaces the
+   ba-tools skills and the template, sets the profile's version, never touches other skills, never
+   commits. Add `--dry-run` to see what would change first.
+3. `git status` in the project, then commit.
+
+`ba-setup check` tells you when a project is behind your ba-tools clone, and prints the command.
 
 ## Changing something
 
 1. Change it here, never in a project.
-2. Bump `ba_tools_version` in the template header and the example profile; add a line to
+2. Bump `ba_tools_version` in the template header and the example profiles; add a line to
    `CHANGELOG.md`.
-3. Reinstall in each project, update its profile's `ba_tools_version`, and run `ba-setup check`.
+3. Push, then update each project as above.
