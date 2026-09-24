@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 — 2026-09-24
+
+- **Default: the design system lives inside the product's own Figma file** — components on their own
+  pages beside the screens, live at once, no publish and accept. A separate library file only when two
+  or more design files share the components (Acme Lending + Bond Portal keep theirs for that reason).
+  Rule 19, the design-system mode and `ba-setup design` now handle both setups; the one-file setup gets
+  a screenshot check of a few screens after a component change instead of a publish review.
+
 ## 0.3.0 — 2026-09-24
 
 - **`skills/figma-build`** — moved from the lead BA's personal commands and made the same for every

@@ -9,7 +9,8 @@ source_of_truth: '<frontend | design>'   # frontend: shipped code wins over Figm
 
 figma:
   build_file: { key: '<file key>', name: '<file name>' }   # where screens and concepts are built
-  ds_file:    { key: '<file key>', name: '<file name>' }   # where the design-system components live (may be the same file)
+  ds_file:    { key: '<file key>', name: '<file name>' }   # where the components live. DEFAULT: the same file as build_file
+                                         # (no publish step). A separate library only when several design files share it.
   ds_library_key: '<lk-… from search_design_system / get_libraries>'   # scope every design-system search to this
   ignore_libraries: []                   # other libraries subscribed to the file that must never be used
   page_convention: '<how pages are organised, in one or two sentences>'

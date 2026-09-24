@@ -67,9 +67,15 @@ component keys, colours, frame sizes, page names) are in the product's design pr
 
 ## Design-system edits
 
-19. **Changing a published component needs two manual steps by the BA**: publish the library, then
-    accept the update in each file that uses it. The plugin API can do neither. Plan the pause before
-    starting, and say so.
+19. **Know where the components live before changing one** — the design profile's `figma.ds_file`
+    against `figma.build_file`:
+    - **Same file** (the default for a single product): edit the component and every screen updates at
+      once. No publish step. Because there is no review step either, screenshot two or three screens
+      that use the component after the change.
+    - **A separate library file** (only when several design files share the components): the change
+      reaches the screens only after two manual steps by the BA — publish the library, then accept the
+      update in each file that uses it. The plugin API can do neither. Plan the pause before starting,
+      and say so.
 20. **Keep the design-system file tidy after every edit**: components in aligned rows, grown component
     sets resized to fit their variants, no overlaps, scratch pages emptied.
 

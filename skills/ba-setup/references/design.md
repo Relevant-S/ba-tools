@@ -41,14 +41,17 @@ Ask one question: **does this product already ship, with frontend code the desig
 
 1. **Brand.** Ask for the brand guide or website, and collect: primary and accent colours, text and
    background colours, fonts, logo, corner radius. Record them as `tokens` with `source: brand-guide`.
-2. **Kit.** Ask which frontend stack the developers plan (a React + Tailwind + shadcn stack → the
+2. **One file or a library?** Ask: *"Will more than one Figma design file use these components — for
+   example two products on the same frontend?"* No (the usual case) → **one file**: components and
+   screens together, no publish step; `ds_file` = `build_file`. Yes → a separate library file.
+3. **Kit.** Ask which frontend stack the developers plan (a React + Tailwind + shadcn stack → the
    shadcn kit). Recommend starting from a stock kit; the BA duplicates it into the client's Figma team.
-   That copy is the design-system file.
-3. **Apply the brand** — run `figma-build` in design-system mode (`references/design-system.md` there):
-   variables from the tokens, the kit's components bound to them, the library published.
-4. **Design file.** A new file for screens, with the library enabled — or the same file, if the BA
-   prefers one file. Set up pages by product area → `page_convention`.
-5. Fill in `frames` (ask the target devices), `registry` (from the live library), `concepts_register`
+   In the one-file setup that copy **is** the product's design file.
+4. **Apply the brand** — run `figma-build` in design-system mode (`references/design-system.md` there):
+   variables from the tokens, the kit's components bound to them (and, for a library only, published).
+5. **Pages.** Add the product's screen pages beside the kit's pages, by product area →
+   `page_convention`.
+6. Fill in `frames` (ask the target devices), `registry` (from the live library), `concepts_register`
    (a new empty register), `inventory`.
 
 ## Then
