@@ -63,32 +63,38 @@ project is decided by the project's client email list, not here.
 
 ### Gmail
 
-What it is for: pulling client email threads. Takes about 15 minutes, once.
+What it is for: pulling client email threads.
 
-1. **console.cloud.google.com** → pick or create a project (for example "BA intake").
-2. **APIs & Services → Library → Gmail API → Enable.**
-3. **APIs & Services → OAuth consent screen** → Internal if your Google Workspace allows it, otherwise
-   External; add yourself as a test user; add the scope `gmail.modify`.
-4. **APIs & Services → Credentials → Create credentials → OAuth client ID → Desktop app** → name it
-   "fetch-gmail" → copy the client ID and secret.
-5. Add `GMAIL_OAUTH_CLIENT_ID` and `GMAIL_OAUTH_CLIENT_SECRET`. Restart Claude Code.
-6. **Sign in once:** ask Claude to run the fetch-gmail sign-in (`fetch.mjs init-auth`). A browser page
-   opens; approve it. The sign-in is saved on your machine only.
+**At Relevant, reuse the shared Google app — do not create one.**
 
-*If your company already has an OAuth client for this, ask for its ID and secret instead of making
-your own — steps 1–4 are then skipped.*
+1. Ask the lead BA for the **BA Intake Gmail client ID and client secret** (shared privately).
+2. Add `GMAIL_OAUTH_CLIENT_ID` and `GMAIL_OAUTH_CLIENT_SECRET`. Restart Claude Code.
+3. **Sign in once:** run the fetch-gmail sign-in (`<skills>/fetch-gmail/scripts/fetch.mjs init-auth`). A
+   browser page opens; choose the Relevant account and approve. The sign-in is saved to
+   `~/.claude/ba-tools/state/gmail-token.json` and does not expire.
+4. If Google says the app is blocked or needs approval → **admin@relevant.software**.
+
+*Only if there is no shared app (another company):* console.cloud.google.com → a project → enable the
+Gmail API → OAuth consent screen (Internal) → Credentials → OAuth client ID → Desktop app → copy the ID
+and secret, then steps 2–3.
 
 ### Slack
 
-What it is for: pulling threads from the project's client channels. Needs a workspace admin once.
+What it is for: pulling threads from the project's client channels.
 
-1. **api.slack.com/apps → Create New App → From scratch** → name it "BA Intake" → pick the workspace.
-   *(If a "BA Intake" app already exists in the workspace, ask for it instead.)*
-2. **OAuth & Permissions → User Token Scopes** — *User*, not Bot — add `channels:history`,
-   `channels:read`, `groups:history`, `groups:read`, `users:read`.
-3. **Install to Workspace.** An admin may need to approve.
-4. Copy the **User OAuth Token** (it starts with `xoxp-`) → add `SLACK_USER_TOKEN`.
-5. **Join each client channel** in Slack. The token sees only channels you are in.
+**At Relevant, reuse the BA Intake Slack app — do not create one.**
+
+1. Ask the lead BA to add the BA as a **collaborator on the BA Intake app**.
+2. **api.slack.com/apps → BA Intake → OAuth & Permissions → Install to Workspace** → approve.
+3. Copy the **User OAuth Token** (starts with `xoxp-`, not the Bot token) → `SLACK_USER_TOKEN`.
+   Restart Claude Code.
+4. **Join each client channel** — the token only sees channels the BA is in.
+5. If the install needs approval → **admin@relevant.software**. This route is new: if it fails, tell the
+   lead BA so the manual is corrected.
+
+*Only if there is no shared app:* api.slack.com/apps → Create New App → From scratch → User Token Scopes
+`channels:history`, `channels:read`, `groups:history`, `groups:read`, `users:read` → Install → copy the
+User OAuth Token.
 
 ## Warnings `check` may raise
 
