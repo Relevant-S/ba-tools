@@ -228,7 +228,7 @@ def cmd_check_project(root):
                     else ("n/a" if "jira" not in down else "missing"),
                     "site + projects set" if prof.get("jira") else "no jira block", "ba-setup project"))
     for key, label, need in [("confluence", "Confluence area", ["space"]), ("figma", "Figma area", ["files"]),
-                             ("slack", "Slack area", ["channels"]), ("client_emails", "Client emails", None)]:
+                             ("slack", "Slack area", ["channels"]), ("client_emails", "Client emails", ["include"])]:
         v = t.get(key)
         if key in t and v in ({}, []):
             rows.append(row(label, "n/a", "not used on this project"))
