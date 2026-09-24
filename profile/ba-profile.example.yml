@@ -1,0 +1,52 @@
+# BA project profile — everything that differs between projects. The template and skills do not.
+# Copy to docs/BA/specs/.ba-profile.yml in your project and fill in every <...>.
+# What each key means: profile/README.md in ba-tools.
+
+profile_version: 1
+ba_tools_version: 0.1.0
+project: <display name>
+
+products:
+  - key: <folder and product: value, e.g. my-product>
+    name: <on-screen product name>
+    jira_project: <KEY or ->
+    roles:
+      checked_at: '<repo @ origin/<branch> — the file the role names come from>'
+      list:                                   # every real role, in the order section 11 should show them
+        - { name: <on-screen name>, code: <code name> }
+      notes: []                               # traps, e.g. whether "Staff" is a role or a group name
+
+decider_model: <single | multi>
+downstream: [<jira | prd>]
+cadence: <release | phase>
+release_folders: <true | false>
+conflict_scope: [<product keys>]
+sizes_requiring_ux: [m, l]
+
+ids:
+  format: '<e.g. FR{n}>'
+  source: <register | highest-existing>
+  register: docs/BA/specs/fr-register.md      # when source is register
+  scan: []                                    # when source is highest-existing — every folder ids can appear in
+
+prd:
+  paths: [<path to the PRD or the PRD folder>]
+  shipped_only: <true | false>
+
+code:
+  dev_branch: <the branch developers merge into>
+  live_branch: <the branch that is in production>
+  repos:
+    - { path: <repo folder, relative to the project root>, area: <what it covers> }
+
+jira:                                         # delete when downstream has no jira
+  site: <yourcompany.atlassian.net>
+  default_issuetype: Task
+  priorities: [<the priority names this Jira has>]
+  ticket_body: short
+
+spec_links:
+  repo_url: <https://github.com/org/repo>
+  branch: <branch the specs live on>
+
+client_review: <clarification-pages | feature-brief>

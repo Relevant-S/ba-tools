@@ -1,0 +1,95 @@
+# BA project profile — everything that differs between projects. The template and skills do not.
+# Lives at docs/BA/specs/.ba-profile.yml in the NWE docs repo (northwind/docs).
+# What each key means: https://github.com/Relevant-S/ba-tools/blob/main/profile/README.md
+
+profile_version: 1
+ba_tools_version: 0.1.0
+project: NWE (Northwind)
+
+products:
+  - key: nwe
+    name: NWE
+    jira_project: '-'
+    roles:
+      checked_at: 'northwind/app @ origin/dev a8e88ed3 (2026-09-24) — enum AdminRole, ProfileType, MembershipTier, AccountApprovalStatus in apps/api/prisma/schema.prisma; project-context.md → "RBAC — two roles, web-only, server-enforced"'
+      list:
+        - { name: Super Admin,        code: AdminRole.super_admin }
+        - { name: Staff,              code: AdminRole.staff }
+        - { name: Company Admin,      code: 'a CompanyAdmin row — at most one company per member' }
+        - { name: Member,             code: 'ProfileType (Practitioner / Partner) × MembershipTier (Free / Paid)' }
+        - { name: Pending member,     code: 'AccountApprovalStatus — not yet approved' }
+        - { name: Logged-off visitor, code: '-' }
+      notes:
+        - 'Staff IS a real role here (AdminRole.staff, the limited back-office role). "Anyone in the back office" means Super Admin + Staff, and both get a column.'
+        - 'Super Admin and Staff are web only. Split the Member column (Practitioner / Partner, Free / Paid) only where the behaviour really differs.'
+
+# multi ⇒ several client voices that can contradict. On conflict: record BOTH, apply the newest,
+# and send a one-line acknowledgement to whoever was overruled so it lands as a decision, not a discovery.
+decider_model: multi
+downstream: [prd]                  # PRD → epics → stories; a spec may add jira: or release: when one exists
+cadence: phase                     # 2.1 / 2.2 / Phase 3 — not a rolling release train
+release_folders: false             # NWE has phases, not a release train — paths are <product>/<id>-<slug>.md
+conflict_scope: [nwe]
+sizes_requiring_ux: [m, l]
+
+ids:
+  format: 'NWE-FR-{n}'
+  source: highest-existing         # NWE has no register — take one above the highest id in BOTH places,
+  scan:                            # because a PRD FR can exist with no spec
+    - docs/BA/specs/nwe
+    - _bmad-output/planning-artifacts/prds
+
+prd:
+  paths: [_bmad-output/planning-artifacts/prds]
+  shipped_only: false
+
+code:
+  dev_branch: dev                  # main is production and trails dev
+  live_branch: main
+  repos:
+    - { path: app, area: 'the whole product — northwind/app (apps/*, packages/*)' }
+
+spec_links:
+  repo_url: https://github.com/northwind/docs
+  branch: docs                     # ⚠️ the branch checked out on 2026-09-24 — confirm before relying on it
+
+client_review: feature-brief
+
+# Notes:
+# - Scope/SOW is NOT a gate. Phase labels may be recorded as planning state; nothing is blocked or
+#   flagged as "out of scope" here. Scope and Change Orders are handled by the team, off this process.
+# - Figma is the UX surface (see docs/BA/design-system/northwind/figma-build-config.md).
+
+# ---- Client-facing briefs (the `feature-brief` skill) ----
+# A brief is a RENDERING of one or more specs for the client. The spec stays source of truth;
+# when they disagree, re-render the brief rather than patching it in Confluence.
+briefs_dir:        docs/BA/briefs/nwe
+confluence_space:  Northwind
+confluence_parent: 51281921        # DEFAULT parent — "Phase 2.2. - Partners/Companies + Booths + Leads"
+figma_file:        SampleFileKey04AbCdEfG
+figma_url_slug:    NWE---Design-System
+
+# A brief may override `confluence_parent` with its own `parent:`. Phase 2.2 has TWO parents because the
+# default one is named for the partner/booth area and the agenda is a different feature area (Vadim,
+# 13 Aug). Keep `title` stable — it is the upsert key; a changed title creates a second page.
+briefs:
+  - title: Partner & Company experience
+    file:  partner-company-experience.md
+    specs: [NWE-FR-75, NWE-FR-76, NWE-FR-122]   # FR-122: the company half (counts + the Leads tab)
+    page:  51609601
+  - title: Exhibitors, Booths & Leads
+    file:  exhibitors-booths-leads.md
+    specs: [NWE-FR-115, NWE-FR-117, NWE-FR-118, NWE-FR-120, NWE-FR-122]   # FR-122: the leads half
+    page:  51904534
+  - title: The event agenda
+    file:  agenda.md
+    parent: 52920321                            # "Phase 2.2. - Agenda" (its own parent, see above)
+    specs: [NWE-FR-123, NWE-FR-124, NWE-FR-125, NWE-FR-126, NWE-FR-127, NWE-FR-128]
+    page:  52953089
+
+# Parent index pages that are published from this repo rather than hand-written in Confluence.
+brief_parents:
+  - title: Phase 2.2. - Agenda
+    file:  _parent-agenda.md
+    parent: 1179824                             # the Northwind space home
+    page:  52920321
