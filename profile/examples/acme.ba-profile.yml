@@ -2,8 +2,8 @@
 # Lives at docs/BA/specs/.ba-profile.yml in the acme-docs repo.
 # What each key means: https://github.com/Relevant-S/ba-tools/blob/main/profile/README.md
 
-profile_version: 1
-ba_tools_version: 0.1.0
+profile_version: 2
+ba_tools_version: 0.2.0
 project: Acme (Acme Lending + Bond Portal)
 
 products:
@@ -73,4 +73,19 @@ spec_links:
   repo_url: https://github.com/acme-co/acme-docs
   branch: ba-tools                 # docs/BA exists only on this branch
 
-client_review: clarification-pages   # docs/BA/clarifications/ — see its README
+client_review: clarification-pages   # where the client answers — the page the BA shares on the call
+client_representations: [figma]   # how the client sees the requirements; comments on these are extra client input
+
+# The project's "area" in each tool — shared by everyone on the project. Personal keys never go here.
+tools:
+  client_emails:                   # whose email and whose calls count as client input (fetch-gmail, fetch-fireflies)
+    include: ['@acme.example']   # a whole domain, or single addresses
+    exclude: [help@acme.example]
+  slack:
+    channels: [acme-release-support, acme-requirements, bond-requirements]
+  figma:
+    files:
+      - { key: SampleFileKey01AbCdEfG, name: 'Acme Lending (Copy)',  product: acme,      use: designs }
+      - { key: SampleFileKey02AbCdEfG, name: 'Bond Portal',     product: bond-portal, use: designs }
+      - { key: SampleFileKey03AbCdEfG, name: 'Custom DS',           product: both,            use: design-system }
+  confluence: {}                   # not used on this project

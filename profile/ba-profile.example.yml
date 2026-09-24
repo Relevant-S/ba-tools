@@ -1,52 +1,68 @@
 # BA project profile — everything that differs between projects. The template and skills do not.
-# Copy to docs/BA/specs/.ba-profile.yml in your project and fill in every <...>.
-# What each key means: profile/README.md in ba-tools.
+# Copy to docs/BA/specs/.ba-profile.yml in your project and replace every '<...>'.
+# `ba-setup project` fills most of it in for you. What each key means: profile/README.md in ba-tools.
 
-profile_version: 1
-ba_tools_version: 0.1.0
-project: <display name>
+profile_version: 2
+ba_tools_version: 0.2.0
+project: '<display name>'
 
 products:
-  - key: <folder and product: value, e.g. my-product>
-    name: <on-screen product name>
-    jira_project: <KEY or ->
+  - key: '<folder name and the spec product value, e.g. my-product>'
+    name: '<on-screen product name>'
+    jira_project: '<Jira project key, or ->'
     roles:
-      checked_at: '<repo @ origin/<branch> — the file the role names come from>'
+      checked_at: '<repo @ origin/branch — the file the role names come from>'
       list:                                   # every real role, in the order section 11 should show them
-        - { name: <on-screen name>, code: <code name> }
+        - { name: '<on-screen name>', code: '<code name>' }
       notes: []                               # traps, e.g. whether "Staff" is a role or a group name
 
-decider_model: <single | multi>
-downstream: [<jira | prd>]
-cadence: <release | phase>
-release_folders: <true | false>
-conflict_scope: [<product keys>]
+decider_model: '<single | multi>'
+downstream: ['<jira | prd>']
+cadence: '<release | phase>'
+release_folders: false                        # true when specs sit in one folder per Jira release
+conflict_scope: ['<product keys>']
 sizes_requiring_ux: [m, l]
 
 ids:
-  format: '<e.g. FR{n}>'
-  source: <register | highest-existing>
+  format: 'FR{n}'                             # how a new capability's id is written; {n} is the number
+  source: '<register | highest-existing>'
   register: docs/BA/specs/fr-register.md      # when source is register
   scan: []                                    # when source is highest-existing — every folder ids can appear in
 
 prd:
-  paths: [<path to the PRD or the PRD folder>]
-  shipped_only: <true | false>
+  paths: ['<path to the PRD, or the PRD folder>']
+  shipped_only: false
 
 code:
-  dev_branch: <the branch developers merge into>
-  live_branch: <the branch that is in production>
+  dev_branch: '<the branch developers merge into>'
+  live_branch: '<the branch that is in production>'
   repos:
-    - { path: <repo folder, relative to the project root>, area: <what it covers> }
+    - { path: '<repo folder, relative to the project root>', area: '<what it covers>' }
 
-jira:                                         # delete when downstream has no jira
-  site: <yourcompany.atlassian.net>
+jira:                                         # delete this block when downstream has no jira
+  site: '<yourcompany.atlassian.net>'
   default_issuetype: Task
-  priorities: [<the priority names this Jira has>]
+  priorities: ['<the priority names this Jira has>']
   ticket_body: short
 
 spec_links:
-  repo_url: <https://github.com/org/repo>
-  branch: <branch the specs live on>
+  repo_url: '<https://github.com/org/repo>'
+  branch: '<branch the specs live on>'
 
-client_review: <clarification-pages | feature-brief>
+client_review: clarification-pages            # where the client answers — the page the BA shares on the call
+client_representations: [figma]               # how the client sees the requirements (add feature-brief if you use
+                                              # Confluence); comments on these are extra client input
+
+# The project's "area" in each tool — shared by everyone on the project. Personal keys never go here.
+tools:
+  client_emails:                              # whose email and whose calls count as client input
+    include: ['<@client-domain.com, or a single address>']
+    exclude: ['<no-reply or help-desk addresses>']
+  slack:
+    channels: ['<channel name without #>']
+  figma:
+    files:
+      - { key: '<file key from the Figma URL>', name: '<file name>', product: '<product key>', use: '<designs | design-system>' }
+  confluence:                                 # delete when the project does not use Confluence
+    space: '<space key>'
+    parent: '<page id new pages go under>'

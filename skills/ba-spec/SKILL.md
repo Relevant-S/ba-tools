@@ -17,9 +17,13 @@ project profile, **`docs/BA/specs/.ba-profile.yml`**. What each key means:
 
 ## Step 0 — Load the profile (every run)
 
-1. Read `docs/BA/specs/.ba-profile.yml`. If it is missing, stop: tell the BA to copy
-   `profile/ba-profile.example.yml` from ba-tools and fill it in. Do not guess project facts.
-2. Check `profile_version` is `1`. Anything else: stop and say which version this skill expects.
+1. **Setup check.** Run `uv run --with pyyaml python ../ba-setup/scripts/setup.py` (the `ba-setup` skill is installed
+   next to this one) with `stamp-status`. If there is no passing stamp for this version, run the `ba-setup` skill in `check`
+   mode first, and carry on only when nothing is ❌. This is how a new BA is sent through setup on
+   their first run.
+2. Read `docs/BA/specs/.ba-profile.yml`. If it is missing, stop: tell the BA to run `ba-setup project`.
+   Do not guess project facts. Check `profile_version` is `2`; anything else, send the BA to
+   `ba-setup project`, which upgrades it.
 3. Check the project's copy of the template (`docs/BA/specs/_template.md`, if present) carries the same
    `ba_tools_version` as `assets/spec-template.md`. If not, tell the BA the project copy is out of date
    or was edited locally — the copy in this skill is the one to follow.
@@ -70,8 +74,18 @@ The spec step does not decide client scope. Before step 2, say which lane this i
 - **Quick spec** — a bug fix (restores behaviour already defined) or an internal-only change with no
   client-visible effect. No change request needed. Say so in one line under the title.
 - **Change request** — anything new or different that a client or end user will see. The spec can be
-  written, but it is not handed off until the client has approved it, through the profile's
-  `client_review` route (`clarification-pages` or `feature-brief`). Mark `status: eliciting` until then.
+  written, but it is not handed off until the client has approved it on the **clarification page**
+  (`client_review` in the profile) — the page the BA shares with the client on the call and collects
+  the answers on. Mark `status: eliciting` until then. The feature brief and the Figma designs
+  (`client_representations`) show the client the requirements; comments left on them are extra client
+  input — read them into the spec like any other source.
+
+## Thin spec (a feature from the brief, before any design)
+
+When the BA says "thin spec", or is breaking a project brief into features: run **step 0, step 1 and
+section 1 (Need) of step 2 only**. Write the file with the header and `# Title` + `## 1. Need`,
+`status: draft`, and stop. The thin spec is what the design is drawn from and what triage attaches
+later call notes to. Run the full skill on the same file when the feature is picked up again.
 
 ## Re-creating a spec that is already handed off
 

@@ -7,15 +7,15 @@ or it is a change to the template for every project.
 Each project keeps one profile at `docs/BA/specs/.ba-profile.yml`. The skills read it at the start of
 every run. If a value they need is missing, they ask you, and you add it here — they do not guess.
 
-Copy [`ba-profile.example.yml`](ba-profile.example.yml) to start. Two real ones are in
+`ba-setup project` writes and fills it for you. To do it by hand, copy [`ba-profile.example.yml`](ba-profile.example.yml). Two real ones are in
 [`examples/`](examples/): Acme Lending + Bond Portal, and NWE.
 
 ## The keys
 
 | Key | What it says | Acme Lending | NWE |
 |---|---|---|---|
-| `profile_version` | Layout of this file. The skills refuse a version they do not know. | `1` | `1` |
-| `ba_tools_version` | The ba-tools release installed in this project. | `0.1.0` | `0.1.0` |
+| `profile_version` | Layout of this file. The skills refuse a version they do not know. | `2` | `2` |
+| `ba_tools_version` | The ba-tools release installed in this project. | `0.2.0` | `0.2.0` |
 | `project` | Display name. | Acme | NWE (Northwind) |
 | `products` | One entry per product in the repo: `key` (the spec's `product:` value and folder name), `name`, `jira_project` (or `-`), and `roles`. | two products | one |
 | `products[].roles.checked_at` | The code file the role list was checked against, and the branch. | `ROLE_NAMES` in acme-app | `enum AdminRole` in the app schema |
@@ -35,8 +35,16 @@ Copy [`ba-profile.example.yml`](ba-profile.example.yml) to start. Two real ones 
 | `code.live_branch` | What is in production — read when the question is "what is live today". | `prod` | `main` |
 | `jira` | Only when `downstream` has jira: site, default issue type, the priority names this Jira has, and the ticket rule. | example, Task | — |
 | `spec_links` | How a ticket or brief links a spec: repo URL and branch. | acme-docs @ ba-tools | northwind/docs @ docs |
-| `client_review` | How open questions reach the client: `clarification-pages` or `feature-brief`. | clarification-pages | feature-brief |
+| `client_review` | Where the client answers — the page the BA shares on the call and collects answers on. Always `clarification-pages`. | clarification-pages | clarification-pages |
+| `client_representations` | How the client *sees* the requirements. Comments left on these are extra client input. | figma | feature-brief, figma |
+| `tools.client_emails` | `include` / `exclude` — whose email and whose recorded calls count as client input. A domain is written `@client.com`. | `@acme.example`, minus the help desk | to fill in |
+| `tools.slack.channels` | The channels where the client talks. The BA must be a member. | 3 channels | to fill in |
+| `tools.figma.files` | Each Figma file the BA works in: `key` (from the URL), `name`, `product`, `use` (`designs` or `design-system`). | 3 files | 1 file |
+| `tools.confluence` | `space` and `parent` page for published pages. `{}` = not used. | not used | Northwind |
 | `briefs_dir`, `confluence_*`, `figma_*`, `briefs`, `brief_parents` | Settings for the `feature-brief` skill. | — | yes |
+
+**Keys, tokens and passwords never go in the profile** — the profile is committed and shared. They go in
+each BA's own `~/.claude/settings.json` (see `ba-setup me`).
 
 ## Adding a key
 

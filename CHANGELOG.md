@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.0 — 2026-09-24
+
+- **`skills/ba-setup`** — new. `check` shows one table of everything a BA needs; `me` walks the BA's
+  own keys, connectors and programs; `project` fills the project's area in each tool into the profile.
+  `me` also offers starter defaults for newcomers: a simple-language section in `~/.claude/CLAUDE.md`
+  and read-only permissions (reading runs without asking; changes still ask; force-push, hard reset,
+  `rm -rf` and sending email are blocked). Nothing is removed from the BA's settings; both files are
+  backed up.
+- **Profile version 2** — new `tools:` block (client emails, Slack channels, Figma files, Confluence),
+  and `client_representations`. `client_review` is `clarification-pages` in every project: the page the
+  BA shares with the client on the call. The feature brief and Figma show the requirements; comments on
+  them are extra client input.
+- **`ba-spec`** — runs the setup check before its first step, so a new BA is sent through `ba-setup`
+  automatically; change requests are approved on the clarification page.
+- `scripts/check-project.py` folded into `ba-setup` (`check-project`), and now ignores Windows line
+  endings. `.gitattributes` keeps every file on LF.
+- `docs/` — the three flow documents.
+
 ## 0.1.0 — 2026-09-24
 
 First release: the spec step, made the same for every project.

@@ -8,9 +8,9 @@ the per-project settings they read.
 **The template and the skills are the same in every project. Only the project profile differs.**
 
 A project never edits the template or a skill. Everything that really is different between projects —
-products, roles, how ids are numbered, where a finished spec goes, Jira, which code branch to read,
-how the client reviews — lives in one file per project: `docs/BA/specs/.ba-profile.yml`
-([what each key means](profile/README.md)).
+products, roles, id numbering, where a finished spec goes, Jira, which code branch to read, the
+project's Slack channels, client emails and Figma files — lives in one file per project:
+`docs/BA/specs/.ba-profile.yml` ([what each key means](profile/README.md)).
 
 If a project seems to need a different template, the difference is either a profile value, or a
 change to the template for every project. Make that change here, bump the version, and reinstall
@@ -20,33 +20,29 @@ everywhere.
 
 | Path | What it is |
 |---|---|
+| `skills/ba-setup/` | Setup, check and repair: your own keys and connectors (`me`), the project's area in each tool (`project`), and a green/red table of both (`check`). Also installs starter defaults for newcomers. |
 | `skills/ba-spec/` | Writes one spec in the template and takes it through the ready gate to its hand-off (Jira ticket or PRD). |
 | `skills/ba-spec/assets/spec-template.md` | The spec template — the only copy that is ever edited. |
 | `profile/` | The profile layout, a blank example, and the real profiles for Acme Lending and NWE. |
-| `scripts/check-project.py` | Checks a project: profile complete, template copy unchanged. |
+| `docs/` | How the BA work runs: first day, a new project, and the day-to-day loop. |
 
 Still to move in: `intake-and-triage`, the fetchers (`fetch-fireflies`, `fetch-gmail`, `fetch-slack`,
-`fetch-jira-backlog`), `jira`, `confluence`, `feature-brief`. Then package it all as a BMad module
-with a setup skill, so it installs like the rest of BMad.
+`fetch-jira-backlog`), `jira`, `confluence`, `feature-brief`, and the clarification-page generator.
+Then package it all as a BMad module with its own installer.
 
-## Installing in a project (for now, by hand)
+## First day
 
-From the project root:
+Read [`docs/new-ba-onboarding.md`](docs/new-ba-onboarding.md). In short:
 
-1. **The skill.** Copy `skills/ba-spec/` to `.claude/skills/ba-spec/`.
-2. **The template.** Copy `skills/ba-spec/assets/spec-template.md` to `docs/BA/specs/_template.md`.
-   It is a read-only copy for people to read; the skill uses its own.
-3. **The profile.** Copy `profile/ba-profile.example.yml` to `docs/BA/specs/.ba-profile.yml` and fill
-   it in — or start from the matching file in `profile/examples/`.
-4. **Check it.**
-
-   ```
-   uv run --with pyyaml python <ba-tools>/scripts/check-project.py <project-root>
-   ```
+1. Install Claude Code, Git, Node 22 and uv.
+2. Clone this repo, e.g. to `C:\dev\ba-tools`.
+3. In your project, copy `skills/ba-setup/` and `skills/ba-spec/` into `.claude/skills/`.
+4. Start Claude Code in the project and say **"ba-setup"**. It checks everything and tells you what to
+   do next.
 
 ## Changing something
 
 1. Change it here, never in a project.
 2. Bump `ba_tools_version` in the template header and the example profile; add a line to
    `CHANGELOG.md`.
-3. Reinstall in each project, update its profile's `ba_tools_version`, and run the check.
+3. Reinstall in each project, update its profile's `ba_tools_version`, and run `ba-setup check`.

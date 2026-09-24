@@ -27,8 +27,9 @@ fix them, or accept them — and then **each accepted box is written into the he
 blocker you can name is a decision; letting one through silently is not.
 
 **Change-request lane:** even when ready, the spec is not filed until the client has approved it. Stop
-here and tell the BA what goes to the client, by the profile's `client_review` route
-(`clarification-pages` or `feature-brief`).
+here and tell the BA what goes on the clarification page for the client to approve. If the project
+also shows the client a feature brief or Figma designs (`client_representations`), check their
+comments first — an unanswered comment there is an open question.
 
 **Then show the BA the whole spec and ask for an explicit yes to hand it off.** Nothing goes to Jira or the PRD before
 that yes.

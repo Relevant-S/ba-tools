@@ -2,8 +2,8 @@
 # Lives at docs/BA/specs/.ba-profile.yml in the NWE docs repo (northwind/docs).
 # What each key means: https://github.com/Relevant-S/ba-tools/blob/main/profile/README.md
 
-profile_version: 1
-ba_tools_version: 0.1.0
+profile_version: 2
+ba_tools_version: 0.2.0
 project: NWE (Northwind)
 
 products:
@@ -53,7 +53,22 @@ spec_links:
   repo_url: https://github.com/northwind/docs
   branch: docs                     # ⚠️ the branch checked out on 2026-09-24 — confirm before relying on it
 
-client_review: feature-brief
+client_review: clarification-pages   # where the client answers — the page the BA shares on the call
+client_representations: [feature-brief, figma]   # how the client sees the requirements; comments on these are extra client input
+
+# The project's "area" in each tool — shared by everyone on the project. Personal keys never go here.
+tools:
+  client_emails:                   # ⚠ fill in — whose email and calls count as client input
+    include: []
+    exclude: []
+  slack:
+    channels: []                   # ⚠ fill in
+  figma:
+    files:
+      - { key: SampleFileKey04AbCdEfG, name: 'NWE Design System', product: nwe, use: designs }
+  confluence:
+    space: Northwind
+    parent: 51281921               # the default parent for feature briefs (see briefs: below)
 
 # Notes:
 # - Scope/SOW is NOT a gate. Phase labels may be recorded as planning state; nothing is blocked or
