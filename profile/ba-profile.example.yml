@@ -3,13 +3,14 @@
 # `ba-setup project` fills most of it in for you. What each key means: profile/README.md in ba-tools.
 
 profile_version: 2
-ba_tools_version: 0.2.0
+ba_tools_version: 0.3.0
 project: '<display name>'
 
 products:
   - key: '<folder name and the spec product value, e.g. my-product>'
     name: '<on-screen product name>'
     jira_project: '<Jira project key, or ->'
+    design_profile: 'docs/BA/design-system/<folder>/design-profile.yml'   # what figma-build reads — ba-setup design writes it
     roles:
       checked_at: '<repo @ origin/branch — the file the role names come from>'
       list:                                   # every real role, in the order section 11 should show them

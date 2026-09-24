@@ -1,0 +1,71 @@
+# Design profile — NWE (Northwind). Lives at docs/BA/design-system/northwind/design-profile.yml in the NWE docs repo.
+design_profile_version: 1
+product: nwe
+source_of_truth: frontend              # member app and back office both ship; concepts are drawn on top
+
+figma:
+  build_file: { key: SampleFileKey04AbCdEfG, name: '@shadcn/ui - Design System (Community) (Copy)' }
+  ds_file:    { key: SampleFileKey04AbCdEfG, name: 'same file — design system and screens live together' }
+  ds_library_key: lk-81c459c7f1b28eb9bb2b1992c98914defdef31ab1857ff43484624f2d897fb9427c3cd069a06afbf25d76327ca34d0ba21198a9b7ac1d63d0b159ff35a6dd9ae
+  ignore_libraries:
+    - 'Northwind Design System (lk-18d1f0c5…) — an abandoned stub with only Button and Skeleton'
+    - 'SnowUI, Acme Lending, Optimum Pay, Material 3, Apple kits — subscribed to the file, never used here'
+  page_convention: >-
+    One page per product area, named "Northwind / <Area>" (for example "Northwind / Wallet",
+    "Northwind / Events / Per-session registration"), frames in flow rows. The Components, Primitives and Icons
+    pages hold the design system — Primitives is not edited.
+  concept_page_prefix: '_Concept · '
+  archive_divider: '🗄 ARCHIVE'
+  concept_question_style: 'amber note on the frame'
+
+frames:
+  - { name: native mobile, width: 390, height: 844, note: 'fixed height, clipsContent, vertical scroll; bottom bars pinned (constraints STRETCH / MAX, y = 844 − bar height); page gutter 20' }
+  - { name: web, width: 0, height: 0, note: '⚠ not recorded — read an existing web frame on the page before building one' }
+
+tokens:
+  source: code
+  path: app/packages/ui/src/styles/globals.css
+  font: Poppins
+  font_note: 'Poppins spells it "SemiBold" (no space). It is wider than Inter — older fixed-height frames can overflow.'
+  scrim: '⚠ not recorded — read the member app Dialog overlay'
+  colors:
+    bg-brand: '#4E036F'
+    bg-tint-brand: '#F4F0F8'
+    accent-gold: '#FEAC0F'
+    text-primary: '#16121F'
+    text-body: '#3A3346'
+    text-muted: '#6B6478'
+    border-default: '#EBE7F0'
+    bg-page: '#FAF9FC'
+    success: '#1E9E6A'
+    info: '#2F7DE2'
+    danger: '#D81327'
+  type:
+    h3: 24 / 32 / 600 / -0.6
+    h4: 20 / 28 / 600 / -0.5
+    large: 18 / 28 / 600
+    p: 16 / 28 / 400
+    p-ui-medium: 16 / 24 / 500
+    body-medium: 14 / 24 / 500
+    small: 14 / 14 / 500
+    detail: 12 / 20 / 500
+  radius: { sm: 8, md: 12, lg: 16, full: 999 }
+  spacing_note: 'The Figma file has no variables yet — components still carry raw hex. Promoting them is outstanding.'
+
+fe:
+  repo: app                            # northwind/app — read origin/dev
+  app_root: apps/member/src
+  ui_package: packages/ui
+
+registry: docs/BA/design-system/northwind/figma-build-config.md   # ⚠ its section 2 holds the component keys until they move to their own registry file
+concepts_register: '⚠ none yet — create docs/BA/design-system/northwind/concepts-register.md on the first concept'
+inventory: docs/BA/design-system/northwind/figma-inventory.md   # replaces the 4,200-line page list in figma-build-config.md
+principles: _bmad-output/planning-artifacts/ux-designs/ux-NWE-2026-07-27/DESIGN.md
+
+traps:
+  - 'The DS Buttons set is Accent / Secondary / Ghost-Link, and Secondary has a WHITE label (drawn for the dark hero). On a light card, override its text fill and stroke to brand violet.'
+  - 'A DS button at half-card width overflows its label (24px side padding) — centre it and drop the padding to about 12px.'
+  - 'Never resize an Avatar instance — swap its Size variant (sm 32, md 40, lg 56). For 44px use the local "Avatar / Size=44 (NWE addition)".'
+  - 'The native mobile header has NO page title: optional back chevron + the NWE logo on the left, the notification bell on the right. No avatar.'
+  - 'Bottom nav is 64px with five tabs: Home, Events, Community, Wallet, Profile.'
+  - 'Always pass includeLibraryKeys (ds_library_key) to search_design_system — eight libraries are subscribed to this file.'

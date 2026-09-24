@@ -1,0 +1,45 @@
+# Design profile — one per product. What the figma-build skill needs to know about this product's
+# Figma files and design system. Lives at docs/BA/design-system/<folder>/design-profile.yml; the
+# project profile points at it (products[].design_profile). `ba-setup design` fills it in.
+
+design_profile_version: 1
+product: '<product key from the project profile>'
+
+source_of_truth: '<frontend | design>'   # frontend: shipped code wins over Figma. design: no code yet — Figma leads
+
+figma:
+  build_file: { key: '<file key>', name: '<file name>' }   # where screens and concepts are built
+  ds_file:    { key: '<file key>', name: '<file name>' }   # where the design-system components live (may be the same file)
+  ds_library_key: '<lk-… from search_design_system / get_libraries>'   # scope every design-system search to this
+  ignore_libraries: []                   # other libraries subscribed to the file that must never be used
+  page_convention: '<how pages are organised, in one or two sentences>'
+  concept_page_prefix: '_Concept · '
+  archive_divider: '🗄 ARCHIVE'
+  concept_question_style: 'amber note on the frame'
+
+frames:
+  - { name: desktop, width: 1440, height: 1024, note: 'grow height for long content, never width' }
+
+tokens:
+  source: '<code | brand-guide>'
+  path: '<the Tailwind config or CSS file the values come from, or the brand guide link>'
+  font: '<family>'
+  font_note: ''                          # e.g. how this font spells its weights
+  scrim: '<modal backdrop colour and opacity>'
+  colors: {}                             # name: hex — copied from the source, never invented
+  type: {}                               # token: size / line height / weight
+  radius: {}
+  spacing_note: ''
+
+fe:                                      # only when source_of_truth is frontend
+  repo: '<repo folder, relative to the project root>'
+  app_root: '<path inside the repo>'
+  ui_package: '<shared component package, if any>'
+
+registry: '<path to the design-system component list, with keys>'
+concepts_register: '<path to the concepts register>'
+inventory: '<path to the generated frame inventory>'
+principles: '<path to the design principles, if the product has them>'
+
+traps: []                                # product-specific mistakes: a component that misbehaves, a rule that
+                                         # only holds here. One line each, with what to do instead.

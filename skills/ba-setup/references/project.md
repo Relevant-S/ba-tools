@@ -44,7 +44,12 @@ Show each list as numbered lines; the BA answers with numbers.
    Ask for the parent page link (new pages go under it); the page id is the number in the link →
    `tools.confluence`. If the project does not use Confluence, write `confluence: {}`.
 
-## Part 3 — Write and check
+## Part 3 — Design profiles
+
+For each product with screens, run `ba-setup design` (or offer to run it now). It writes the product's
+design profile and adds its path as `products[].design_profile`.
+
+## Part 4 — Write and check
 
 1. Show the profile as a list of what is new or changed. Wait for a yes.
 2. Write it. If a profile existed, back it up first (`.ba-profile.yml.bak-<date>`).

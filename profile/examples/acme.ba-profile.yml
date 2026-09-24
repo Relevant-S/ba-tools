@@ -3,13 +3,14 @@
 # What each key means: https://github.com/Relevant-S/ba-tools/blob/main/profile/README.md
 
 profile_version: 2
-ba_tools_version: 0.2.0
+ba_tools_version: 0.3.0
 project: Acme (Acme Lending + Bond Portal)
 
 products:
   - key: acme
     name: Acme Lending
     jira_project: ACME
+    design_profile: docs/BA/design-system/acme/design-profile.yml
     roles:
       checked_at: 'acme-app @ origin/main — ROLE_NAMES in src/permission/scripts/build-sync-permissions-payload.ts'
       list:
@@ -27,6 +28,7 @@ products:
   - key: bond-portal
     name: Bond Portal
     jira_project: BOND
+    design_profile: docs/BA/design-system/bond-portal/design-profile.yml
     roles:
       checked_at: 'bond-portal-app — one admin flag (isadmin); there are no other roles'
       list:

@@ -1,0 +1,73 @@
+# Design profile — Acme Lending. Lives at docs/BA/design-system/acme/design-profile.yml.
+design_profile_version: 1
+product: acme
+source_of_truth: frontend              # the shipped code wins; the Figma audit copy is being made faithful to it
+
+figma:
+  build_file: { key: SampleFileKey01AbCdEfG, name: 'Acme Lending (Copy)' }   # the audit copy — BA edit
+  ds_file:    { key: SampleFileKey03AbCdEfG, name: 'Acme Lending Custom (DS)' }
+  ds_library_key: lk-427aa4854f9a23a0f7eb5f2f77d179f8f9ec4a1dfa79a511190cce2d03d800baa40a9ee2cc9450900d31686a8a54ac4dc980c15f04c75248b0d993be557015aa   # 'Acme Lending Custom (DS)'
+  ignore_libraries:                    # vendor / legacy — never slot these into anything
+    - 'SnowUI (lk-8e393eb2932…) — the vendor kit being swept away'
+    - 'Acme Lending (lk-28bb09d3c60…) — the ORIGINAL library, last updated Feb 2026; not the Custom DS'
+    - 'Easy term Investment (lk-ebb4c0006e9…) — 2024, legacy'
+  page_convention: >-
+    Role-divider pages named "<emoji> ─── NAME ───" (🌐 COMMON · 👤 CUSTOMER · 🛠 ADMIN / STAFF · 🧑 AGENT ·
+    ✅ COMPLIANCE), then one page per sidebar section under its divider holding all that section's screens,
+    tabs, states and modals. COMMON is only for flows shared across roles (Authorization, Profile Setup).
+  concept_page_prefix: '_Concept · '
+  archive_divider: '🗄 ARCHIVE'
+  concept_question_style: 'amber note on the frame'
+
+frames:
+  - { name: staff desktop, width: 1440, height: 1024, note: 'sidebar 262 + content 1178; grow height, never width' }
+
+tokens:
+  source: code
+  path: acme-client/packages/tailwind-config/tailwind.config.ts   # the app configs only pull in this preset
+  font: Inter
+  font_note: 'Inter spells it "Semi Bold" (with a space)'
+  scrim: '#1C1C1C at 20% — the shared Modal overlay bg-black-20'
+  colors:
+    'black.NN': '#1C1C1C at NN% opacity — baked opacity, not a lighter hex'
+    primary.aqua: '#00819B'
+    primary.light: '#F7F9FB'
+    grey.base: '#79858B'
+    grey.light: '#CDD2D5'
+    green.main: '#2B9749'
+    red: '#FF4747'
+    brand.hover: '#1E9FB9'
+  type:
+    sm: 12 / 18
+    base: 14 / 20
+    lg: '16'
+    xl: 18 / 24
+    2xl: 24 / 36 — not 32
+    3xl: '48'
+    4xl: '64'
+  radius: { values: '4 6 8 12 16 20 24 28 32 40 48 80, full = 50%' }
+  spacing_note: '1:1 px. Reduced-opacity tints are literal paints, never a bound opaque variable.'
+
+fe:
+  repo: acme-client
+  app_root: apps/acme/src
+  ui_package: packages/ui              # @acme/ui
+
+registry: docs/BA/design-system/acme/ds-canonical-registry.md
+concepts_register: docs/BA/design-system/acme/concepts-register.md
+inventory: docs/BA/design-system/acme/figma-inventory.md   # generate on first use
+principles: docs/BA/design-system/acme/design-principles.md
+
+traps:
+  - 'Button weight follows Size: only Size=Large is 600, Small and Medium are 400. The frontend passes no size to almost every button (= Medium). Match the code, never pick a size by eye.'
+  - 'The DS Button has no red / destructive variant. For Reject or Delete, override label and stroke to red and flag the gap.'
+  - 'Status cells are Badge (AcmeLending) instances, never a hand-made dot and text. The Status for table and StatusBadge sets are deprecated.'
+  - 'TableHeaderCell (AcmeLending) is 54px tall; cloning can collapse it to 15px — restore it. Data cells and rows are 39px.'
+  - 'InfoRow (AcmeLending) does NOT match the frontend CustomerDetailRow (12px Regular, label black-60, 58px tall, value left in a 2/3 column). Do not use it for those rows.'
+  - 'Two sidebars: Sidebar (AcmeLending) is the STAFF sidebar; Sidebar/Customers is the customer one.'
+  - 'On wizard steps, the first "_w Select" found is a text-styled one with its caret hidden. Pick a donor with a visible glyph/CaretDown.'
+  - 'Turning on Left Icon on the Button set inserts the placeholder glyph/FourLeafClover-24 — always swap it.'
+  - 'Field labels: TextInput, Datepicker, Currency, Phone and Checkbox show black-40 labels when disabled; Select keeps black-80 (a frontend quirk — match it).'
+  - 'FormSelect / FormAsyncSelect (v2) silently drop col-span and col-start classes, so those fields are always half width. Trust a production screenshot over the JSX.'
+  - 'The design file does not list the Custom DS among its libraries (only SnowUI and the old Acme Lending). Run search_design_system with fileKey = the ds_file and includeLibraryKeys = ds_library_key, or results come back from the wrong libraries.'
+  - 'A Sidebar/Customers also exists in SnowUI under the same name. Use only the Custom DS one (component key 8643523a…).'

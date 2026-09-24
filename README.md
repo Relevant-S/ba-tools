@@ -21,9 +21,10 @@ everywhere.
 | Path | What it is |
 |---|---|
 | `skills/ba-setup/` | Setup, check and repair: your own keys and connectors (`me`), the project's area in each tool (`project`), and a green/red table of both (`check`). Also installs starter defaults for newcomers. |
+| `skills/figma-build/` | Builds in Figma: reproduces shipped screens, designs new features as concepts, sets up and changes design systems. Reads the product's design profile. |
 | `skills/ba-spec/` | Writes one spec in the template and takes it through the ready gate to its hand-off (Jira ticket or PRD). |
 | `skills/ba-spec/assets/spec-template.md` | The spec template — the only copy that is ever edited. |
-| `profile/` | The profile layout, a blank example, and the real profiles for Acme Lending and NWE. |
+| `profile/` | The profile layout, a blank example, the real project profiles for Acme Lending and NWE, and their design profiles (`examples/design/`). |
 | `docs/` | How the BA work runs: first day, a new project, and the day-to-day loop. |
 
 Still to move in: `intake-and-triage`, the fetchers (`fetch-fireflies`, `fetch-gmail`, `fetch-slack`,
@@ -36,7 +37,7 @@ Read [`docs/new-ba-onboarding.md`](docs/new-ba-onboarding.md). In short:
 
 1. Install Claude Code, Git, Node 22 and uv.
 2. Clone this repo, e.g. to `C:\dev\ba-tools`.
-3. In your project, copy `skills/ba-setup/` and `skills/ba-spec/` into `.claude/skills/`.
+3. In your project, copy `skills/ba-setup/`, `skills/ba-spec/` and `skills/figma-build/` into `.claude/skills/`.
 4. Start Claude Code in the project and say **"ba-setup"**. It checks everything and tells you what to
    do next.
 

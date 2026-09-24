@@ -1,0 +1,52 @@
+# Design profile — Bond Portal. Lives at docs/BA/design-system/bond-portal/design-profile.yml.
+design_profile_version: 1
+product: bond-portal
+source_of_truth: frontend
+
+figma:
+  build_file: { key: SampleFileKey02AbCdEfG, name: 'Bond Portal' }
+  ds_file:    { key: SampleFileKey03AbCdEfG, name: 'Acme Lending Custom (DS)' }   # shared with Acme Lending — same @acme/ui
+  ds_library_key: lk-427aa4854f9a23a0f7eb5f2f77d179f8f9ec4a1dfa79a511190cce2d03d800baa40a9ee2cc9450900d31686a8a54ac4dc980c15f04c75248b0d993be557015aa   # 'Acme Lending Custom (DS)' — shared with Acme Lending
+  ignore_libraries:                    # vendor / legacy — never slot these into anything
+    - 'SnowUI (lk-8e393eb2932…) — the vendor kit being swept away'
+    - 'Acme Lending (lk-28bb09d3c60…) — the ORIGINAL library, last updated Feb 2026; not the Custom DS'
+    - 'Easy term Investment (lk-ebb4c0006e9…) — 2024, legacy'
+  page_convention: >-
+    Role-divider pages COMMON / ADMIN / INVESTOR, then one page per sidebar section under its divider.
+    Admin screens come first.
+  concept_page_prefix: '_Concept · '
+  archive_divider: '🗄 ARCHIVE'
+  concept_question_style: 'amber note on the frame'
+
+frames:
+  - { name: app, width: 1440, height: 1024, note: 'sidebar 268 + content 1172 (inner padding 32); grow height' }
+  - { name: auth, width: 1440, height: 1024, note: 'logo top-centre at y56, a 444px column centred — never the 600×760 AuthLayout size' }
+
+tokens:
+  source: code
+  path: acme-client/packages/tailwind-config/tailwind.config.ts   # identical to Acme Lending — same preset
+  font: Inter
+  font_note: 'text-base is 14'
+  scrim: '#1C1C1C at 20%'
+  colors: { note: 'identical to the Acme Lending design profile' }
+  type: { note: 'identical to the Acme Lending design profile' }
+  radius: { note: 'identical to the Acme Lending design profile' }
+  spacing_note: ''
+
+fe:
+  repo: acme-client
+  app_root: apps/bond-portal/src
+  ui_package: packages/ui
+
+registry: docs/BA/design-system/acme/ds-canonical-registry.md   # shared design-system file
+concepts_register: docs/BA/design-system/bond-portal/concepts-register.md
+inventory: docs/BA/design-system/bond-portal/figma-inventory.md
+principles: docs/BA/design-system/acme/design-principles.md
+
+traps:
+  - 'The Bond Portal shell uses the SHARED Sidebar v2 (DS component Sidebar/Bond Portal, Type=Admin or Investor). Sidebar.v1 is dead code — the old figma-build-config still says otherwise and is out of date.'
+  - 'Attachments use the simpler FileInput, not the Acme Lending Dropzone.'
+  - 'Only two roles: Admin and Investor. Never carry Acme Lending roles across.'
+  - 'Cloned Buttons can come out with an aqua override — check the label colour after every clone.'
+  - 'Run search_design_system with fileKey = the ds_file and includeLibraryKeys = ds_library_key. The Acme Lending design file does not list the Custom DS among its libraries, and this file may not either (not checked).'
+  - 'A Sidebar/Customers also exists in SnowUI under the same name. Use only the Custom DS one (component key 8643523a…).'

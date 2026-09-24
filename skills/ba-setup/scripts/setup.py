@@ -235,6 +235,24 @@ def cmd_check_project(root):
             continue
         ok = bool(v) if need is None else bool(v) and all(v.get(n) for n in need)
         rows.append(row(label, "ok" if ok else "missing", "set" if ok else "not set", "ba-setup project"))
+    for pr in prof.get("products") or []:
+        dp = pr.get("design_profile")
+        if not dp:
+            rows.append(row(f"design profile: {pr.get('key')}", "missing", "no design_profile path", "ba-setup design"))
+            continue
+        f = root / dp
+        if not f.exists():
+            rows.append(row(f"design profile: {pr.get('key')}", "missing", f"{dp} does not exist", "ba-setup design"))
+            continue
+        d = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        gaps = [k for k in ("figma", "frames", "tokens", "registry") if not d.get(k)]
+        fig = d.get("figma") or {}
+        if not (fig.get("build_file") or {}).get("key"):
+            gaps.append("figma.build_file")
+        if not fig.get("ds_library_key"):
+            gaps.append("figma.ds_library_key")
+        rows.append(row(f"design profile: {pr.get('key')}", "ok" if not gaps else "warn",
+                        "complete" if not gaps else f"not filled: {', '.join(gaps)}", "ba-setup design"))
     tv = tools_version()
     if prof.get("ba_tools_version") != tv:
         rows.append(row("ba-tools version", "warn", f"profile says {prof.get('ba_tools_version')}, installed is {tv}",

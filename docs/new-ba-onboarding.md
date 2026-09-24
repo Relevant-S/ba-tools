@@ -31,7 +31,7 @@ missing at every step.
    the branch the BAs work on (it is `spec_links.branch` in the project profile — for Acme Lending,
    `ba-tools`).
 2. Clone `https://github.com/Relevant-S/ba-tools` to, for example, `C:\dev\ba-tools`.
-3. Copy `skills/ba-setup/` and `skills/ba-spec/` from ba-tools into the project's `.claude/skills/`.
+3. Copy `skills/ba-setup/`, `skills/ba-spec/` and `skills/figma-build/` from ba-tools into the project's `.claude/skills/`.
    (Skip this if the project already has them.)
 
 ## 4. Run the setup

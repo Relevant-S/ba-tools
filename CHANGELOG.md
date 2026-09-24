@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.3.0 — 2026-09-24
+
+- **`skills/figma-build`** — moved from the lead BA's personal commands and made the same for every
+  project. Three modes: `reproduce` (a shipped screen, from the code), `concept` (a new feature or
+  change, from the spec), `design-system` (set up or change a design system). The quick clone-first
+  method is the default; the spec-first method is only for a genuinely new or complex screen, and the
+  skill says so before starting. Loads Figma's own `figma-use` skill first.
+- `references/rules.md` — 24 build rules gathered from the Acme Lending build rules and the lead BA's
+  memory, with every project value taken out.
+- `references/plugin-gotchas.md` — one file of Figma plugin traps: Acme Lending's 488 lines and the
+  ~25 NWE recorded separately, merged.
+- `references/inventory.md` — the frame inventory is generated from the live file, never hand-kept
+  (NWE's config had grown a 4,200-line frame list).
+- **Design profiles** — one per product (`docs/BA/design-system/<folder>/design-profile.yml`): Figma
+  files, design-system library, tokens, frame sizes, product traps. Real ones for Acme Lending, the
+  Bond Portal and NWE in `profile/examples/design/`. The project profile points at them
+  (`products[].design_profile`).
+- **`ba-setup design`** — writes a design profile: read out of the code and Figma for a shipped
+  product, or set up from a stock kit and the client's brand for a new one. `check` now reports a
+  missing or incomplete design profile.
+- A new concept may draw what the design system lacks, but only as a layer named `DS gap · …`, listed
+  in the concepts register.
+
 ## 0.2.0 — 2026-09-24
 
 - **`skills/ba-setup`** — new. `check` shows one table of everything a BA needs; `me` walks the BA's

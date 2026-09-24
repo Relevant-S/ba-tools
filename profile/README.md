@@ -15,9 +15,10 @@ every run. If a value they need is missing, they ask you, and you add it here â€
 | Key | What it says | Acme Lending | NWE |
 |---|---|---|---|
 | `profile_version` | Layout of this file. The skills refuse a version they do not know. | `2` | `2` |
-| `ba_tools_version` | The ba-tools release installed in this project. | `0.2.0` | `0.2.0` |
+| `ba_tools_version` | The ba-tools release installed in this project. | `0.3.0` | `0.3.0` |
 | `project` | Display name. | Acme | NWE (Northwind) |
 | `products` | One entry per product in the repo: `key` (the spec's `product:` value and folder name), `name`, `jira_project` (or `-`), and `roles`. | two products | one |
+| `products[].design_profile` | Path to the product's design profile â€” Figma files, design system, tokens, frame sizes, traps. Read by `figma-build`; written by `ba-setup design`. | two, one per product | one |
 | `products[].roles.checked_at` | The code file the role list was checked against, and the branch. | `ROLE_NAMES` in acme-app | `enum AdminRole` in the app schema |
 | `products[].roles.list` | Every real role: on-screen `name` and `code` name, in the order the section 11 matrix uses. | 7 roles | 6 |
 | `products[].roles.notes` | Traps. For example, whether "Staff" is a real role or only a group name. | "Staff" is not a role | "Staff" *is* a role |

@@ -1,6 +1,6 @@
 ---
 name: ba-setup
-description: Set up, check or repair the BA toolset — the BA's personal keys and connectors (Jira, Confluence, Fireflies, Gmail, Slack, Figma), the project's area in each tool (Jira projects, Slack channels, client emails, Figma files, Confluence space), and starter defaults for newcomers (simple-language instructions, read-only permissions). Three modes — `check` (a green/red table, changes nothing), `me` (personal, once per machine), `project` (shared, once per project). Use when the BA says "set up", "ba-setup", "check my setup", "why does fetch fail", on a BA's first day, or when another ba-tools skill sends you here.
+description: Set up, check or repair the BA toolset — the BA's personal keys and connectors (Jira, Confluence, Fireflies, Gmail, Slack, Figma), the project's area in each tool (Jira projects, Slack channels, client emails, Figma files, Confluence space), and starter defaults for newcomers (simple-language instructions, read-only permissions). Four modes — `check` (a green/red table, changes nothing), `me` (personal, once per machine), `project` (shared, once per project), `design` (a product's Figma files and design system, once per product). Use when the BA says "set up", "ba-setup", "check my setup", "why does fetch fail", on a BA's first day, or when another ba-tools skill sends you here.
 ---
 
 # ba-setup
@@ -9,13 +9,14 @@ Gets a BA from nothing to working, and tells them exactly what is missing when s
 working. Written for someone who has never used Claude Code or BMad: plain words, one step at a time,
 and never "just edit the config".
 
-Three modes. With no argument, run **check**.
+Four modes. With no argument, run **check**.
 
 | Mode | What it covers | Who it belongs to | Changes anything? |
 |---|---|---|---|
 | `check` | everything below, as one table | — | no (writes the setup stamp when all is green) |
 | `me` | personal keys and connectors, local programs, starter defaults | this BA, this machine | yes — the BA's own settings, after asking |
 | `project` | the project's area in each tool, and the project profile | everyone on the project | yes — `docs/BA/specs/.ba-profile.yml`, after showing it |
+| `design` | one product's design profile: Figma files, design system, tokens, frame sizes, traps | everyone on the project | yes — `docs/BA/design-system/<folder>/design-profile.yml`, after showing it |
 
 The helper script does the calls; it never prints a key:
 
@@ -52,7 +53,7 @@ uv run --with pyyaml python "<this skill>/scripts/setup.py" <command> [project-r
    | Result | Say |
    |---|---|
    | ❌ only under You | "Run `ba-setup me` — it walks you through each one." |
-   | ❌ only under This project | "Run `ba-setup project`." |
+   | ❌ only under This project | "Run `ba-setup project`." (or `ba-setup design` when only a design profile is missing) |
    | ❌ in both | "Run `ba-setup me` first, then `ba-setup project`." Offer to start `me` now. |
    | only ✅ and ⚠️ | "All set." Explain each ⚠️ in one line. Run `stamp`. |
 
@@ -101,6 +102,12 @@ Follow `references/project.md`. In short:
    `docs/BA/specs/_template.md`, and create the BA folders that are missing
    (`docs/BA/intake`, `docs/BA/triage`, `docs/BA/specs`, `docs/BA/clarifications`).
 5. Run `check-project` and show the result. Do not commit — say what changed and ask.
+
+## Mode: design
+
+Follow `references/design.md`. It asks one question first — does the product already ship code the
+design must match? — and then reads the profile out of the code and the Figma file (existing
+product), or sets up a design system from a stock kit and the client's brand (new product).
 
 ## Other ba-tools skills
 

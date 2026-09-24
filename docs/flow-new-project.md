@@ -14,12 +14,12 @@ Brief ─► feature list ─► per feature:  thin spec ─► design ⇄ clien
 
 | # | Step | BMad or ours | Skill | Result |
 |---|---|---|---|---|
-| 0 | Set up the project: its profile, tool areas, BA folders | ours | `ba-setup project` | `docs/BA/specs/.ba-profile.yml`, `docs/BA/…` folders |
+| 0 | Set up the project: its profile, tool areas, BA folders — and the design system: a stock kit plus the client's brand | ours | `ba-setup project`, `ba-setup design` | `docs/BA/specs/.ba-profile.yml`, `docs/BA/…` folders |
 | 1 | Collect the first inputs: kick-off calls, the client's documents, email | ours | `fetch-fireflies`, `fetch-gmail`, `fetch-slack` | files in `docs/BA/intake/` |
 | 2 | *(optional)* Research the market or domain, or stress-test the idea | BMad | `bmad-deep-recon`, `bmad-forge-idea`, `bmad-prfaq` | research notes |
 | 3 | Project brief | BMad | `bmad-product-brief` | the brief |
 | 4 | Break the brief into features; write a **thin spec** for each — the need and the outcome only | ours | `ba-spec` (stops after the need) | one `draft` spec per feature |
-| 5 | **Per feature — design**, when it has screens: draw it, show it, change it | ours | Figma, `figma-build` | frames in the project's Figma file |
+| 5 | **Per feature — design**, when it has screens: draw it, show it, change it | ours | `figma-build` (concept mode) | a concept page in the product's Figma file |
 | 6 | **Per feature — client review**: questions and the designs go on the feature's clarification page; the client answers on the call | ours | clarification page | answers, pasted back |
 | 7 | **Per feature — full spec**: rules, edge cases, code check, decisions, open questions | ours | `ba-spec` | spec at `eliciting` |
 | 8 | Repeat 5–7 until nothing is open; the ready gate | ours | `ba-spec` | spec at `ready` |
@@ -55,4 +55,3 @@ Brief ─► feature list ─► per feature:  thin spec ─► design ⇄ clien
 | The step that groups ready specs into a phase PRD — pick them, check them against each other, carry any accepted open items into the PRD | done by hand, then `bmad-prd` |
 | Clarification pages as a ba-tools skill | a generator and a README in the Acme Lending repo (`docs/BA/clarifications/`) |
 | Reading Figma and Confluence comments as intake | by hand |
-| A Figma setup for a new project's design system — brand colours, fonts, components | to design next |

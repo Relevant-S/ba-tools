@@ -3,13 +3,14 @@
 # What each key means: https://github.com/Relevant-S/ba-tools/blob/main/profile/README.md
 
 profile_version: 2
-ba_tools_version: 0.2.0
+ba_tools_version: 0.3.0
 project: NWE (Northwind)
 
 products:
   - key: nwe
     name: NWE
     jira_project: '-'
+    design_profile: docs/BA/design-system/northwind/design-profile.yml
     roles:
       checked_at: 'northwind/app @ origin/dev a8e88ed3 (2026-09-24) — enum AdminRole, ProfileType, MembershipTier, AccountApprovalStatus in apps/api/prisma/schema.prisma; project-context.md → "RBAC — two roles, web-only, server-enforced"'
       list:
