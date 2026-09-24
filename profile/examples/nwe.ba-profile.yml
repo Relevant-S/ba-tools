@@ -52,18 +52,21 @@ code:
 
 spec_links:
   repo_url: https://github.com/northwind/docs
-  branch: docs                     # ⚠️ the branch checked out on 2026-09-24 — confirm before relying on it
+  branch: docs                     # confirmed 2026-09-24 — the specs branch (263 commits ahead of main)
 
 client_review: clarification-pages   # where the client answers — the page the BA shares on the call
 client_representations: [feature-brief, figma]   # how the client sees the requirements; comments on these are extra client input
 
 # The project's "area" in each tool — shared by everyone on the project. Personal keys never go here.
 tools:
-  client_emails:                   # ⚠ fill in — whose email and calls count as client input
-    include: []
+  client_emails:                   # whose email and calls count as client input (several voices — decider_model: multi)
+    include:
+      - client.one@northwind.example
+      - client.two@northwind.example
+      - client.three@northwind.example
+      - client.four@northwind.example
     exclude: []
-  slack:
-    channels: []                   # ⚠ fill in
+  slack: {}                        # not used — NWE has no Slack channel with the client
   figma:
     files:
       - { key: SampleFileKey04AbCdEfG, name: 'NWE Design System', product: nwe, use: designs }
