@@ -33,7 +33,7 @@ everywhere.
 | `skills/ba-spec/` | Writes one spec in the template and takes it through the ready gate to its hand-off (Jira ticket or PRD). |
 | `skills/ba-spec/assets/spec-template.md` | The spec template — the only copy that is ever edited. |
 | `profile/` | The profile layout, a blank example, the real project profiles for Acme Lending and NWE, and their design profiles (`examples/design/`). |
-| `docs/` | How the BA work runs: the guide (`our-ba-approach.pdf`), the setup manual, a new project, and the day-to-day loop. |
+| `docs/` | How the BA work runs: the guide (`our-ba-approach.pdf`, built from `guide-src/`), the setup manual, a new project, and the day-to-day loop. |
 | `scripts/install.py` | Installs or updates every skill and the template in a project. |
 
 Still to do: package it as a BMad module, so it installs like the rest of BMad.
