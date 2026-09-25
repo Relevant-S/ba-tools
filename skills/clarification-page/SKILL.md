@@ -56,8 +56,12 @@ dated and attributed. If an answer only lives on the page, the spec rots and the
   these pages; the generated page names its own screens in a `DESIGN SCREENS` comment at the top.
 - **The share pin does not move by itself.** After a new round, tell the BA to move it from the
   artifact's share menu, or the client keeps seeing the old version.
-- Add or update the row in `docs/BA/clarifications/README.md`, and in the BA dashboard if the project
-  has one.
+- **Put it on the dashboard — every time, as part of publishing.** Run the `ba-dashboard` script:
+  `set-clar --feature "<the feature's area>" --url <this page's link> --label "Clarification page — V<n>, <k> questions"`
+  with `--open <file>` holding the page's open questions (one line each, the client's words), and
+  `--new <file>` the first time, when the feature has no row yet. Then `build` and publish the
+  dashboard to its link (`tools.dashboard.url`). **The dashboard is the register of clarification
+  pages** — this is how a BA finds a page after it is created.
 - **There is no email button, and there cannot be** — an artifact page cannot open the reader's mail
   client. *Copy all answers* is the whole mechanism.
 

@@ -26,12 +26,12 @@ everywhere.
 | `skills/intake-and-triage/` | Turns intake into a triage report: new specs, Jira edits, dashboard items, notes — and carries out what the BA approves. |
 | `skills/fetch-jira-backlog/` | Turns existing open tickets into spec stubs for `ba-spec`. |
 | `skills/clarification-page/` | Builds and publishes the page the client answers questions on. |
+| `skills/ba-dashboard/` | The project's BA dashboard: every feature with its clarification page, what is waiting on whom, your to-dos, the next call's agenda. One page, one link. |
 | `skills/jira/`, `skills/confluence/`, `skills/feature-brief/` | Jira helpers (comment, search, field edit, release folders), Confluence publishing, and client briefs on Confluence. |
 | `skills/ba-spec/` | Writes one spec in the template and takes it through the ready gate to its hand-off (Jira ticket or PRD). |
 | `skills/ba-spec/assets/spec-template.md` | The spec template — the only copy that is ever edited. |
 | `profile/` | The profile layout, a blank example, the real project profiles for Acme Lending and NWE, and their design profiles (`examples/design/`). |
-| `docs/` | How the BA work runs: first day, a new project, and the day-to-day loop. |
-
+| `docs/` | How the BA work runs: the guide (`our-ba-approach.pdf`), the setup manual, a new project, and the day-to-day loop. |
 | `scripts/install.py` | Installs or updates every skill and the template in a project. |
 
 Still to do: package it as a BMad module, so it installs like the rest of BMad.

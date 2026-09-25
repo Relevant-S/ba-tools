@@ -3,7 +3,7 @@
 # What each key means: https://github.com/Relevant-S/ba-tools/blob/main/profile/README.md
 
 profile_version: 2
-ba_tools_version: 0.4.0
+ba_tools_version: 0.5.0
 project: Acme (Acme Lending + Bond Portal)
 
 products:
@@ -91,3 +91,6 @@ tools:
       - { key: SampleFileKey02AbCdEfG, name: 'Bond Portal',     product: bond-portal, use: designs }
       - { key: SampleFileKey03AbCdEfG, name: 'Custom DS',           product: both,            use: design-system }
   confluence: {}                   # not used on this project
+  dashboard:                       # the BA dashboard — one page, one link; the ba-dashboard skill builds it
+    file: docs/BA/dashboard.yaml
+    url: https://claude.ai/artifact/ExampleDashboardPage3

@@ -3,7 +3,7 @@
 # What each key means: https://github.com/Relevant-S/ba-tools/blob/main/profile/README.md
 
 profile_version: 2
-ba_tools_version: 0.4.0
+ba_tools_version: 0.5.0
 project: NWE (Northwind)
 
 products:
@@ -70,6 +70,7 @@ tools:
   figma:
     files:
       - { key: SampleFileKey04AbCdEfG, name: 'NWE Design System', product: nwe, use: designs }
+  dashboard: {}                    # ⚠ none yet — the ba-dashboard skill starts one
   confluence:
     space: Northwind
     parent: 51281921               # the default parent for feature briefs (see briefs: below)

@@ -44,7 +44,13 @@ Show each list as numbered lines; the BA answers with numbers.
    Ask for the parent page link (new pages go under it); the page id is the number in the link →
    `tools.confluence`. If the project does not use Confluence, write `confluence: {}`.
 
-## Part 3 — Design profiles
+## Part 3 — The dashboard
+
+If `docs/BA/dashboard.yaml` exists, record it and its published link as `tools.dashboard`. If not,
+offer to start one with the `ba-dashboard` skill (*Starting one*) — it is where the BA will find every
+clarification page. Not wanted yet: write `dashboard: {}`.
+
+## Part 3b — Design profiles
 
 For each product with screens, run `ba-setup design` (or offer to run it now). It writes the product's
 design profile and adds its path as `products[].design_profile`.

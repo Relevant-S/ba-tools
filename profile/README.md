@@ -15,7 +15,7 @@ every run. If a value they need is missing, they ask you, and you add it here �
 | Key | What it says | Acme Lending | NWE |
 |---|---|---|---|
 | `profile_version` | Layout of this file. The skills refuse a version they do not know. | `2` | `2` |
-| `ba_tools_version` | The ba-tools release installed in this project. | `0.4.0` | `0.4.0` |
+| `ba_tools_version` | The ba-tools release installed in this project. | `0.5.0` | `0.5.0` |
 | `project` | Display name. | Acme | NWE (Northwind) |
 | `products` | One entry per product in the repo: `key` (the spec's `product:` value and folder name), `name`, `jira_project` (or `-`), and `roles`. | two products | one |
 | `products[].design_profile` | Path to the product's design profile — Figma files, design system, tokens, frame sizes, traps. Read by `figma-build`; written by `ba-setup design`. | two, one per product | one |
@@ -41,6 +41,7 @@ every run. If a value they need is missing, they ask you, and you add it here �
 | `tools.client_emails` | `include` / `exclude` — whose email and whose recorded calls count as client input. A domain is written `@client.com`. | `@acme.example`, minus the help desk | to fill in |
 | `tools.slack.channels` | The channels where the client talks. The BA must be a member. | 3 channels | to fill in |
 | `tools.figma.files` | Each Figma file the BA works in: `key` (from the URL), `name`, `product`, `use` (`designs` or `design-system`). | 3 files | 1 file |
+| `tools.dashboard` | `file` (the dashboard's data, `docs/BA/dashboard.yaml`) and `url` (its published page — one link, never changes). Where a BA finds every clarification page. | the live dashboard | none yet |
 | `tools.confluence` | `space` and `parent` page for published pages. `{}` = not used. | not used | Northwind |
 | `briefs_dir`, `confluence_*`, `figma_*`, `briefs`, `brief_parents` | Settings for the `feature-brief` skill. | — | yes |
 

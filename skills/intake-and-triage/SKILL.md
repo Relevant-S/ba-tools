@@ -65,7 +65,7 @@ These names appear in YAML frontmatter and state files — they're kept verbatim
 |---|---|
 | `spec` | Writes a stub at `docs/BA/specs/{project}/{release_slug}/{slug}.md` in the approved template (`docs/BA/specs/_template.md`) — the template's header + `# Title` + `## 1. Need` (the problem seed) only. Status `draft`. The BA then runs the `ba-spec` skill on the file to fill the remaining sections, pass the ready gate and file it. |
 | `edit` | Patches a field on an existing JIRA ticket via `node <skills>/jira/scripts/jira.mjs update-field`. Three pre-write checks: placeholder (excerpt looks like `[TODO]`), already-applied (proposed_value text fragment already in the live field — skip cleanly), changed-since (`current_excerpt` no longer in the live field — abort and re-surface in a `partially-actioned` report). |
-| `dashboard` | Appends a markdown block to a named zone in `docs/BA/dashboard.md`. Resolves the zone via AUTO-STATUS markers if present; else by slug-matching against existing H2 headings (and inserts markers around the section on first write so later appends are safe to re-run); else creates a fresh section. Duplicate-check skips re-writes of items already present. |
+| `dashboard` | Adds one item to the project dashboard (`docs/BA/dashboard.yaml`) with the `ba-dashboard` script — to `awaiting` (parked on someone else), `todos` (on the BA) or `agenda` (for the next client call). A title already there is skipped. |
 | `note` | No file written. Logged in the report's `actioned_log.notes_logged`. |
 
 **BA review options per block** — at the step 05 prompt, decide each block via verb:
@@ -137,7 +137,7 @@ Report sections: items grouped by lane (each carrying a `proposed_action:` block
 |---|---|
 | Spec stubs (per `type: spec`) | `docs/BA/specs/{project}/{release_slug}/{slug}.md` (status `draft`) — skipped if file already exists (logged with externally-filed JIRA key when applicable) |
 | JIRA field edits (per `type: edit`) | Live ticket patched via `node <skills>/jira/scripts/jira.mjs update-field` — checked against placeholder, already-applied, and changed-since |
-| Dashboard items (per `type: dashboard`) | `docs/BA/dashboard.md` — appended to the matching AUTO-STATUS zone (preferred) or to the matching H2 section with markers added on first write (hand-managed dashboards) |
+| Dashboard items (per `type: dashboard`) | `docs/BA/dashboard.yaml` via `ba-dashboard add`; the page is rebuilt and republished once at the end of the run |
 | Intake archive moves | `docs/BA/intake/<file>` → `docs/BA/intake/.processed/<file>` |
 | Report status flip | `pending-ba-review` → `actioned` (or `partially-actioned` if any field changed since) |
 | Finished-report archive | `actioned` reports auto-move from `docs/BA/triage/<report>.md` → `docs/BA/triage/.processed/<report>.md` |
@@ -162,6 +162,6 @@ Report sections: items grouped by lane (each carrying a `proposed_action:` block
 - `bmad-correct-course` — when a triaged item changes approved scope in the middle of a sprint.
 - `bmad-prd` (update) — on a phase project (`downstream: prd`), when ready specs are grouped into the next phase PRD.
 
-**The dashboard page.** `dashboard` actions write `docs/BA/dashboard.md`. If the project publishes a
-dashboard page (for example `docs/BA/dashboard.html`), update and republish it by hand after the run —
-this skill does not.
+**The dashboard page.** After the last approved action of a run, rebuild and republish the dashboard
+once (`ba-dashboard`: `build`, then publish to `tools.dashboard.url`). A project without a dashboard
+yet: offer to start one (`ba-dashboard` → *Starting one*).

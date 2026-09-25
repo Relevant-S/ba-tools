@@ -12,7 +12,7 @@ PRD — see [`flow-new-project.md`](flow-new-project.md), step 9.
 | 1 | A client call, Slack thread or email happens | — | — |
 | 2 | Pull it in — first check there is no newer call you have missed | `fetch-fireflies`, `fetch-slack`, `fetch-gmail` | files in `docs/BA/intake/` |
 | 3 | Triage: for each ask, decide — a new spec, a change to an existing ticket, a dashboard item, or a note | `intake-and-triage` | a triage report in `docs/BA/triage/`; the intake is archived |
-| 4 | Update the BA dashboard page with the new items and republish it | by hand | the dashboard |
+| 4 | The dashboard is rebuilt and republished with the new items | `intake-and-triage` → `ba-dashboard` | the dashboard, same link |
 | 5 | Write each new spec — thin first, then full | `ba-spec` | a spec in `docs/BA/specs/<product>/<release>/` |
 | 6 | If the client will see the change: questions and any designs go on the feature's clarification page; the client answers on the call; the answers go into the spec's Decisions | `clarification-page`, then `fetch-slack` / `fetch-gmail` for pasted answers | the spec, updated |
 | 7 | The ready gate, then your explicit yes | `ba-spec` | `status: ready` |
@@ -36,5 +36,4 @@ its "re-create a spec already filed" path.
 
 | Gap | Today |
 |---|---|
-| The dashboard page is not updated by triage | triage writes `dashboard.md`; the page is updated by hand |
 | PRD catch-up has no written steps | done by hand on 23 Sep 2026 — worth turning into a skill |

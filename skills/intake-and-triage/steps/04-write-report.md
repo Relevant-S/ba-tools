@@ -51,7 +51,7 @@ actioned_log:                         # set by step 1 §0.5 — what was carried
   specs_materialized: []              # paths written
   edits_posted: []                    # JIRA-KEY:field pairs successfully patched
   edits_aborted: []                   # JIRA-KEY:field pairs where the change-check fired
-  dashboard_items_written: []         # zone:title pairs appended
+  dashboard_items_written: []         # list:title pairs added to the dashboard
   notes_logged: []                    # candidate ids logged as todos
 ---
 ```
@@ -178,21 +178,15 @@ proposed_action:
   rationale: {1 sentence — why this edit captures the intake signal}
 ```
 
-**`dashboard` — append a block to a named zone.** Block shape varies by zone — see step 03 §E "Block shape per zone" for the full per-zone templates. Three forms in active use:
-
-- **`awaiting-external-input`** — H3 with structured sub-bullets, leading H3 carries `{auto_number}` placeholder which step 1 §0.5 substitutes with `max(existing ### N.) + 1`. Sub-bullets: **Blocked on:** / **Origin:** / **Where the answer lands:** / **Source:** / **Owner:**.
-- **`open-todos`** / **`next-meeting-agenda-candidates`** (plain bullet form) — single-line bullet `- **<Title>** — <description>. Source: \`<path>\`. Owner: <who>.`
-- **`next-meeting-agenda-candidates`** (carry-over form) — `- **<Title>** — <description>. Reference: *<zone heading>* §<N>.` (no Source/Owner — the referenced item carries those).
+**`dashboard` — one item for the project dashboard** (`docs/BA/dashboard.yaml`, the `ba-dashboard`
+skill). The item shape is in step 03 §E:
 
 ```yaml
 proposed_action:
   type: dashboard
-  zone: awaiting-external-input        # or open-todos | next-meeting-agenda-candidates | <fresh-slug>
-  block: |
-    <markdown block per the per-zone template>
+  list: awaiting                       # awaiting | todos | agenda
+  item: { prod: …, who: …, since: …, t: …, s: …, l: … }
 ```
-
-Zone slugs come from the project's `docs/BA/dashboard.md` H2 headings (slugified). Step 1 §0.5 wraps any matching H2 section in AUTO-STATUS markers on first write so later appends are safe to re-run.
 
 **`note` — pass-through todo, no file:**
 
@@ -265,7 +259,7 @@ N candidates · X 🔴 · Y 🟡 · proposed: spec=A, edit=B, dashboard=C, note=
 5. ...
 
 📌 Dashboard items:
-6. {Title} → {zone} — {1-line}
+6. {Title} → {list: awaiting | todos | agenda} — {1-line}
 7. ...
 
 📋 Notes (todos, parked, pass-through):

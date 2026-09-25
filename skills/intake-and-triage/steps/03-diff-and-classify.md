@@ -67,12 +67,12 @@ Each candidate gets one `proposed_action` block — what the BA can confirm or o
 |---|---|---|
 | `state_diff: new` AND `lane != ?` AND no 🔴 / 🟡 | **`spec`** | Net-new ask, lane decided — draft a template-shaped stub for `ba-spec` to complete. |
 | `state_diff: in_flight` (matched JIRA key or in-progress story) | **`edit`** | Existing ticket is being worked; capture the new signal as a field-level edit instead of a duplicate spec. |
-| Candidate is parked on a third party (Sam / compliance officer / vendor / customer / a named teammate) — next move belongs to someone outside the BA | **`dashboard`** zone `awaiting-external-input` | Surface every time the BA opens the dashboard so the pending counter-party stays visible between runs. |
-| Candidate is a concrete BA-owned next-step (sample prep, list compilation, follow-up ping) without yet a spec or JIRA ticket | **`dashboard`** zone `open-todos` | Tracked todo on the BA's main page. Promote to `spec` / `edit` once concrete enough. |
-| Candidate is parked behind a window (after refactoring, after release N+1) and should resurface at the next recurring meeting | **`dashboard`** zone `next-meeting-agenda-candidates` | Avoids losing the item between runs; lets the BA stage the meeting agenda. |
+| Candidate is parked on a third party (Sam / compliance officer / vendor / customer / a named teammate) — next move belongs to someone outside the BA | **`dashboard`** list `awaiting` | Surface every time the BA opens the dashboard so the pending counter-party stays visible between runs. |
+| Candidate is a concrete BA-owned next-step (sample prep, list compilation, follow-up ping) without yet a spec or JIRA ticket | **`dashboard`** list `todos` | Tracked todo on the BA's main page. Promote to `spec` / `edit` once concrete enough. |
+| Candidate is parked behind a window (after refactoring, after release N+1) and should resurface at the next recurring meeting | **`dashboard`** list `agenda` | Avoids losing the item between runs; lets the BA stage the meeting agenda. |
 | `state_diff: duplicate` (matched a backlog item not yet started) | **`edit`** if a JIRA ID is matched, else **`note`** | Update the existing item rather than spawning a new one. |
 | `flags: 🔴 contradiction` | **`note`** | Hard-block — needs BA resolution before any output decision; never auto-draft a spec under contradiction. |
-| `flags: 🟡 ba_judgement`, lane `?`, BA needs to decide | **`dashboard`** zone `open-todos` | The decision needs a main-page entry so it doesn't slip between runs. |
+| `flags: 🟡 ba_judgement`, lane `?`, BA needs to decide | **`dashboard`** list `todos` | The decision needs a main-page entry so it doesn't slip between runs. |
 | Anything else (pure FYI, half-formed idea, info-only with no main-page value) | **`note`** | Pass-through — log only. |
 
 **`dashboard` is the default for anything parked, awaiting, or BA-todo-shaped — not just operational signals on already-shipped features.** Reserve `note` for items that are purely informational and won't matter between runs.
@@ -131,71 +131,32 @@ Paste the returned `excerpt` value verbatim into `current_excerpt`. The carry-ou
 
 **Hard rule:** `current_excerpt` must contain real ticket content. Drafting an `edit` block with a placeholder (e.g. `[verify before applying]`, `[TODO: pull live]`) is forbidden — the BA can't review a diff against a placeholder, and the carry-out step will reject it. If `get-field` is unavailable (JIRA MCP / script down): downgrade the block to `proposed_action: note` with a todo for the BA to re-run when JIRA is back, rather than emitting a placeholder edit.
 
-**`dashboard`** — fields the carry-out step needs to append to a named zone. The `block:` shape varies by zone — see "Block shape per zone" below.
+**`dashboard`** — one item for the project dashboard (`docs/BA/dashboard.yaml`, the `ba-dashboard`
+skill). Pick the list by who has the next move:
 
-```yaml
-proposed_action:
-  type: dashboard
-  zone: <slug derived from an existing dashboard H2 heading, or a fresh slug for a new zone>
-  block: |
-    <markdown block — shape varies by zone>
-```
-
-**Resolving the zone slug.** During step 1, scan `docs/BA/dashboard.md` for H2 headings and slugify each (lowercase, runs of non-alphanumerics → single hyphen, trim leading/trailing hyphens). That set is the available zone vocabulary. Pick the slug that best fits the candidate:
-
-| Candidate shape | Preferred zone slug (default name in parens) |
+| Candidate shape | `list` |
 |---|---|
-| Parked on a third party — next move belongs to someone outside the BA | the dashboard's "awaiting"-shaped zone (default `awaiting-external-input`) |
-| Concrete BA-owned next-step without yet a spec/ticket | the dashboard's "open todos"-shaped zone (default `open-todos`) |
-| Parked behind a window; surface at the next recurring meeting | the dashboard's "next meeting"-shaped zone (default `next-meeting-agenda-candidates`) |
-| None of the above — fresh category | a new slug; step 1 §0.5 will create the H2 + AUTO-STATUS markers on first write |
-
-If `docs/BA/dashboard.md` doesn't exist, fall back to the default names verbatim. The first dashboard write per zone sets up the section.
-
-**Block shape per zone.**
-
-For `awaiting-external-input`, the convention is **H3-with-structured-sub-bullets** — every item describes a specific counter-party blockage and benefits from named fields (who, why, where the answer lands). Use this template:
+| Parked on a third party — the next move is someone else's | `awaiting` |
+| A concrete next step on the BA, with no spec or ticket yet | `todos` |
+| To raise or chase on the next client call | `agenda` |
 
 ```yaml
 proposed_action:
   state: pending-decision
   type: dashboard
-  zone: awaiting-external-input
-  block: |
-    ### {auto_number}. <Title>
-
-    - **Blocked on:** **<counter-party name>** — <what they need to do / decide>.
-    - **Origin:** <1-sentence: who raised this, when, in what context>.
-    - **Where the answer lands:** <where the resolution gets captured — JIRA edit on ACME-N, spec at docs/BA/specs/..., or dashboard close>.
-    - **Source:** `<intake file path>`.
-    - **Owner:** <who has the next move, e.g. BA → counter-party>.
+  list: awaiting            # awaiting | todos | agenda
+  item:
+    prod: <a product name from the dashboard's products list, or Both>
+    who: <who has the next move — a person's name, or the BA>
+    since: <YYYY-MM-DD — the date of the intake it came from>
+    t: <title — what it is, in plain words, no codes>
+    s: <1–3 sentences: the situation, and what exactly is owed>
+    l: <where the answer lands — a spec, a ticket edit, or the dashboard closing it>
+    hot: false              # true only for a real deadline
 ```
 
-The `{auto_number}` token is substituted by step 1 §0.5 at carry-out time — it counts existing `### N.` H3 headings in the resolved zone and inserts `max + 1`.
-
-For `open-todos` and `next-meeting-agenda-candidates`, use the **plain bullet** form — items in these zones are typically self-contained one-liners:
-
-```yaml
-proposed_action:
-  state: pending-decision
-  type: dashboard
-  zone: open-todos    # or next-meeting-agenda-candidates
-  block: |
-    - **<Title>** — <1–2 sentence description: what's the item, who's blocked on what, what's the next concrete move>. Source: `<intake file path>`. Owner: <who has the next move>.
-```
-
-For **carry-over items** in `next-meeting-agenda-candidates` that point at an existing item already living in another zone (typically *Awaiting external input*), use the cross-reference shorthand — the referenced item carries its own source / owner fields:
-
-```yaml
-proposed_action:
-  state: pending-decision
-  type: dashboard
-  zone: next-meeting-agenda-candidates
-  block: |
-    - **<Title>** — <1 sentence: what to nudge, what's the desired outcome>. Reference: *<zone heading>* §<N>.
-```
-
-For **fresh zones** (slug not yet present in the dashboard), default to the plain bullet form. The carry-out step creates the zone heading + AUTO-STATUS markers on first write.
+The item's `s` names its source (the intake file and date) in plain words. Never paste a quote
+longer than one sentence — the report holds the quotes.
 
 **`note`** — pass-through:
 

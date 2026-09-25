@@ -31,7 +31,7 @@ For each report still in progress, parse every `proposed_action:` block and prob
 
 - **`type: spec`** — read frontmatter at `proposed_action.path`. If the file exists with `status: ready`, `filed`, `parked` or `buried` (the template's statuses past `draft` / `eliciting`), it has been completed elsewhere. Capture `status`, `jira_ticket` (if present), and any `workflow_completed_at` timestamp. **Note:** `status: draft-from-jira` is a legacy state from older `/fetch-jira-backlog` runs (new runs write `status: draft`) — treat it as equivalent to `draft` (still waiting for `ba-spec`), not as post-draft. If a triage `type: spec` block's `proposed_action.path` collides with a `draft-from-jira` stub, surface it as a duplicate-detection signal: the JIRA fetcher and triage independently saw the same work.
 - **`type: edit`** — call `node <skills>/jira/scripts/jira.mjs get-field <jira_key> <field> --max 1000`. If `proposed_value` (first ~200 chars, normalized whitespace) is already a text fragment of the live field, the edit is already applied. If the live field has changed since `current_excerpt` was captured, surface as changed-since (the BA may have applied an alternative).
-- **`type: dashboard`** — read `docs/BA/dashboard.md`. Search for the proposed block (or a close paraphrase) under the named zone marker. If present, the dashboard item has been added elsewhere.
+- **`type: dashboard`** — read `docs/BA/dashboard.yaml` (the `ba-dashboard` skill's data). If an item with the same title is already in `proposed_action.list`, the dashboard item has been added elsewhere.
 - **`type: note`** — nothing to check externally; skip.
 
 Print a single section per report still in progress. Format:
@@ -128,29 +128,18 @@ Scan `docs/BA/triage/*.md` for reports with frontmatter `status: approved`. For 
    - Otherwise, PATCH the ticket: `node <skills>/jira/scripts/jira.mjs update-field <key> <field> --change-kind <append|prepend|replace> --value-file <tmp>` (write `proposed_value` to a temp file first to handle multi-line content cleanly). The script re-reads the live ADF doc and merges at the content-array level so existing formatting survives. On success, append `<jira_key>:<field>` to `actioned_log.edits_posted`. On non-zero exit, append `<jira_key>:<field> (api_error: <stderr>)` to `actioned_log.edits_aborted`.
 
    ### `type: dashboard`
-   - Locate `docs/BA/dashboard.md`. If it doesn't exist, log `dashboard_items_written: [(dashboard missing)]` and skip the rest of the dashboard blocks.
-   - Find the target zone in this priority order:
-     1. **AUTO-STATUS markers (preferred).** Search for `<!-- AUTO-STATUS:zone:{zone} -->`. If found, append `proposed_action.block` immediately above the matching closing `<!-- /AUTO-STATUS:zone:{zone} -->`.
-     2. **Matching H2 heading (hand-managed dashboards).** Slugify every H2 heading in the file — lowercase, collapse runs of non-alphanumeric characters to a single hyphen, trim leading/trailing hyphens — and compare to `{zone}`. On match, append `proposed_action.block` at the **end of that H2 section**: immediately before the next `## ` heading, or before a closing horizontal rule `---`, or at end-of-file, whichever comes first. On the **first** append into a heading-matched zone, also **wrap the existing section body in AUTO-STATUS markers** — insert `<!-- AUTO-STATUS:zone:{zone} -->` on the line directly after the H2 (and after any blank line that follows it) and `<!-- /AUTO-STATUS:zone:{zone} -->` at the end of the section. Later appends to the same zone take path 1.
-     3. **Neither found.** Append a new section at the end of the dashboard:
-        ```markdown
-        ## {zone-title-cased-from-slug}
-
-        <!-- AUTO-STATUS:zone:{zone} -->
-        {proposed_action.block}
-        <!-- /AUTO-STATUS:zone:{zone} -->
-        ```
-   - **Auto-number substitution (run before placeholder strip, only if `proposed_action.block` contains `{auto_number}`).** Inside the resolved zone, scan for existing numbered H3 headings using the regex `^###\s+(\d+)\.\s+` (multiline). Take the max integer captured (default 0 if none), add 1, and substitute that integer for `{auto_number}` everywhere it appears in the block. This keeps numbered H3 sequences (e.g. in `awaiting-external-input`, where every item lives under `### N. Title`) sequential without the BA having to track the count manually.
-   - **Placeholder strip (run before appending, every append).** Inside the resolved zone, search for any standalone line matching the regex `^\s*\*(Empty|None yet|None|TBD)\.?\*\s*$` (case-insensitive). If found, delete that line plus one trailing blank line if present. Placeholders are useful as "section is empty" captions but become self-contradictory the moment a real item lands next to them. Safe to re-run — once stripped, future runs find nothing to strip. Apply this rule at the H2 zone level *and* at any H3 subsection level if the proposed block is being appended under a specific subsection.
-   - **Duplicate-check (run before appending).** Search the resolved zone's body for the proposed block — text-fragment match on the block's first line (the `- **Title**` line), normalized whitespace. If already present, append `<zone>:<title> (already present)` to `actioned_log.dashboard_items_written` and skip the write. This stops re-runs of an already-actioned report from duplicating dashboard items the BA may have moved or hand-edited.
-   - On a fresh write, append `<zone>:<title>` to `actioned_log.dashboard_items_written`.
-
-   **Slug→H2 matching examples** (so step 03 §E and this step agree on vocabulary):
-   - `awaiting-external-input` matches an H2 reading "Awaiting external input"
-   - `open-todos` matches an H2 reading "Open TODOs"
-   - `next-meeting-agenda-candidates` matches an H2 reading "Next meeting — agenda candidates"
-
-   Slugification trims trailing punctuation and collapses em-dashes/colons/spaces uniformly, so "Next meeting — agenda candidates" and "Next meeting: agenda candidates" both produce the same slug.
+   - Write `proposed_action.item` to a temporary YAML file and run
+     `uv run --with pyyaml python <skills>/ba-dashboard/scripts/dashboard.py add <list> --item <file>`,
+     where `<list>` is `proposed_action.list` (`awaiting`, `todos` or `agenda`).
+   - The script skips an item whose title is already in that list — log it as
+     `<list>:<title> (already present)`; otherwise log `<list>:<title>` in
+     `actioned_log.dashboard_items_written`. An `awaiting` item gets the next number automatically.
+   - No `docs/BA/dashboard.yaml` yet: log `(no dashboard)`, keep the block, and tell the BA once at
+     the end that the project has no dashboard (the `ba-dashboard` skill starts one).
+   - **Do not build or publish after each item** — once, at the end of the run (see SKILL.md,
+     *The dashboard page*).
+   - Projects that still keep items in `docs/BA/dashboard.md` only: that file is retired once the
+     project has a `dashboard.yaml`; do not write to both.
 
    ### `type: note`
    - No file written. Append `<candidate_id>: <todo>` to `actioned_log.notes_logged`. The note is preserved in the report itself for retrospective searchability.

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0 — 2026-09-25
+
+- **`skills/ba-dashboard`** — new. The project's BA dashboard, one page at one link: features in flight
+  (each with its clarification page and open questions), awaiting external input, open to-dos, and the
+  **next call agenda** (was "Friday agenda"). Built from `docs/BA/dashboard.yaml`, never hand-edited; the
+  script builds the page and adds, closes and links items.
+- **`clarification-page`** puts every page on the dashboard as part of publishing (`set-clar`, build,
+  republish) — the dashboard is now the register of clarification pages.
+- **`intake-and-triage`** writes its dashboard actions into `dashboard.yaml` (lists `awaiting`, `todos`,
+  `agenda`) instead of markdown zones in `dashboard.md`, and rebuilds and republishes the dashboard once
+  at the end of a run.
+- Profile: `tools.dashboard` (`file`, `url`); `ba-setup check` reports it.
+
 ## 0.4.0 — 2026-09-24
 
 Every BA skill now lives in ba-tools and reads the project profile.
