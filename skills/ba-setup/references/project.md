@@ -50,6 +50,12 @@ If `docs/BA/dashboard.yaml` exists, record it and its published link as `tools.d
 offer to start one with the `ba-dashboard` skill (*Starting one*) — it is where the BA will find every
 clarification page. Not wanted yet: write `dashboard: {}`.
 
+## Part 3a — Dictionary and messages
+
+Start the data dictionary (`data-dictionary` skill, *Starting one*) and the messages catalogue
+(`messages` skill, `init`), and record them as `tools.dictionary.config` and `tools.messages.file`. On a
+project that already ships, fill the catalogue from the code's notification service.
+
 ## Part 3b — Design profiles
 
 For each product with screens, run `ba-setup design` (or offer to run it now). It writes the product's
@@ -60,8 +66,10 @@ design profile and adds its path as `products[].design_profile`.
 1. Show the profile as a list of what is new or changed. Wait for a yes.
 2. Write it. If a profile existed, back it up first (`.ba-profile.yml.bak-<date>`).
 3. Copy `skills/ba-spec/assets/spec-template.md` from ba-tools to `docs/BA/specs/_template.md`.
-4. Create any missing BA folders: `docs/BA/intake`, `docs/BA/triage`, `docs/BA/specs`,
-   `docs/BA/clarifications`. Put a `.gitkeep` in each empty one.
+4. Create any missing BA folders: `docs/BA/reference`, `docs/BA/intake`, `docs/BA/triage`,
+   `docs/BA/specs`, `docs/BA/clarifications`. Put a `.gitkeep` in each empty one. Into `docs/BA/reference/`
+   copy `assets/reference-README.md` as `README.md` and `assets/reference-gitignore` as `.gitignore`
+   (recordings stay out of git).
 5. Run `check-project` and show the table.
 6. Do **not** commit. List the changed files and ask.
 

@@ -10,7 +10,7 @@ deferred.
 closed questions here.
 
 **7. Conflicts** — start with **"Checked against:"** and list what you actually compared, across every
-product in the profile's `conflict_scope`: the FRs in
+product in the profile's `conflict_scope` (including the data dictionary, for names and labels): the FRs in
 `covers`, other specs found in step 1, shipped code from step 5. Then "no collision", or each conflict
 with both sides quoted. Record near-misses too.
 
@@ -24,7 +24,10 @@ raised. Before adding one, check it is not already answered in the source, the P
 **When their trigger applies:**
 
 - **10. Data model** — new or changed stored data: real field names, new/changed/unchanged, migration
-  or "no migration — all net-new".
+  or "no migration — all net-new". **Check every field name and screen label against the data
+  dictionary** (the `data-dictionary` skill, *Using it while writing a spec*): a name or label already
+  used for something else is renamed, or the reason it is the same is recorded here. New fields go into
+  the dictionary's overlay as planned.
 - **11. Roles** — behaviour differs by role: the template's full matrix, one column per role in the profile's `products[].roles.list`, a row for what
   the denied user sees; every `?` also goes to section 9.
 - **12. NFRs** — only what differs from the platform default (the PRD's Non-Functional Requirements

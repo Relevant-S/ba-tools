@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.0 — 2026-09-25
+
+- **One PRD per phase, everywhere.** No living whole-system PRD: the code says how the system works now
+  (Claude reads it), specs say why, phase PRDs say what is being built. Acme Lending's `docs/prd.md` is
+  frozen at 6.0 / 1.17.0; the PRD catch-up routine is dropped. FR numbers live in the register; the phase
+  PRD that takes a spec lists its number (template `decided` updated).
+- **Reference folder** — `docs/BA/reference/` in every project, for documents from the client and sales
+  (proposal, WBS, contract scope): an index `README.md` and a `.gitignore` that keeps recordings out of git.
+  `ba-setup project` creates it; the new-project flow starts from it.
+- **`skills/data-dictionary`** — new. NWE's domain-dictionary generator, made general: several Prisma
+  schemas read from the remote branch, UI labels from translation files or constant files (suggested
+  labels), and two new columns, Required and Min / max. `ba-spec` checks every new field name and label
+  against it.
+- **`skills/messages`** — new. The messages catalogue: every email, in-app, push and SMS message, with
+  trigger, recipients, subject, content, status and spec; a searchable page built from
+  `docs/BA/messages.yaml`. The template now asks rules that send a message to name its id (`[msg: M-012]`).
+- Profile: `tools.dictionary`, `tools.messages`; `ba-setup check` reports both.
+
 ## 0.5.0 — 2026-09-25
 
 - **`skills/ba-dashboard`** — new. The project's BA dashboard, one page at one link: features in flight

@@ -231,7 +231,8 @@ def cmd_check_project(root):
                     "site + projects set" if prof.get("jira") else "no jira block", "ba-setup project"))
     for key, label, need in [("confluence", "Confluence area", ["space"]), ("figma", "Figma area", ["files"]),
                              ("slack", "Slack area", ["channels"]), ("client_emails", "Client emails", ["include"]),
-                             ("dashboard", "BA dashboard", ["file", "url"])]:
+                             ("dashboard", "BA dashboard", ["file", "url"]), ("dictionary", "Data dictionary", ["config"]),
+                             ("messages", "Messages catalogue", ["file"])]:
         v = t.get(key)
         if key in t and v in ({}, []):
             rows.append(row(label, "n/a", "not used on this project"))

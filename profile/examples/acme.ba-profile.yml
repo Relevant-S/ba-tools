@@ -3,7 +3,7 @@
 # What each key means: https://github.com/Relevant-S/ba-tools/blob/main/profile/README.md
 
 profile_version: 2
-ba_tools_version: 0.5.0
+ba_tools_version: 0.6.0
 project: Acme (Acme Lending + Bond Portal)
 
 products:
@@ -50,8 +50,9 @@ ids:
   register: docs/BA/specs/fr-register.md
 
 prd:
-  paths: [docs/prd.md]
-  shipped_only: true               # a spec's reserved FR enters the PRD only when it ships
+  paths: [docs/prd.md]             # FROZEN 2026-09-25 (what shipped to 6.0 / 1.17.0); phase PRDs go in docs/planning-artifacts/prds/
+  shipped_only: true
+  frozen: true
 
 code:
   dev_branch: main
@@ -94,3 +95,7 @@ tools:
   dashboard:                       # the BA dashboard — one page, one link; the ba-dashboard skill builds it
     file: docs/BA/dashboard.yaml
     url: https://claude.ai/artifact/ExampleDashboardPage3
+  dictionary:                      # the data dictionary — the data-dictionary skill builds it
+    config: docs/BA/data-dictionary.config.yaml
+  messages:                        # every message the system sends — the messages skill builds it
+    file: docs/BA/messages.yaml

@@ -1,0 +1,7 @@
+# Recordings and large media stay out of git — keep them on the shared drive and link them in README.md
+*.mp3
+*.mp4
+*.m4a
+*.wav
+*.mov
+*.webm

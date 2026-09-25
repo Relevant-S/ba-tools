@@ -1,0 +1,26 @@
+# Data dictionary config — which code the ba-tools data-dictionary skill reads for this project.
+
+title: '<Project> Data Dictionary'
+out: docs/BA/data-dictionary.md               # the generated page
+overlay: docs/BA/data-dictionary.overlay.md   # the hand-written layer
+
+# One entry per Prisma schema. Read fresh from the remote branch of that repo — run `git fetch` first.
+# A plain path string reads the local file instead.
+schemas:
+  - { repo: '<repo folder, relative to the project root>', ref: origin/main, path: prisma/schema.prisma }
+
+# Optional: folders of TypeScript enum files shared between backend and frontend (read locally).
+shared_enums: []
+
+# Optional: where the UI's words come from.
+labels:
+  # JSON translation folders, one per app (read locally), and which translation namespaces can speak
+  # for which entity — without that, a field called `type` collects the label of every `type`.
+  i18n: {}
+  model_namespaces: {}
+  # Or constant files like `export const FIRST_NAME = 'First name'` — matched to fields by name and
+  # shown as a suggested label.
+  strings_ts: []
+
+# Field names with no domain meaning, left out of the collision report.
+boilerplate_fields: []

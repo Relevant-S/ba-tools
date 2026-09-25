@@ -100,7 +100,8 @@ Follow `references/project.md`. In short:
      belong to this project.
 4. Show the finished profile as a list of changes. On yes, write it, copy the template to
    `docs/BA/specs/_template.md`, and create the BA folders that are missing
-   (`docs/BA/intake`, `docs/BA/triage`, `docs/BA/specs`, `docs/BA/clarifications`).
+   (`docs/BA/reference`, `docs/BA/intake`, `docs/BA/triage`, `docs/BA/specs`, `docs/BA/clarifications`),
+   with the reference folder's index and `.gitignore` from `assets/`.
 5. Run `check-project` and show the result. Do not commit — say what changed and ask.
 
 ## Mode: design

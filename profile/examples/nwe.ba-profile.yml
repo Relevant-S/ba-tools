@@ -3,7 +3,7 @@
 # What each key means: https://github.com/Relevant-S/ba-tools/blob/main/profile/README.md
 
 profile_version: 2
-ba_tools_version: 0.5.0
+ba_tools_version: 0.6.0
 project: NWE (Northwind)
 
 products:
@@ -73,6 +73,10 @@ tools:
   dashboard:                       # the BA dashboard — one page, one link; the ba-dashboard skill builds it
     file: docs/BA/dashboard.yaml
     url: https://claude.ai/artifact/ExampleDashboardPage2
+  dictionary:
+    config: docs/BA/data-dictionary.config.yaml
+  messages:
+    file: docs/BA/messages.yaml
   confluence:
     space: Northwind
     parent: 51281921               # the default parent for feature briefs (see briefs: below)

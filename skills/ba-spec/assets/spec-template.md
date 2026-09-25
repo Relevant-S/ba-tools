@@ -1,11 +1,12 @@
 ---
 title: Spec template — designed backwards from the story a developer builds from
 status: approved      # approved by Vadim 2026-09-23 as the one spec template, after the trial in acme-docs docs/BA/drafts/template-trial/
-ba_tools_version: 0.5.0   # the ba-tools release this copy came from — a project copy must match it exactly
+ba_tools_version: 0.6.0   # the ba-tools release this copy came from — a project copy must match it exactly
 created: 2026-09-10
 updated: 2026-09-24   # made universal in ba-tools: every project fact moved to the project profile (docs/BA/specs/.ba-profile.yml)
 decided:
-  - id numbering (Vadim, 2026-09-23) — a spec that adds a new capability reserves the next free id the day it is written, by the rule in the profile's `ids` block. The PRD adds that id when it ships. A spec that only changes existing FRs has no id of its own; it lists them in covers.
+  - id numbering (Vadim, 2026-09-23; changed 2026-09-25) — a spec that adds a new capability reserves the next free id the day it is written, by the rule in the profile's `ids` block. The phase PRD that takes the spec lists that id. A spec that only changes existing FRs has no id of its own; it lists them in covers.
+  - one PRD per phase (Vadim, 2026-09-25) — every project assembles a PRD per phase from that phase's ready specs and hands it to development. There is no living, whole-system PRD: how the system works now is read from the code (Claude reads it), the specs say why, and the data dictionary and messages catalogue are the lookup tables.
   - one template for every project (Vadim, 2026-09-24) — this file is never edited inside a project. Anything that differs between projects is a profile value. If a project seems to need a different template, the difference goes into the profile, or into this file for every project.
 context: Drawn from three approaches we have actually run — Sarah's create-business-requirement (AcmeLending), the NWE spec set, and a trial of the fdw plugin. Section-by-section credit is in the table at the bottom.
 companion: acme-docs repo, docs/BA/drafts/workflow-improvements-from-fdw-trial.md   # the evidence and the process changes; this file is the document format

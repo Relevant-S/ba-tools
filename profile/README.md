@@ -15,7 +15,7 @@ every run. If a value they need is missing, they ask you, and you add it here �
 | Key | What it says | Acme Lending | NWE |
 |---|---|---|---|
 | `profile_version` | Layout of this file. The skills refuse a version they do not know. | `2` | `2` |
-| `ba_tools_version` | The ba-tools release installed in this project. | `0.5.0` | `0.5.0` |
+| `ba_tools_version` | The ba-tools release installed in this project. | `0.6.0` | `0.6.0` |
 | `project` | Display name. | Acme | NWE (Northwind) |
 | `products` | One entry per product in the repo: `key` (the spec's `product:` value and folder name), `name`, `jira_project` (or `-`), and `roles`. | two products | one |
 | `products[].design_profile` | Path to the product's design profile — Figma files, design system, tokens, frame sizes, traps. Read by `figma-build`; written by `ba-setup design`. | two, one per product | one |
@@ -30,7 +30,7 @@ every run. If a value they need is missing, they ask you, and you add it here �
 | `sizes_requiring_ux` | Sizes that must have section 13. | m, l | m, l |
 | `ids.format` | How a new capability's id is written. `{n}` is the number. | `FR{n}` | `NWE-FR-{n}` |
 | `ids.source` | `register`: take `next_free` from `ids.register`, then bump it. `highest-existing`: one above the highest id found in `ids.scan`. | register | highest-existing |
-| `prd.paths` | Where the PRD lives, and whether it holds shipped work only. | `docs/prd.md`, shipped only | the BMad PRD run folders |
+| `prd.paths` | Where the phase PRDs live (one per phase, from that phase's ready specs). `frozen: true` marks an older whole-system PRD kept as a record. | phase PRDs; `docs/prd.md` frozen at 6.0 | the BMad PRD run folders |
 | `code.repos` | Repos section 14 reads, relative to the project root, with the area each covers. | 7 repos | `app` |
 | `code.dev_branch` | The branch developers merge into. Section 14 reads `origin/<this>`, never the local checkout. | `main` | `dev` |
 | `code.live_branch` | What is in production — read when the question is "what is live today". | `prod` | `main` |
@@ -42,6 +42,8 @@ every run. If a value they need is missing, they ask you, and you add it here �
 | `tools.slack.channels` | The channels where the client talks. The BA must be a member. | 3 channels | to fill in |
 | `tools.figma.files` | Each Figma file the BA works in: `key` (from the URL), `name`, `product`, `use` (`designs` or `design-system`). | 3 files | 1 file |
 | `tools.dashboard` | `file` (the dashboard's data, `docs/BA/dashboard.yaml`) and `url` (its published page — one link, never changes). Where a BA finds every clarification page. | the live dashboard | none yet |
+| `tools.dictionary` | `config` — the data dictionary's config (which code it reads); the `data-dictionary` skill builds the page. | set | set |
+| `tools.messages` | `file` — the messages catalogue (`docs/BA/messages.yaml`); the `messages` skill builds its page. | 28 Bond Portal emails imported | empty |
 | `tools.confluence` | `space` and `parent` page for published pages. `{}` = not used. | not used | Northwind |
 | `briefs_dir`, `confluence_*`, `figma_*`, `briefs`, `brief_parents` | Settings for the `feature-brief` skill. | — | yes |
 

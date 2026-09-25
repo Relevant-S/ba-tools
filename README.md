@@ -27,6 +27,8 @@ everywhere.
 | `skills/fetch-jira-backlog/` | Turns existing open tickets into spec stubs for `ba-spec`. |
 | `skills/clarification-page/` | Builds and publishes the page the client answers questions on. |
 | `skills/ba-dashboard/` | The project's BA dashboard: every feature with its clarification page, what is waiting on whom, your to-dos, the next call's agenda. One page, one link. |
+| `skills/data-dictionary/` | The data dictionary: every entity and field with type, required, min/max and screen label, generated from the code, plus the collisions that confuse people. |
+| `skills/messages/` | The messages catalogue: every email, in-app, push and SMS message the system sends, with trigger, recipients and content. |
 | `skills/jira/`, `skills/confluence/`, `skills/feature-brief/` | Jira helpers (comment, search, field edit, release folders), Confluence publishing, and client briefs on Confluence. |
 | `skills/ba-spec/` | Writes one spec in the template and takes it through the ready gate to its hand-off (Jira ticket or PRD). |
 | `skills/ba-spec/assets/spec-template.md` | The spec template — the only copy that is ever edited. |

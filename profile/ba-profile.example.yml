@@ -3,7 +3,7 @@
 # `ba-setup project` fills most of it in for you. What each key means: profile/README.md in ba-tools.
 
 profile_version: 2
-ba_tools_version: 0.5.0
+ba_tools_version: 0.6.0
 project: '<display name>'
 
 products:
@@ -67,6 +67,10 @@ tools:
   dashboard:                                  # the BA dashboard page — ba-dashboard starts one
     file: docs/BA/dashboard.yaml
     url: '<the published dashboard link>'
+  dictionary:                                 # the data dictionary — data-dictionary skill
+    config: docs/BA/data-dictionary.config.yaml
+  messages:                                   # every automatic message — messages skill
+    file: docs/BA/messages.yaml
   confluence:                                 # delete when the project does not use Confluence
     space: '<space key>'
     parent: '<page id new pages go under>'
