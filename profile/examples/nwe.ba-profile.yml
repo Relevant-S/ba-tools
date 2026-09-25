@@ -70,7 +70,9 @@ tools:
   figma:
     files:
       - { key: SampleFileKey04AbCdEfG, name: 'NWE Design System', product: nwe, use: designs }
-  dashboard: {}                    # ⚠ none yet — the ba-dashboard skill starts one
+  dashboard:                       # the BA dashboard — one page, one link; the ba-dashboard skill builds it
+    file: docs/BA/dashboard.yaml
+    url: https://claude.ai/artifact/ExampleDashboardPage2
   confluence:
     space: Northwind
     parent: 51281921               # the default parent for feature briefs (see briefs: below)
