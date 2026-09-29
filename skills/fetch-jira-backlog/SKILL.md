@@ -5,7 +5,7 @@ description: Bulk-import existing JIRA tickets from ACME+BOND as spec stubs in t
 
 # Fetch JIRA Backlog
 
-Pulls open JIRA tickets via the Atlassian REST API and writes one spec stub per ticket at `docs/BA/specs/{project}/{release_slug}/{slug}.md`, with the header of the approved template (`docs/BA/specs/_template.md`), `status: draft` and `source: jira-import`. The BA then runs the **`ba-spec`** skill on each stub (its *re-creating a spec that is already filed* path, since the ticket exists) to write the spec, pass the ready gate and — with approval — replace the ticket description with the short form.
+Pulls open JIRA tickets via the Atlassian REST API and writes one spec stub per ticket at `docs/BA/specs/{project}/{release_slug}/{slug}.md`, with the header of the approved template (`docs/BA/specs/_template.md`), `status: draft` and `source: jira-import`. The BA then runs the **`ba-spec`** skill on each stub (its *re-creating a spec that is already filed* path, since the ticket exists) to write the spec, pass the ready gate and — with approval — rewrite the ticket description from `ba-spec`'s `assets/ticket-template.md`.
 
 This is a **different flow** from `/fetch-fireflies`:
 
