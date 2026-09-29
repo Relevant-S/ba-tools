@@ -161,7 +161,7 @@ fetched_at: '{today}'
 
 > Imported from JIRA ticket [{KEY}](https://example.atlassian.net/browse/{KEY}) on {fetched_at}.
 > The `ba-spec` skill reads this section as raw input when it writes the spec in the approved template.
-> When the spec is written, this section is removed and the ticket description is replaced by the short form (summary + spec link).
+> When the spec is written, this section is removed and the ticket description is rewritten from `ba-spec`'s `assets/ticket-template.md` (summary, how to test, spec link).
 
 **Status:** {jira_status}
 **Issue type:** {jira_issuetype}

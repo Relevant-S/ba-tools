@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.6.1 — 2026-09-29
+
+- **A Jira ticket is the feature's storefront, not a tracker line.** Feedback from the Acme Lending dev and
+  QA team: developers build from the spec with BMad and read the ticket as the plain-language summary of
+  what to do; QA test mostly by hand and work from the ticket. New **`skills/ba-spec/assets/ticket-template.md`**:
+  what and why, where (the click path), what changes, how to test (test data, numbered steps with the
+  expected result, regression, the not-allowed role), known limits that are not bugs, then the spec and
+  Figma links. Still never the spec body. `ba-spec` step 9 writes the description from it and checks
+  every test-data step can really be done; `ba-spec` hard rule 7, `jira`, `fetch-jira-backlog` and the
+  ongoing-project flow point at it instead of "short description + spec link". First used on ACME-1710.
+- **`figma-build` gotcha G56** — hiding layers inside an instance replaces the node (re-find from the
+  instance root for every hide), hidden sublayers drop out of `.children`, and fixed-height wrappers keep
+  their gap; hide the known item level by name, never "climb until the parent has ≥N children".
+
 ## 0.6.0 — 2026-09-25
 
 - **One PRD per phase, everywhere.** No living whole-system PRD: the code says how the system works now

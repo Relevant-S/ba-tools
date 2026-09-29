@@ -15,7 +15,7 @@ every run. If a value they need is missing, they ask you, and you add it here â€
 | Key | What it says | Acme Lending | NWE |
 |---|---|---|---|
 | `profile_version` | Layout of this file. The skills refuse a version they do not know. | `2` | `2` |
-| `ba_tools_version` | The ba-tools release installed in this project. | `0.6.0` | `0.6.0` |
+| `ba_tools_version` | The ba-tools release installed in this project. | `0.6.1` | `0.6.1` |
 | `project` | Display name. | Acme | NWE (Northwind) |
 | `products` | One entry per product in the repo: `key` (the spec's `product:` value and folder name), `name`, `jira_project` (or `-`), and `roles`. | two products | one |
 | `products[].design_profile` | Path to the product's design profile â€” Figma files, design system, tokens, frame sizes, traps. Read by `figma-build`; written by `ba-setup design`. | two, one per product | one |

@@ -20,9 +20,12 @@ cloudId = `jira.site`):
 | Project | the product's `jira_project` |
 | Type | `jira_issuetype` — `jira.default_issuetype` unless the spec says otherwise; Bug only for a true regression |
 | Summary | the spec title, plain words |
-| Description | 2–4 sentences: the problem and the fix, then `**Spec:** [<path>](<spec_links.repo_url>/blob/<spec_links.branch>/<path>)`, then the Figma link if there are screens. **Never the spec body.** |
+| Description | written from **`assets/ticket-template.md`**: what and why, where, what changes, how to test (test data, numbered steps with expected results, regression), known limits, then the spec link and the Figma link. Plain words — developers read it as the feature's summary, manual QA test from it. **Never the spec body.** Markdown, `contentFormat: markdown`. |
 | fixVersions | `[{name: <jira_fixversion>}]` — must match a real version name exactly |
 | priority | `{name: <jira_priority>}` — one of `jira.priorities` |
+
+Before creating it, read the *How to test* part as a tester: every record under *Before you start*
+must be something they can actually create the way it says. Check the code when unsure.
 
 Then **check it landed**: search the new key and confirm fixVersion and priority are set (the create
 response does not show them). Write back `jira_ticket: <KEY>` in the spec header.

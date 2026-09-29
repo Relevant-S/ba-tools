@@ -17,7 +17,7 @@ the system works now, the specs say why.
 | 5 | Write each new spec — thin first, then full | `ba-spec` | a spec in `docs/BA/specs/<product>/<release>/` |
 | 6 | If the client will see the change: questions and any designs go on the feature's clarification page; the client answers on the call; the answers go into the spec's Decisions | `clarification-page`, then `fetch-slack` / `fetch-gmail` for pasted answers | the spec, updated |
 | 7 | The ready gate, then your explicit yes | `ba-spec` | `status: ready` |
-| 8 | File it: the next requirement number (new features only), commit, push (it asks), a Jira ticket with a short description and the spec link | `ba-spec` | the ticket key in the spec, `status: filed` |
+| 8 | File it: the next requirement number (new features only), commit, push (it asks), a Jira ticket written as the feature's storefront — what and why, what changes, how to test — with the spec link | `ba-spec` | the ticket key in the spec, `status: filed` |
 | 9 | When the sprint or phase branch is cut, copy its specs onto it | by hand | the hand-off branch |
 | 10 | A release ships: move its spec folder to `released/`, rebuild the release list | `jira refresh-specs` | `_releases.md` |
 
@@ -27,7 +27,9 @@ its "re-create a spec already filed" path.
 ## Rules that hold the loop together
 
 - **Spec before ticket.** Nothing reaches Jira without a written spec and the BA's yes.
-- **Tickets are trackers.** A short description and the link to the spec, never the spec itself.
+- **A ticket is the storefront, the spec is the build.** Developers build from the spec; the ticket
+  gives them the summary in plain words, and manual QA test from it (test data, steps, expected
+  results). It links the spec and never pastes it.
 - **Every ticket has a release (fixVersion) when it is created.** `Backlog` is a release.
 - **Every push is asked for.**
 - **The clarification page is a surface, not the record.** Answers live in the spec's Decisions.

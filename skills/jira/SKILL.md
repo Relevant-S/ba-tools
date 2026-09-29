@@ -47,8 +47,9 @@ Restart the Claude Code session after adding so the env vars propagate to spawne
 ### `file-spec` — retired (2026-09-24)
 
 It pasted the whole spec into the ticket and blanked lists in the spec header when it wrote back.
-Tickets are filed by the **`ba-spec` skill (step 9)**: a short description plus the spec link. The
-subcommand now stops with that message.
+Tickets are filed by the **`ba-spec` skill (step 9)**, written from its `assets/ticket-template.md`: a
+plain-language summary for developers, test steps for manual QA, and the spec link — never the spec
+body. The subcommand now stops with that message.
 
 ### `comment <issue-key> <markdown>`
 

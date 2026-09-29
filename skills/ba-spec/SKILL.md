@@ -64,7 +64,10 @@ another step.
 5. **Roles are the product's real roles** — `products[].roles.list` in the profile, with its `notes`.
    Never a role from another project, never an invented one.
 6. **Spec before hand-off.** Show the spec and get an explicit yes before any Jira call or PRD edit.
-7. **Tickets are trackers.** Short description + spec link (+ Figma link). Never paste the spec body.
+7. **A ticket is the feature's storefront, not its spec.** Written in plain words from
+   `assets/ticket-template.md`: what and why, where, what changes, and how to test — so a developer
+   gets the summary and a manual QA can test from the ticket alone. Spec link (+ Figma link) at the
+   end. Never paste the spec body.
 8. **Pushing needs approval every time.** A spec link must resolve — commit and push first.
 
 ## Quick spec or change request
@@ -98,14 +101,15 @@ When the spec already has a ticket or PRD entry that development has not started
 - **Steps 2–8** — as normal. Rewrite in place (same path, so links keep working); the old version
   stays in git history. Keep the existing `id`, `jira_ticket`, `source_intake` and `triage_ref`.
 - **Step 9** — no new ticket or id. Commit and (with approval) push. If the ticket description is out
-  of date or pastes the spec, replace it with the short form — with the BA's approval, since the
-  assignee reads it.
+  of date or pastes the spec, rewrite it from `assets/ticket-template.md` — with the BA's approval,
+  since the assignee reads it.
 
 ## Paths and names — all from the profile
 
 | Thing | Where |
 |---|---|
 | Template | `assets/spec-template.md` (this skill) |
+| Ticket description | `assets/ticket-template.md` (this skill) |
 | Profile | `docs/BA/specs/.ba-profile.yml` |
 | Next id | `ids` — `register` (read `next_free`) or `highest-existing` (scan `ids.scan`) |
 | PRD | `prd.paths` |
