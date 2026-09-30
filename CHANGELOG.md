@@ -6,6 +6,8 @@
   opacity only when the opacity is in the paint you bind, and tints are safest re-set in a separate call (G57);
   a screenshot in the same call as a fill change can show the old fill (G58); some CMS-served WebP files upload
   with HTTP 200 and render blank — convert to JPEG first (G59).
+- **`figma-build` gotcha G60** — generated FigJam diagrams: connectors keep their old routes after the shapes move;
+  recreate them after the move, and set the label font to Inter because generated labels report an empty family.
 
 ## 0.6.1 — 2026-09-29
 
