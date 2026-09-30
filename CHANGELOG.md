@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **`figma-build` gotchas G57–G59**, first recorded on Majordome (2026-09-30): a bound-variable paint keeps its
+  opacity only when the opacity is in the paint you bind, and tints are safest re-set in a separate call (G57);
+  a screenshot in the same call as a fill change can show the old fill (G58); some CMS-served WebP files upload
+  with HTTP 200 and render blank — convert to JPEG first (G59).
+
 ## 0.6.1 — 2026-09-29
 
 - **A Jira ticket is the feature's storefront, not a tracker line.** Feedback from the Acme Lending dev and
