@@ -15,7 +15,7 @@ every run. If a value they need is missing, they ask you, and you add it here �
 | Key | What it says | Acme Lending | NWE |
 |---|---|---|---|
 | `profile_version` | Layout of this file. The skills refuse a version they do not know. | `2` | `2` |
-| `ba_tools_version` | The ba-tools release installed in this project. | `0.6.1` | `0.6.1` |
+| `ba_tools_version` | The ba-tools release installed in this project. | `0.7.0` | `0.7.0` |
 | `project` | Display name. | Acme | NWE (Northwind) |
 | `products` | One entry per product in the repo: `key` (the spec's `product:` value and folder name), `name`, `jira_project` (or `-`), and `roles`. | two products | one |
 | `products[].design_profile` | Path to the product's design profile — Figma files, design system, tokens, frame sizes, traps. Read by `figma-build`; written by `ba-setup design`. | two, one per product | one |
@@ -41,7 +41,7 @@ every run. If a value they need is missing, they ask you, and you add it here �
 | `tools.client_emails` | `include` / `exclude` — whose email and whose recorded calls count as client input. A domain is written `@client.com`. | `@acme.example`, minus the help desk | to fill in |
 | `tools.slack.channels` | The channels where the client talks. The BA must be a member. | 3 channels | to fill in |
 | `tools.figma.files` | Each Figma file the BA works in: `key` (from the URL), `name`, `product`, `use` (`designs` or `design-system`). | 3 files | 1 file |
-| `tools.dashboard` | `file` (the dashboard's data, `docs/BA/dashboard.yaml`) and `url` (its published page — one link, never changes). Where a BA finds every clarification page. | the live dashboard | none yet |
+| `tools.dashboard` | `file` (the dashboard's data, `docs/BA/dashboard.yaml`), `url` (its published page — one link, never changes), `page` (`docs/BA/mind-map/mind-map.html`, the Map + Board page that gets published) and optional `map` (`products`: Jira project → product name; `stage_of_status`: Jira status → stage). Where a BA finds every feature and clarification page. Started right after the project brief. | the live Map + Board page | none yet |
 | `tools.dictionary` | `config` — the data dictionary's config (which code it reads); the `data-dictionary` skill builds the page. | set | set |
 | `tools.messages` | `file` — the messages catalogue (`docs/BA/messages.yaml`); the `messages` skill builds its page. | 28 Bond Portal emails imported | empty |
 | `tools.confluence` | `space` and `parent` page for published pages. `{}` = not used. | not used | Northwind |

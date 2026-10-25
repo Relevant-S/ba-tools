@@ -185,7 +185,7 @@ skill). The item shape is in step 03 §E:
 proposed_action:
   type: dashboard
   list: awaiting                       # awaiting | todos | agenda
-  item: { prod: …, who: …, since: …, t: …, s: …, l: … }
+  item: { feature: …, prod: …, who: …, since: …, t: …, s: …, l: … }   # feature = the dashboard feature/topic id, when one fits
 ```
 
 **`note` — pass-through todo, no file:**

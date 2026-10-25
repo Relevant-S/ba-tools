@@ -18,6 +18,7 @@ Brief ─► feature list ─► per feature:  thin spec ─► design ⇄ clien
 | 1 | Collect the first inputs. **Documents** from sales and the client — proposal, WBS, contract scope, client files — go into `docs/BA/reference/`, one index row each; **conversations** (kick-off calls, email) come in as intake | ours | by hand for documents; `fetch-fireflies`, `fetch-gmail`, `fetch-slack` | `docs/BA/reference/` and `docs/BA/intake/` |
 | 2 | *(optional)* Research the market or domain, or stress-test the idea | BMad | `bmad-deep-recon`, `bmad-forge-idea`, `bmad-prfaq` | research notes |
 | 3 | Project brief, written from the reference folder and the first calls | BMad | `bmad-product-brief` | the brief |
+| 3b | **Start the BA dashboard from the brief** — offered as soon as the brief is written: one row per feature the brief names, its open questions on the agenda. Every later spec, question and clarification page hangs from it | ours | `ba-dashboard` (*Starting one*) | the dashboard page (Map + Board), its link in the profile |
 | 4 | Break the brief into features; write a **thin spec** for each — the need and the outcome only | ours | `ba-spec` (stops after the need) | one `draft` spec per feature |
 | 5 | **Per feature — design**, when it has screens: draw it, show it, change it | ours | `figma-build` (concept mode) | a concept page in the product's Figma file |
 | 6 | **Per feature — client review**: questions and the designs go on the feature's clarification page; the client answers on the call | ours | `clarification-page` | answers, pasted back |

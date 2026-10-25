@@ -239,6 +239,15 @@ def cmd_check_project(root):
             continue
         ok = bool(v) if need is None else bool(v) and all(v.get(n) for n in need)
         rows.append(row(label, "ok" if ok else "missing", "set" if ok else "not set", "ba-setup project"))
+    # The dashboard is best started right after the project brief: every feature and question hangs from it.
+    dash = t.get("dashboard") or {}
+    briefs = sorted({*root.glob("docs/**/product-brief*.md"), *root.glob("docs/planning-artifacts/**/*brief*.md")})
+    if not dash.get("url") and briefs:
+        rows.append(row("BA dashboard", "warn", f"the project has a brief ({briefs[0].relative_to(root).as_posix()}) but no dashboard",
+                        "ba-dashboard — Starting one (it seeds the features from the brief)"))
+    elif dash.get("url") and not dash.get("page"):
+        rows.append(row("dashboard page", "warn", "the dashboard is still the old table page",
+                        "ba-dashboard — Starting one, steps 4–6: build the Map/Board page and publish it to the same link"))
     for pr in prof.get("products") or []:
         dp = pr.get("design_profile")
         if not dp:

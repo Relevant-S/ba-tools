@@ -36,7 +36,9 @@ Do not edit the PRD from this step — the PRD is updated through `bmad-prd` (up
 this spec as the change signal.
 
 **4. Write back.** In the spec header: `status: filed`. If the spec came from a PRD open item, add the
-ticket key or spec id to that line in the PRD. Commit. Ask before pushing.
+ticket key or spec id to that line in the PRD. If the feature has a row on the dashboard
+(`docs/BA/dashboard.yaml`), add the new key to its `tickets:` list, so the dashboard's map and board place
+it by its tickets, then publish the dashboard (`ba-dashboard`). Commit. Ask before pushing.
 
 **5. Report to the BA** with the key as a link and its summary, for example
 `[KEY-123](https://<jira.site>/browse/KEY-123) (short summary) — Critical, Backlog`, or with the spec

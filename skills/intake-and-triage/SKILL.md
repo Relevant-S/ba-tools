@@ -163,5 +163,6 @@ Report sections: items grouped by lane (each carrying a `proposed_action:` block
 - `bmad-prd` (update) — on a phase project (`downstream: prd`), when ready specs are grouped into the next phase PRD.
 
 **The dashboard page.** After the last approved action of a run, rebuild and republish the dashboard
-once (`ba-dashboard`: `build`, then publish to `tools.dashboard.url`). A project without a dashboard
-yet: offer to start one (`ba-dashboard` → *Starting one*).
+once (`ba-dashboard` → *Publish*: check the YAML, build the map page, publish it to
+`tools.dashboard.url`). A project without a dashboard yet: offer to start one (`ba-dashboard` →
+*Starting one*).

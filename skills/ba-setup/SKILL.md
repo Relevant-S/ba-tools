@@ -102,7 +102,8 @@ Follow `references/project.md`. In short:
    `docs/BA/specs/_template.md`, and create the BA folders that are missing
    (`docs/BA/reference`, `docs/BA/intake`, `docs/BA/triage`, `docs/BA/specs`, `docs/BA/clarifications`),
    with the reference folder's index and `.gitignore` from `assets/`.
-5. Run `check-project` and show the result. Do not commit — say what changed and ask.
+5. Run `check-project` and show the result. If it says the project has a brief but no dashboard, offer
+   to start one now (`ba-dashboard` → *Starting one*). Do not commit — say what changed and ask.
 
 ## Mode: design
 

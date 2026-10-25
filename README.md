@@ -26,7 +26,7 @@ everywhere.
 | `skills/intake-and-triage/` | Turns intake into a triage report: new specs, Jira edits, dashboard items, notes — and carries out what the BA approves. |
 | `skills/fetch-jira-backlog/` | Turns existing open tickets into spec stubs for `ba-spec`. |
 | `skills/clarification-page/` | Builds and publishes the page the client answers questions on. |
-| `skills/ba-dashboard/` | The project's BA dashboard: every feature with its clarification page, what is waiting on whom, your to-dos, the next call's agenda. One page, one link. |
+| `skills/ba-dashboard/` | The project's BA dashboard, one page at one link with two tabs: **Map** (product → area → feature → items, coloured by stage) and **Board** (features by Jira release). Every feature with its clarification page, what is waiting on whom, your to-dos, the next call's agenda. Offered right after the project brief. |
 | `skills/data-dictionary/` | The data dictionary: every entity and field with type, required, min/max and screen label, generated from the code, plus the collisions that confuse people. |
 | `skills/messages/` | The messages catalogue: every email, in-app, push and SMS message the system sends, with trigger, recipients and content. |
 | `skills/jira/`, `skills/confluence/`, `skills/feature-brief/` | Jira helpers (comment, search, field edit, release folders), Confluence publishing, and client briefs on Confluence. |

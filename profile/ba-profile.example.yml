@@ -3,7 +3,7 @@
 # `ba-setup project` fills most of it in for you. What each key means: profile/README.md in ba-tools.
 
 profile_version: 2
-ba_tools_version: 0.6.1
+ba_tools_version: 0.7.0
 project: '<display name>'
 
 products:
@@ -64,9 +64,14 @@ tools:
   figma:
     files:
       - { key: '<file key from the Figma URL>', name: '<file name>', product: '<product key>', use: '<designs | design-system>' }
-  dashboard:                                  # the BA dashboard page — ba-dashboard starts one
+  dashboard:                                  # the BA dashboard page (Map + Board) — ba-dashboard starts one after the brief
     file: docs/BA/dashboard.yaml
     url: '<the published dashboard link>'
+    page: docs/BA/mind-map/mind-map.html      # what gets published
+    map:                                      # optional
+      # products: { PROJ: Product name }      # Jira project -> product name, when dashboard.yaml spells it differently
+      stage_of_status:                        # Jira status -> stage; unlisted statuses use Jira's status group
+        In Review: qa                         # list every "being tested" status as qa
   dictionary:                                 # the data dictionary — data-dictionary skill
     config: docs/BA/data-dictionary.config.yaml
   messages:                                   # every automatic message — messages skill

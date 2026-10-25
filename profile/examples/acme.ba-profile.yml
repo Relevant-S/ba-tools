@@ -3,7 +3,7 @@
 # What each key means: https://github.com/Relevant-S/ba-tools/blob/main/profile/README.md
 
 profile_version: 2
-ba_tools_version: 0.6.1
+ba_tools_version: 0.7.0
 project: Acme (Acme Lending + Bond Portal)
 
 products:
@@ -94,7 +94,19 @@ tools:
   confluence: {}                   # not used on this project
   dashboard:                       # the BA dashboard — one page, one link; the ba-dashboard skill builds it
     file: docs/BA/dashboard.yaml
-    url: https://claude.ai/artifact/ExampleDashboardPage3
+    url: https://claude.ai/artifact/ExampleDashboardPage1   # the mind map (Map + Board tabs); the old table page was deleted 25 Oct 2026
+    page: docs/BA/mind-map/mind-map.html   # what gets published; built by the ba-dashboard skill's map/build.py
+    map:
+      products: { ACME: AcmeLending, BOND: Bond Portal }   # Jira project -> product name as dashboard.yaml writes it
+      stage_of_status:             # Jira status -> map stage; statuses not listed use Jira's own status group
+        Backlog: ready
+        To Do: ready
+        In Progress: dev
+        QA: qa
+        Ready for Testing: qa
+        Ready to test (stage): qa
+        Ready for Production: qa
+        Done: done
   dictionary:                      # the data dictionary — the data-dictionary skill builds it
     config: docs/BA/data-dictionary.config.yaml
   messages:                        # every message the system sends — the messages skill builds it

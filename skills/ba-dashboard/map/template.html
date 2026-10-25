@@ -1,0 +1,1148 @@
+<title>BA Dashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: a pannable mind map on the left (product hub → areas → features → items), a detail panel on the right; stacked on phones. */
+:root {
+  --paper: #f3f6f6; --card: #ffffff; --ink: #111d1c; --ink-2: #3d4f4d; --ink-3: #6b7c7a;
+  --rule: #d3dddc; --rule-soft: #e6eceb; --accent: #0d5b60; --accent-bg: #e2eeee;
+  --spec: #2457c5; --spec-bg: #e5ecfb; --design: #5b45a8; --design-bg: #ece8f7; --dev: #2c6b47; --dev-bg: #e2efe7; --build: #b0306e; --build-bg: #f9e6ef;
+  --st-concept: #8a9694; --st-concept-bg: #edf1f1; --st-spec: #7046c2; --st-spec-bg: #efe9fa;
+  --st-ready: #2457c5; --st-ready-bg: #e5ecfb; --st-dev: #b0306e; --st-dev-bg: #f9e6ef;
+  --st-qa: #b98900; --st-qa-bg: #fbf2d6; --st-done: #2c7a45; --st-done-bg: #e2efe7;
+  --wait: #9c5c05; --wait-bg: #f8eddc; --over: #a3282a; --over-bg: #f8e5e4;
+  --open: #7f918f; --open-bg: #edf1f1;
+  --font: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --mono: "Figtree", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0d1414; --card: #151f1e; --ink: #e8efee; --ink-2: #aebbb9; --ink-3: #7d8d8b;
+    --rule: #2a3736; --rule-soft: #1e2a29; --accent: #5cc2c6; --accent-bg: #14302f;
+    --spec: #82a8f5; --spec-bg: #182540; --design: #a994f0; --design-bg: #251f3b; --dev: #6fca94; --dev-bg: #15301f; --build: #ef7fb5; --build-bg: #3a1a2a;
+    --st-concept: #8a9b99; --st-concept-bg: #1b2625; --st-spec: #b59af5; --st-spec-bg: #261f3b;
+    --st-ready: #82a8f5; --st-ready-bg: #182540; --st-dev: #ef7fb5; --st-dev-bg: #3a1a2a;
+    --st-qa: #e9c24b; --st-qa-bg: #33290c; --st-done: #6fca94; --st-done-bg: #15301f;
+    --wait: #e0a44e; --wait-bg: #33260f; --over: #ef8886; --over-bg: #351b1b;
+    --open: #8a9b99; --open-bg: #1b2625; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0d1414; --card: #151f1e; --ink: #e8efee; --ink-2: #aebbb9; --ink-3: #7d8d8b;
+  --rule: #2a3736; --rule-soft: #1e2a29; --accent: #5cc2c6; --accent-bg: #14302f;
+  --spec: #82a8f5; --spec-bg: #182540; --design: #a994f0; --design-bg: #251f3b; --dev: #6fca94; --dev-bg: #15301f; --build: #ef7fb5; --build-bg: #3a1a2a;
+    --st-concept: #8a9b99; --st-concept-bg: #1b2625; --st-spec: #b59af5; --st-spec-bg: #261f3b;
+    --st-ready: #82a8f5; --st-ready-bg: #182540; --st-dev: #ef7fb5; --st-dev-bg: #3a1a2a;
+    --st-qa: #e9c24b; --st-qa-bg: #33290c; --st-done: #6fca94; --st-done-bg: #15301f;
+  --wait: #e0a44e; --wait-bg: #33260f; --over: #ef8886; --over-bg: #351b1b;
+  --open: #8a9b99; --open-bg: #1b2625; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--paper); color: var(--ink); font: 14px/1.5 var(--font); }
+button { font: inherit; color: inherit; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); grid-template-rows: auto minmax(0, 1fr); height: 100%; }
+header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); background: var(--card); border-bottom: 1px solid var(--rule); }
+.brand { margin: 0; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.15; }
+.brand small { display: block; font-size: 0.75rem; font-weight: 400; color: var(--ink-3); letter-spacing: 0; }
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; font-size: 0.85rem; min-width: 0; flex: 1; }
+.crumbs button { background: none; border: 0; padding: 2px 6px; border-radius: 6px; cursor: pointer; color: var(--accent); }
+.crumbs button:hover { background: var(--accent-bg); }
+.crumbs span.sep { color: var(--ink-3); }
+.crumbs span.here { padding: 2px 6px; color: var(--ink); font-weight: 600; }
+.controls { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 999px; padding: 2px; background: var(--paper); }
+.seg button { border: 0; background: none; border-radius: 999px; padding: 3px 12px; font-size: 0.8rem; cursor: pointer; color: var(--ink-2); }
+.seg button[aria-checked="true"] { background: var(--ink); color: var(--card); font-weight: 600; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--rule); background: var(--card); border-radius: 999px; padding: 3px 10px 3px 7px; cursor: pointer; font-size: 0.8rem; }
+.filtering .chip[aria-pressed="false"] { opacity: 0.45; }
+.chip[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--card); font-weight: 600; }
+.chip[aria-pressed="true"] .glyph { stroke: var(--card); }
+.chip.reset { padding: 3px 7px; }
+.chip.reset:disabled { opacity: 0.35; cursor: default; }
+.chip.reset:not(:disabled) .glyph { stroke: var(--over); }
+.chip svg, .ico { width: 15px; height: 15px; flex: none; }
+
+.mapwrap { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+svg.map { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; user-select: none; }
+svg.map.dragging { cursor: grabbing; }
+.zoom { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+.zoom button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--rule); background: var(--card); cursor: pointer; font-size: 1rem; line-height: 1; }
+.example { position: absolute; left: 12px; bottom: 12px; font-size: 0.72rem; color: var(--ink-3); background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 3px 8px; max-width: calc(100% - 80px); }
+
+.edge { fill: none; stroke: var(--rule); stroke-width: 1.5; }
+.node { cursor: pointer; }
+.node .fill { fill: var(--card); stroke: var(--rule); stroke-width: 1; }
+.node .track { fill: none; stroke: var(--rule-soft); }
+.node:hover .fill, .node:focus-visible .fill { stroke: var(--ink-3); }
+.node:focus { outline: none; }
+.dim { opacity: 0.18; }
+.half { opacity: 0.45; }
+.lbl { fill: var(--ink); font: 600 19px var(--font); }
+.flbl { fill: var(--ink); font: 600 17px var(--font); }
+.sub { fill: var(--ink-3); font: 400 14px var(--font); }
+.num { fill: var(--ink); font: 700 20px var(--font); }
+.hub-t { fill: var(--ink); font: 700 22px var(--font); }
+.hub-s { fill: var(--ink-3); font: 400 13px var(--mono); }
+.clbl { fill: var(--ink); font: 400 16px var(--font); }
+.clbl.on { font-weight: 600; }
+.clbl.more { fill: var(--accent); font-weight: 600; }
+.clbl.res { fill: var(--ink-3); text-decoration: line-through; }
+.node.res .bubble { fill: var(--st-done-bg); stroke: var(--st-done); }
+.node.res .glyph { stroke: var(--st-done); }
+.res-t { text-decoration: line-through; color: var(--ink-3); }
+.unotes { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem; color: var(--ink-2); }
+.unotes .age { font: 400 0.72rem var(--mono); color: var(--ink-3); margin-right: 6px; }
+label.unote { display: block; font-size: 0.85rem; font-weight: 600; margin: 4px 0 6px; }
+#u-note { width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; background: var(--card); color: var(--ink); font: inherit; font-size: 0.9rem; }
+.ucheck { display: flex; gap: 8px; align-items: center; margin: 10px 0; font-size: 0.9rem; cursor: pointer; }
+.ucheck input { width: 16px; height: 16px; accent-color: var(--st-done); }
+.urow { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.urow .btn { border: 0; cursor: pointer; }
+aside .m { font-size: 0.85rem; color: var(--ink-3); margin: 0; }
+.ititle { display: flex; gap: 8px; align-items: flex-start; }
+.ititle h2 { flex: 1; min-width: 0; }
+.copylink { flex: none; margin-top: 2px; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); cursor: pointer; }
+.copylink:hover { border-color: var(--ink-3); background: var(--rule-soft); }
+.copied { margin: 2px 0 6px; overflow-wrap: anywhere; }
+.copied:empty { display: none; }
+.qbadge { fill: var(--over); }
+.qbadge-t { fill: var(--card); font: 700 12px var(--font); }
+
+/* Status colours: one token pair per status, used by rings, outlines, pills and the legend. */
+.s-epic { --c: var(--accent); --cb: var(--accent-bg); }
+.s-concept { --c: var(--st-concept); --cb: var(--st-concept-bg); }
+.s-spec { --c: var(--st-spec); --cb: var(--st-spec-bg); }
+.s-ready { --c: var(--st-ready); --cb: var(--st-ready-bg); }
+.s-dev { --c: var(--st-dev); --cb: var(--st-dev-bg); }
+.s-qa { --c: var(--st-qa); --cb: var(--st-qa-bg); }
+.s-done { --c: var(--st-done); --cb: var(--st-done-bg); }
+.seg { fill: none; stroke-linecap: butt; }
+.seg.track { stroke: var(--rule-soft); }
+.seg.fillx { stroke: var(--c); }
+.wbadge { fill: #ea6a00; }
+.clink { cursor: pointer; }
+.clink circle { fill: var(--card); stroke: var(--accent); stroke-width: 1.5; }
+.clink path { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.clink:hover circle, .clink:focus-visible circle { fill: var(--accent-bg); }
+.tick { fill: none; stroke: var(--c); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.s-hot { --c: var(--over); --cb: var(--over-bg); }
+.s-old { --c: var(--wait); --cb: var(--wait-bg); }
+.s-open, .s-none { --c: var(--open); --cb: var(--open-bg); }
+.ring { fill: none; stroke: var(--c); stroke-linecap: round; }
+.ring-none { fill: none; stroke: var(--open); stroke-dasharray: 3 4; }
+.bubble { fill: var(--cb); stroke: var(--c); stroke-width: 2; }
+.bubble.more { fill: var(--card); stroke: var(--ink-3); stroke-dasharray: 3 3; }
+.glyph { fill: none; stroke: var(--c); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.more .glyph, .glyph.muted { stroke: var(--ink-3); }
+
+aside { min-width: 0; min-height: 0; overflow-y: auto; background: var(--card); border-left: 1px solid var(--rule); padding-block: 18px 32px; padding-left: 20px; padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+aside h2 { margin: 0 0 4px; font-size: 1.2rem; line-height: 1.25; text-wrap: balance; }
+aside h3 { margin: 22px 0 8px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); font-weight: 600; }
+aside p { margin: 0 0 10px; color: var(--ink-2); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; border-radius: 999px; padding: 2px 9px; background: var(--cb, var(--rule-soft)); color: var(--c, var(--ink-2)); white-space: nowrap; }
+.pill.plain { background: var(--rule-soft); color: var(--ink-2); font-weight: 500; }
+.ready { margin: 6px 0 14px; }
+.bar { height: 8px; border-radius: 4px; background: var(--rule-soft); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--c); }
+.bar.stack { display: flex; gap: 2px; background: none; }
+.ready small { display: block; margin-top: 4px; color: var(--ink-3); font-size: 0.78rem; }
+ol.qs { margin: 0; padding-left: 20px; color: var(--ink-2); }
+ul.txt { margin: 0 0 10px; padding-left: 20px; color: var(--ink-2); }
+ul.txt li { margin-bottom: 4px; }
+ol.qs li { margin-bottom: 6px; }
+ul.items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+ul.items button { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px; align-items: start; width: 100%; text-align: left; background: none; border: 0; border-radius: 8px; padding: 6px 8px; cursor: pointer; }
+ul.items button:hover, ul.items a.row:hover { background: var(--rule-soft); }
+ul.items a.row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 6px 8px; border-radius: 8px; color: var(--ink); text-decoration: none; }
+ul.items .ico { margin-top: 2px; }
+ul.items .age { font: 400 0.72rem var(--mono); color: var(--ink-3); margin-top: 2px; }
+ul.items .side { display: flex; gap: 4px; align-items: center; margin-top: 1px; }
+.legend { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px 10px; align-items: center; font-size: 0.85rem; color: var(--ink-2); }
+.legend svg { width: 22px; height: 22px; }
+table.sum { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+table.sum th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 4px; border-bottom: 1px solid var(--rule); }
+table.sum td { padding: 5px 4px; border-bottom: 1px solid var(--rule-soft); font-variant-numeric: tabular-nums; }
+table.sum td.n, table.sum th.n { text-align: right; }
+table.sum td.n { color: var(--ink-2); }
+table.sum button { background: none; border: 0; padding: 0; cursor: pointer; color: var(--accent); text-align: left; }
+/* The clarification page opens in a new tab, so it stays a link but looks like a button. */
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; background: var(--accent); color: var(--card); font-weight: 600; font-size: 0.88rem; text-decoration: none; }
+.btn:hover { filter: brightness(1.1); }
+.btn .glyph { stroke: var(--card); }
+.back { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font-size: 0.85rem; margin-bottom: 10px; }
+.who { font-size: 0.85rem; color: var(--ink-2); margin-bottom: 12px; }
+.who b { color: var(--ink); font-weight: 600; }
+
+/* Board: rows are Jira releases, columns are areas, one card per feature. Item lanes sit on top. */
+.mapwrap, .boardwrap { grid-column: 1; grid-row: 2; }
+.boardwrap { min-width: 0; min-height: 0; overflow: auto; }
+.board { display: grid; grid-template-columns: 190px repeat(var(--n), 212px); width: max-content; min-width: 100%; }
+.board .ch { position: sticky; top: 0; z-index: 2; background: var(--card); border-bottom: 1px solid var(--rule); border-right: 1px solid var(--rule-soft); padding: 8px 10px; font-size: 0.82rem; font-weight: 700; }
+.board .ch small { display: block; font-weight: 400; color: var(--ink-3); }
+.board .rl { position: sticky; left: 0; z-index: 1; background: var(--card); border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 10px; font-size: 0.82rem; }
+.board .ch.corner { left: 0; z-index: 3; border-right: 1px solid var(--rule); }
+.rl b { display: block; font-size: 0.88rem; line-height: 1.25; }
+.rl .rn { display: block; color: var(--ink-2); line-height: 1.3; margin-top: 2px; }
+.rl .rd { display: block; margin-top: 6px; color: var(--ink-3); font-size: 0.75rem; }
+.rl .rd.late { color: var(--wait); font-weight: 600; }
+.rl select { margin-top: 6px; width: 100%; font: inherit; font-size: 0.78rem; padding: 3px 4px; border: 1px solid var(--rule); border-radius: 6px; background: var(--card); color: var(--ink); }
+.rl.lane { background: var(--paper); }
+.board .bc { border-right: 1px solid var(--rule-soft); border-bottom: 1px solid var(--rule); padding: 6px; display: flex; flex-direction: column; gap: 6px; min-height: 44px; }
+.board .bc.lane { background: var(--paper); }
+.bcard, .bitem { position: relative; display: block; width: 100%; text-align: left; border: 1px solid var(--rule); border-left: 4px solid var(--c); background: var(--card); border-radius: 8px; padding: 6px 8px; cursor: pointer; }
+.bcard:hover, .bitem:hover { border-color: var(--ink-3); border-left-color: var(--c); }
+.bcard.on, .bitem.on { outline: 2px solid var(--ink); outline-offset: 1px; }
+.bcard .bt, .bitem .bt { display: flex; gap: 6px; align-items: flex-start; font-weight: 600; font-size: 0.84rem; line-height: 1.3; }
+.bcard .bt > span:not(.bk) { flex: 1; min-width: 0; }
+.bitem .bt { font-weight: 500; }
+.bcard .bt .ico, .bitem .bt .ico { margin-top: 1px; }
+.bcard .bs { display: block; margin-top: 3px; font-size: 0.74rem; color: var(--c); font-weight: 600; }
+.bcard .bs span { color: var(--ink-3); font-weight: 400; }
+.bitem .bs { display: block; margin-top: 2px; font-size: 0.72rem; color: var(--ink-3); }
+.bcard .bk { flex: none; display: flex; gap: 3px; align-items: center; }
+.bk:empty { display: none; }
+.controls, #chips { min-width: 0; }
+.bk i { font-style: normal; min-width: 18px; height: 18px; border-radius: 9px; color: #fff; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; }
+.bk i.q { background: var(--over); }
+.bk i.w { background: #ea6a00; }
+.bk .ico { width: 16px; height: 16px; }
+.bitem.res .bt span { text-decoration: line-through; color: var(--ink-3); }
+.board-empty { padding: 24px; color: var(--ink-3); }
+.lanet { background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+.lanecount { align-self: flex-start; background: var(--card); border: 1px solid var(--rule); border-radius: 999px; padding: 2px 10px; font-size: 0.75rem; color: var(--ink-2); cursor: pointer; }
+.lanecount:hover { border-color: var(--ink-3); }
+.board .bc.lane:has(.lanecount), .board .bc.lane:empty { min-height: 0; }
+
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 58vh auto; height: auto; }
+  .crumbs { order: 3; flex-basis: 100%; }
+  .controls, #chips { flex-basis: 100%; }
+  .board { grid-template-columns: 120px repeat(var(--n), 190px); }
+  .board .rl { padding: 8px; }
+  aside { border-left: 0; border-top: 1px solid var(--rule); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header>
+    <h1 class="brand">BA mind map<small id="updated">Example built from the BA dashboard</small></h1>
+    <nav class="crumbs" id="crumbs" aria-label="Where you are"></nav>
+    <div class="controls">
+      <span class="seg" id="view" role="radiogroup" aria-label="View"></span>
+      <span class="seg" id="prod" role="radiogroup" aria-label="Product"></span>
+      <span id="chips" class="controls" role="group" aria-label="Show item types"></span>
+    </div>
+  </header>
+  <div class="mapwrap">
+    <svg class="map" id="map" role="application" aria-label="Mind map of areas, features and items"></svg>
+    <div class="zoom">
+      <button id="zin" aria-label="Zoom in">+</button>
+      <button id="zout" aria-label="Zoom out">&minus;</button>
+      <button id="zfit" aria-label="Fit to screen">&#8634;</button>
+    </div>
+  </div>
+  <div class="boardwrap" id="boardwrap" hidden></div>
+  <aside id="panel" aria-live="polite"></aside>
+</div>
+
+<script>
+const DATA = /*DATA*/null;
+const NS = "http://www.w3.org/2000/svg";
+const PRODUCTS = DATA.products;
+/* Item kinds, with Tabler outline icon paths (24×24 grid). */
+const KINDS = [
+  { k: "agenda", name: "Next-call agenda", plural: "Next-call agenda", icon: "M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z M16 3v4 M8 3v4 M4 11h16 M8 15h2v2h-2z" },
+  { k: "waiting", name: "Waiting on others", plural: "Waiting on others", icon: "M6.5 7h11 M6.5 17h11 M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1z M6 4v2a6 6 0 1 0 12 0v-2a1 1 0 0 0 -1 -1h-10a1 1 0 0 0 -1 1z" },
+  { k: "todo", name: "My to-do", plural: "My to-dos", icon: "M3 5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14z M9 12l2 2l4 -4" },
+];
+const CLAR_ICON = "M14 3v4a1 1 0 0 0 1 1h4 M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z M9 13h6 M9 17h4";
+const FEATURE_ICON = "M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9z M5 21v-7";
+const kindOf = k => KINDS.find(t => t.k === k);
+const STATUS = { concept: "Concept", spec: "Spec & design", ready: "Ready for dev", dev: "In dev", qa: "In QA", done: "Done", epic: "Epic", hot: "Hot", old: "Waiting over 30 days", open: "Open", none: "No spec yet" };
+const expanded = new Set();
+let prod = PRODUCTS[0], epic = null, feat = null, picked = null, showInactive = false;
+
+const svg = document.getElementById("map");
+const panel = document.getElementById("panel");
+const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+function el(tag, attrs, parent) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+function icon(d, status, extra = "") { return `<svg class="ico s-${status}" viewBox="0 0 24 24" aria-hidden="true"><path class="glyph ${extra}" d="${d}"/></svg>`; }
+function glyph(parent, d, size) {
+  const g = el("g", { transform: `translate(${-size / 2},${-size / 2}) scale(${size / 24})` }, parent);
+  el("path", { class: "glyph", d }, g);
+}
+
+/* ---------- Data helpers ---------- */
+function inProd(x) { return x.prod === prod || x.prod === "Both"; }
+/* Active areas (work now, or a feature/item on the dashboard) show on the map; the rest sit in one "quiet areas" bubble.
+   With "Hide done > 2 weeks" on, features finished more than 14 days ago are hidden, and an area left with nothing else goes quiet. */
+let hideOldDone = true;
+const doneCut = new Date(Date.parse(DATA.updated + "T00:00:00Z") - 14 * 864e5).toISOString().slice(0, 10);
+function oldDone(f) { return hideOldDone && f.stageKey === "done" && (f.doneDate || "") < doneCut; }
+function isActive(e) {
+  if (!e.active) return false;
+  if (!hideOldDone || e.loose || e.noarea) return true;
+  if (e.features.length) return e.features.some(f => !oldDone(f));
+  return !(e.stage === "done" && (e.jira?.lastDone || "") < doneCut);
+}
+function inactiveOf() { return DATA.epics.filter(e => inProd(e) && !isActive(e)).sort((a, b) => (b.jira?.lastDone || "").localeCompare(a.jira?.lastDone || "")); }
+/* Type filter: nothing picked = everything. Picking kinds keeps only bubbles that hold items of those kinds. */
+const picks = new Set();
+const filtering = () => picks.size > 0;
+const showsKind = k => !filtering() || picks.has(k);
+function epicVisible(e) { return inProd(e) && isActive(e) && (!filtering() || e.features.some(f => kidsOf(f).length)); }
+function epicsShown() {
+  const act = DATA.epics.filter(epicVisible), ina = inactiveOf();
+  if (!ina.length || filtering()) return act;
+  return [...act, ...(showInactive ? ina : []), { id: "inactive", group: true, n: ina.length, label: showInactive ? "Hide quiet areas" : "Quiet areas", features: [], prod }];
+}
+const month = d => d ? new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" }) : "never";
+function featsOf(e) { return e.features.filter(f => inProd(f) && !oldDone(f) && (kidsOf(f).length || ((f.feature || f.tickets.length) && !filtering()))); }
+function kidsOf(f) { return f.children.filter(c => showsKind(c.kind) && inProd(c)); }
+/* Progress ring: four stages, the same on every project. Concept 0-20%, Spec & design 20-50%, Build 50-90%, Released 100%. */
+/* Stage mix. A parent's ring is split into sectors, one per stage, sized by how many children are in it.
+   A bubble with no children has one colour: its own stage. No work started anywhere = empty ring. */
+const ORDER = ["done", "qa", "dev", "ready", "spec", "concept"];
+function stagesOf(e) {
+  if (e.loose || e.group) return [];
+  const fs = featsOf(e);
+  return fs.length ? fs.map(f => f.stageKey) : [e.stage];
+}
+function hubStages() { return epicsShown().flatMap(stagesOf); }
+function mix(stages) { return ORDER.map(k => [k, stages.filter(x => x === k).length]).filter(([, n]) => n); }
+function mainStage(stages) { const m = mix(stages); return m.length === 1 ? m[0][0] : m.length ? "mixed" : "concept"; }
+function mixText(stages) { return mix(stages).map(([k, n]) => `${n} ${STATUS[k]}`).join(" · "); }
+/* Resolutions: notes and "Resolved" ticks saved in this page's own store (collection "resolutions",
+   one document per item key). They show at once; "sync the mind map" writes them into
+   dashboard.yaml (the ba-dashboard skill's map/sync.py) and then clears them. */
+let RES = {}, DB = null;
+const isResolved = c => !!(c && (c.done || (c.key && RES[c.key] && RES[c.key].resolved)));
+function waitingLong(list) { return list.filter(c => !isResolved(c) && (c.age ?? 0) > 30).length; }
+const JIRA_BASE = ((DATA.epics.find(e => e.jira) || {}).jira?.search || "").split("/issues/")[0] + "/browse/";
+function openQs(e) { return featsOf(e).reduce((n, f) => n + (f.feature ? f.feature.open.length : 0), 0); }
+function featStatus(f) { return f.stageKey; }
+function ageText(c) { return c.age == null ? "" : c.age === 0 ? "today" : c.age + "d"; }
+function countKind(list, k) { return list.filter(c => c.kind === k).length; }
+
+/* Up to 3 items of one kind are shown. With more, the 2 most critical show and a third bubble says "+ N more". */
+const CRIT = { hot: 0, old: 1, open: 2 };
+function critical(p, q) { return (CRIT[p.status] ?? 3) - (CRIT[q.status] ?? 3) || (q.age ?? 0) - (p.age ?? 0); }
+function grouped(f) {
+  const out = [];
+  for (const t of KINDS) {
+    const list = kidsOf(f).filter(c => c.kind === t.k).sort(critical);
+    if (list.length <= 3 || expanded.has(f.id + ":" + t.k)) { out.push(...list); continue; }
+    out.push(list[0], list[1], { kind: t.k, more: list.length - 2, status: "open", title: `+ ${list.length - 2} more`, age: null, fid: f.id });
+  }
+  return out;
+}
+
+function arc(r, frac) {
+  if (frac >= 0.999) return `M0,${-r} A${r},${r} 0 1,1 -0.01,${-r}`;
+  const a = frac * 2 * Math.PI - Math.PI / 2;
+  return `M0,${-r} A${r},${r} 0 ${frac > 0.5 ? 1 : 0},1 ${(r * Math.cos(a)).toFixed(2)},${(r * Math.sin(a)).toFixed(2)}`;
+}
+function arcBetween(r, a, b) {
+  const A = a * 2 * Math.PI - Math.PI / 2, B = b * 2 * Math.PI - Math.PI / 2;
+  return `M${(r * Math.cos(A)).toFixed(2)},${(r * Math.sin(A)).toFixed(2)} A${r},${r} 0 ${b - a > .5 ? 1 : 0},1 ${(r * Math.cos(B)).toFixed(2)},${(r * Math.sin(B)).toFixed(2)}`;
+}
+function donut(g, r, w, stages) {
+  const m = mix(stages), total = stages.length;
+  if (!m.length) { el("circle", { class: "seg track", r, "stroke-width": w }, g); return; }
+  if (m.length === 1) { el("circle", { class: `seg fillx s-${m[0][0]}`, r, "stroke-width": w }, g); return; }
+  const gap = 0.012;
+  let a = 0;
+  for (const [k, n] of m) {
+    const b = a + n / total;
+    el("path", { class: `seg fillx s-${k}`, d: arcBetween(r, a + gap / 2, b - gap / 2), "stroke-width": w }, g);
+    a = b;
+  }
+}
+function centre(g, allDone, text, size) {
+  if (allDone) { el("path", { class: "tick", d: `M${-size * .45},0 L${-size * .1},${size * .35} L${size * .5},${-size * .35}` }, g); return; }
+  el("text", { class: "num", "text-anchor": "middle", "dominant-baseline": "central", style: size < 20 ? "font-size:17px" : "" }, g).textContent = text;
+}
+/* Red badge (top right) = open client questions. Orange badge (bottom right) = items waiting over 30 days. */
+function badge(g, r, n, orange) {
+  if (!n) return;
+  const ang = orange ? Math.PI / 4 : -Math.PI / 4;
+  const bx = r * Math.cos(ang), by = r * Math.sin(ang);
+  el("circle", { class: orange ? "wbadge" : "qbadge", cx: bx, cy: by, r: 11 }, g);
+  el("text", { class: "qbadge-t", x: bx, y: by, "text-anchor": "middle", "dominant-baseline": "central" }, g).textContent = n;
+}
+function wrap(s, n) {
+  const out = [""];
+  for (const w of s.split(" ")) {
+    const cur = out[out.length - 1];
+    if (cur && (cur + " " + w).length > n) out.push(w); else out[out.length - 1] = cur ? cur + " " + w : w;
+  }
+  return out;
+}
+function cut(s, n) { return s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s; }
+
+/* ---------- Layout ---------- */
+const FEAT_GAP = 86, ITEM_GAP = 50;
+let ringR = 330;
+function layout() {
+  const list = epicsShown();
+  ringR = Math.max(330, list.length * 150 / (2 * Math.PI));
+  list.forEach((e, i) => {
+    e.ang = -Math.PI / 2 + (i / list.length) * 2 * Math.PI;
+    e.x = ringR * Math.cos(e.ang); e.y = ringR * Math.sin(e.ang);
+    e.r = e.group ? 40 : !isActive(e) ? 28 : 34 + 4 * Math.sqrt(Math.max(1, e.features.reduce((n, f) => n + kidsOf(f).length, 0)));
+    e.side = Math.cos(e.ang) >= -0.01 ? 1 : -1;
+  });
+  if (epic) {
+    const fs = featsOf(epic);
+    fs.forEach((f, i) => {
+      f.r = 22 + 3 * Math.sqrt(Math.max(1, kidsOf(f).length));
+      f.side = epic.side;
+      f.x = epic.x + epic.side * (epic.r + 260);
+      f.y = epic.y + (i - (fs.length - 1) / 2) * FEAT_GAP;
+    });
+  }
+  if (feat) {
+    const items = grouped(feat);
+    items.forEach((c, i) => {
+      c.side = feat.side; c.r = 15;
+      c.x = feat.x + feat.side * (feat.r + 280);
+      c.y = feat.y + (i - (items.length - 1) / 2) * ITEM_GAP;
+    });
+    feat.items = items;
+  }
+  return list;
+}
+
+/* ---------- Drawing ---------- */
+let cam = { x: -700, y: -560, w: 1400, h: 1120 };
+function setView() { svg.setAttribute("viewBox", `${cam.x} ${cam.y} ${cam.w} ${cam.h}`); }
+function onActivate(g, fn) {
+  g.addEventListener("click", e => { e.stopPropagation(); fn(); });
+  g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } });
+}
+function curve(parent, x1, y1, x2, y2, cls) {
+  const mx = (x1 + x2) / 2;
+  el("path", { class: "edge" + (cls ? " " + cls : ""), d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}` }, parent);
+}
+function render() {
+  svg.textContent = "";
+  const list = layout();
+  const gE = el("g", {}, svg), gN = el("g", {}, svg);
+
+  drawHub(gN);
+  for (const e of list) {
+    if (epic && epic !== e) continue;
+    el("path", { class: "edge", d: `M0,0 L${e.x - Math.cos(e.ang) * (e.r + 6)},${e.y - Math.sin(e.ang) * (e.r + 6)}` }, gE);
+    drawEpic(gN, e);
+  }
+  if (epic) {
+    for (const f of featsOf(epic)) {
+      const other = feat && feat !== f;
+      curve(gE, epic.x + epic.side * (epic.r + 8), epic.y, f.x - f.side * (f.r + 6), f.y, other ? "half" : "");
+      drawFeature(gN, f, other);
+    }
+  }
+  if (feat) {
+    for (const c of feat.items) {
+      curve(gE, feat.x + feat.side * (feat.r + 230), feat.y, c.x - c.side * (c.r + 4), c.y);
+      drawItem(gN, c);
+    }
+  }
+}
+function drawHub(gN) {
+  const hub = el("g", { class: "node", tabindex: 0, role: "button", "aria-label": "Show the whole map" }, gN);
+  el("circle", { class: "fill", r: 80 }, hub);
+  donut(hub, 88, 8, hubStages());
+  el("text", { class: "hub-t", "text-anchor": "middle", y: -2 }, hub).textContent = prod;
+  el("text", { class: "hub-s", "text-anchor": "middle", y: 22 }, hub).textContent = "updated " + DATA.updated;
+  onActivate(hub, () => go(null));
+}
+const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+function drawEpic(parent, e) {
+  const n = e.features.reduce((s, f) => s + kidsOf(f).length, 0), q = openQs(e), nf = featsOf(e).length;
+  const stages = stagesOf(e), st = e.group ? "none" : mainStage(stages);
+  const g = el("g", { class: "node s-" + (st === "mixed" ? "epic" : st), transform: `translate(${e.x},${e.y})`, tabindex: 0, role: "button",
+    "aria-label": e.group ? `${e.label}: ${e.n}` : `Area ${e.label}: ${nf} features, ${n} items, ${q} open questions` }, parent);
+  el("circle", { class: "fill", r: e.r }, g);
+  if (e.group) {
+    el("circle", { class: "ring-none", r: e.r + 5, "stroke-width": 3 }, g);
+    el("text", { class: "num", "text-anchor": "middle", "dominant-baseline": "central" }, g).textContent = showInactive ? "−" : "+" + e.n;
+  } else {
+    if (e.loose) el("circle", { class: "ring-none", r: e.r + 5, "stroke-width": 3 }, g); else donut(g, e.r + 5, 7, stages);
+    centre(g, st === "done", nf || "", 26);
+    badge(g, e.r + 5, q);
+    badge(g, e.r + 5, waitingLong(e.features.flatMap(kidsOf)), true);
+  }
+  // An open epic puts its name above the bubble, so the lines to its features stay clear.
+  const out = epic === e ? 0 : Math.cos(e.ang), down = epic === e ? -1 : Math.sin(e.ang), rr = e.r + 18;
+  const lx = out * rr, ly = down * rr;
+  const anchor = Math.abs(out) < 0.35 ? "middle" : out > 0 ? "start" : "end";
+  const lines = wrap(cut(e.label, 34), 14);
+  const baseY = Math.abs(out) < 0.35 ? (down > 0 ? ly + 18 : ly - 8 - 22 * lines.length) : ly - (lines.length * 22) / 2 + 6;
+  const t = el("text", { class: "lbl", "text-anchor": anchor, x: lx, y: baseY }, g);
+  lines.forEach((s, i) => el("tspan", { x: lx, dy: i ? 22 : 0 }, t).textContent = s);
+  el("tspan", { x: lx, dy: 20, class: "sub" }, t).textContent = e.group ? (showInactive ? "" : "no work on them now")
+    : !isActive(e) ? `last done ${month(e.jira?.lastDone)}`
+    : e.loose ? "items with no feature" : st === "mixed" ? plural(stages.length, "feature") : STATUS[st];
+  onActivate(g, () => { if (e.group) { showInactive = !showInactive; epic = feat = picked = null; refresh(true); } else go(e); });
+}
+function drawFeature(parent, f, other) {
+  const st = featStatus(f), n = kidsOf(f).length;
+  const g = el("g", { class: `node s-${st}` + (other ? " half" : ""), transform: `translate(${f.x},${f.y})`, tabindex: 0, role: "button",
+    "aria-label": `${f.label}: ${STATUS[st]}, ${n} items` + (f.feature ? `, ${f.feature.open.length} open questions` : "") }, parent);
+  el("circle", { class: "fill", r: f.r }, g);
+  donut(g, f.r + 4, 6, [f.stageKey]);
+  centre(g, f.stageKey === "done", n, 17);
+  if (f.feature) badge(g, f.r + 4, f.feature.open.length);
+  badge(g, f.r + 4, waitingLong(kidsOf(f)), true);
+  const x = f.side * (f.r + 16), anchor = f.side > 0 ? "start" : "end";
+  const lines = wrap(f.label, 18);
+  const t = el("text", { class: "flbl" + (feat === f ? " on" : ""), "text-anchor": anchor, x, y: -((lines.length - 1) * 20) / 2 - 2 }, g);
+  lines.forEach((s, i) => el("tspan", { x, dy: i ? 20 : 0 }, t).textContent = s);
+  el("tspan", { x, dy: 19, class: "sub" }, t).textContent = STATUS[st];
+  onActivate(g, () => goFeat(f));
+  if (f.feature?.clar) {
+    const ang = -3 * Math.PI / 4, cx = f.x + (f.r + 4) * Math.cos(ang), cy = f.y + (f.r + 4) * Math.sin(ang);
+    const a = el("a", { href: f.feature.clar, target: "_blank", rel: "noopener", class: "clink" + (other ? " half" : ""), "aria-label": `Open the clarification page: ${f.label}` }, parent);
+    el("title", {}, a).textContent = "Open the clarification page";
+    el("circle", { cx, cy, r: 12 }, a);
+    const ig = el("g", { transform: `translate(${cx - 7},${cy - 7}) scale(${14 / 24})` }, a);
+    el("path", { d: CLAR_ICON }, ig);
+    a.addEventListener("click", ev => ev.stopPropagation());
+    a.addEventListener("pointerdown", ev => ev.stopPropagation());
+  }
+}
+function drawItem(parent, c) {
+  const t = kindOf(c.kind);
+  const res = !c.more && isResolved(c);
+  const g = el("g", { class: `node s-${c.status}` + (c.more ? " more" : "") + (res ? " res" : ""), transform: `translate(${c.x},${c.y})`, tabindex: 0, role: "button",
+    "aria-label": c.more ? `Show ${c.more} more: ${t.plural}` : `${t.name}: ${c.title}` + (res ? " (resolved)" : "") }, parent);
+  el("circle", { class: "bubble" + (c.more ? " more" : ""), r: c.r, "stroke-width": picked === c ? 3.5 : 2 }, g);
+  glyph(g, res ? "M5 12l5 5l10 -10" : t.icon, 17);
+  const lbl = el("text", { class: "clbl" + (c.more ? " more" : picked === c ? " on" : "") + (res ? " res" : ""), x: c.side * (c.r + 12), y: 5, "text-anchor": c.side > 0 ? "start" : "end" }, g);
+  lbl.textContent = c.more ? c.title : cut(c.title, 42);
+  if (!c.more && c.age != null) el("tspan", { class: "sub", dx: 6 }, lbl).textContent = ageText(c);
+  onActivate(g, () => {
+    if (c.more) { expanded.add(c.fid + ":" + c.kind); render(); fitFocus(); }
+    else pick(c);
+  });
+}
+
+/* ---------- Camera ---------- */
+let raf = null;
+function fit(box) {
+  const W = svg.clientWidth || 800, H = svg.clientHeight || 600, aspect = W / H;
+  let { x, y, w, h } = box;
+  const pad = 30; x -= pad; y -= pad; w += pad * 2; h += pad * 2;
+  if (w < 900) { x -= (900 - w) / 2; w = 900; }
+  if (w / h > aspect) { const nh = w / aspect; y -= (nh - h) / 2; h = nh; } else { const nw = h * aspect; x -= (nw - w) / 2; w = nw; }
+  animateTo({ x, y, w, h });
+}
+function fitFocus() {
+  if (!epic) { fit({ x: -ringR - 240, y: -ringR - 110, w: 2 * ringR + 480, h: 2 * ringR + 220 }); return; }
+  const pts = [];
+  const add = (x, y, r, lw, side) => pts.push([side < 0 ? x - r - lw : x - r, y - r - 30], [side > 0 ? x + r + lw : x + r, y + r + 30]);
+  // The whole path stays in view: product hub → epic → feature → items.
+  add(0, 0, 80, 0, 1);
+  pts.push([epic.x - epic.r - 100, epic.y - epic.r - 90], [epic.x + epic.r + 100, epic.y + epic.r + 30]);
+  if (!feat) {
+    for (const f of featsOf(epic)) add(f.x, f.y, f.r, 200, f.side);
+  } else {
+    add(feat.x, feat.y, feat.r, 200, feat.side);
+    for (const c of feat.items) add(c.x, c.y, c.r, 9 * Math.min(48, c.title.length + 5), c.side);
+  }
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const x0 = Math.min(...xs), y0 = Math.min(...ys);
+  fit({ x: x0, y: y0, w: Math.max(...xs) - x0, h: Math.max(...ys) - y0 });
+}
+function animateTo(to) {
+  cancelAnimationFrame(raf);
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { cam = to; setView(); return; }
+  const from = { ...cam }, t0 = performance.now(), dur = 420;
+  const step = now => {
+    const k = Math.max(0, Math.min(1, (now - t0) / dur)), e = 1 - Math.pow(1 - k, 3);
+    for (const p of ["x", "y", "w", "h"]) cam[p] = from[p] + (to[p] - from[p]) * e;
+    setView();
+    if (k < 1) raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+}
+function zoomBy(f, cx, cy) {
+  cancelAnimationFrame(raf);
+  if (cx == null) { cx = cam.x + cam.w / 2; cy = cam.y + cam.h / 2; }
+  f = Math.min(4000, Math.max(300, cam.w * f)) / cam.w;
+  cam.x = cx - (cx - cam.x) * f; cam.y = cy - (cy - cam.y) * f; cam.w *= f; cam.h *= f;
+  setView();
+}
+function toWorld(ev) {
+  const r = svg.getBoundingClientRect();
+  return [cam.x + (ev.clientX - r.left) / r.width * cam.w, cam.y + (ev.clientY - r.top) / r.height * cam.h];
+}
+svg.addEventListener("wheel", ev => { ev.preventDefault(); const [x, y] = toWorld(ev); zoomBy(Math.exp(ev.deltaY * 0.0015), x, y); }, { passive: false });
+
+/* One finger or the mouse drags the map; two fingers pinch to zoom and move it together. */
+let drag = null, pinch = null;
+const touches = new Map();
+function pinchState() {
+  const [a, b] = [...touches.values()];
+  return { mid: [(a.x + b.x) / 2, (a.y + b.y) / 2], dist: Math.hypot(a.x - b.x, a.y - b.y) || 1 };
+}
+svg.addEventListener("pointerdown", ev => {
+  touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+  if (touches.size === 2) {
+    cancelAnimationFrame(raf);
+    const p = pinchState();
+    pinch = { ...p, cam: { ...cam }, world: toWorld({ clientX: p.mid[0], clientY: p.mid[1] }) };
+    drag = null;
+    for (const id of touches.keys()) { try { svg.setPointerCapture(id); } catch (e) {} }
+    return;
+  }
+  if (touches.size > 2 || ev.target.closest(".node")) return;
+  cancelAnimationFrame(raf);
+  drag = { x: ev.clientX, y: ev.clientY, moved: false };
+  svg.setPointerCapture(ev.pointerId); svg.classList.add("dragging");
+});
+svg.addEventListener("pointermove", ev => {
+  if (touches.has(ev.pointerId)) touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+  const r = svg.getBoundingClientRect();
+  if (pinch && touches.size >= 2) {
+    const p = pinchState();
+    const w = Math.min(4000, Math.max(300, pinch.cam.w * pinch.dist / p.dist)), s = w / pinch.cam.w;
+    cam.w = w; cam.h = pinch.cam.h * s;
+    cam.x = pinch.world[0] - (p.mid[0] - r.left) / r.width * cam.w;
+    cam.y = pinch.world[1] - (p.mid[1] - r.top) / r.height * cam.h;
+    setView();
+    return;
+  }
+  if (!drag) return;
+  const dx = (ev.clientX - drag.x) / r.width * cam.w, dy = (ev.clientY - drag.y) / r.height * cam.h;
+  if (Math.abs(ev.clientX - drag.x) + Math.abs(ev.clientY - drag.y) > 3) drag.moved = true;
+  cam.x -= dx; cam.y -= dy; drag.x = ev.clientX; drag.y = ev.clientY; setView();
+});
+function endPointer(ev) {
+  touches.delete(ev.pointerId);
+  if (pinch) { if (touches.size < 2) pinch = null; drag = null; svg.classList.remove("dragging"); return; }
+  if (ev.type === "pointerup" && drag && !drag.moved) back();
+  drag = null; svg.classList.remove("dragging");
+}
+svg.addEventListener("pointerup", endPointer);
+svg.addEventListener("pointercancel", endPointer);
+document.getElementById("zin").onclick = () => zoomBy(1 / 1.25);
+document.getElementById("zout").onclick = () => zoomBy(1.25);
+document.getElementById("zfit").onclick = fitFocus;
+document.addEventListener("keydown", e => { if (e.key === "Escape") back(); });
+
+/* ---------- Navigation ---------- */
+function refresh(refit) {
+  if (view === "board") { renderBoard(); renderPanel(); renderCrumbs(); return; }
+  render(); if (refit) fitFocus(); renderPanel(); renderCrumbs();
+}
+function go(e) { if (e && !e.group && !isActive(e)) showInactive = true; epic = e; feat = null; picked = null; refresh(true); }
+function goFeat(f) { feat = f; picked = null; refresh(true); }
+function pick(c) { picked = c; refresh(false); }
+function back() { if (picked) pick(null); else if (feat) goFeat(null); else if (epic) go(null); }
+function renderCrumbs() {
+  const nav = document.getElementById("crumbs");
+  if (view === "board") { nav.innerHTML = `<span class="here">${esc(prod)} · releases by area</span>`; return; }
+  const parts = [[prod, epic ? () => go(null) : null]];
+  if (epic) parts.push([epic.label, feat ? () => go(epic) : null]);
+  if (feat) parts.push([feat.label, picked ? () => pick(null) : null]);
+  if (picked) parts.push([cut(picked.title, 34), null]);
+  nav.innerHTML = "";
+  parts.forEach(([label, fn], i) => {
+    if (i) { const s = document.createElement("span"); s.className = "sep"; s.textContent = "›"; nav.appendChild(s); }
+    const b = document.createElement(fn ? "button" : "span");
+    b.textContent = label; if (fn) b.onclick = fn; else b.className = "here";
+    nav.appendChild(b);
+  });
+}
+
+/* ---------- Panel ---------- */
+function ringSvg(stages, dashed) {
+  if (dashed) return `<svg viewBox="-12 -12 24 24" aria-hidden="true"><circle r="8" class="ring-none" stroke-width="2.5"/></svg>`;
+  const m = mix(stages), total = stages.length;
+  let body;
+  if (!m.length) body = `<circle r="8" class="seg track" stroke-width="4"/>`;
+  else if (m.length === 1) body = `<circle r="8" class="seg fillx s-${m[0][0]}" stroke-width="4"/>`;
+  else { let a = 0; body = m.map(([k, n]) => { const b = a + n / total, d = arcBetween(8, a + .02, b - .02); a = b; return `<path class="seg fillx s-${k}" stroke-width="4" d="${d}"/>`; }).join(""); }
+  const done = m.length === 1 && m[0][0] === "done";
+  return `<svg viewBox="-12 -12 24 24" aria-hidden="true" class="s-done">${body}${done ? `<path class="tick" stroke-width="2" d="M-3.5,0 L-1,2.5 L4,-3"/>` : ""}</svg>`;
+}
+function legendHtml() {
+  return `<div class="legend">
+    <span></span><span><b>The ring shows stages.</b> A bubble with no children is one colour: its own stage. A parent's ring is split into sectors, one per stage, sized by how many of its children are in that stage.</span>
+    ${ringSvg(["concept"])}<span><span class="pill s-concept">Concept</span> An idea or concept, even just a name. Not in spec yet.</span>
+    ${ringSvg(["spec"])}<span><span class="pill s-spec">Spec & design</span> Spec or design is being written; not approved for development yet.</span>
+    ${ringSvg(["ready"])}<span><span class="pill s-ready">Ready for dev</span> Approved and in Jira; no developer has started.</span>
+    ${ringSvg(["dev"])}<span><span class="pill s-dev">In dev</span> A developer is working on it.</span>
+    ${ringSvg(["qa"])}<span><span class="pill s-qa">In QA</span> Built; being tested or waiting to go to production.</span>
+    ${ringSvg(["done"])}<span><span class="pill s-done">Done</span> Every ticket is Done. A tick shows in the middle.</span>
+    <span></span><span>A feature with several tickets takes the stage of its slowest open ticket.</span>
+    ${ringSvg(["done", "qa", "dev", "dev", "spec", "concept"])}<span>A parent with mixed children, for example 1 done, 1 in QA, 2 in dev, 1 in spec and 1 concept.</span>
+    <svg viewBox="-12 -12 24 24" aria-hidden="true"><circle r="6" class="qbadge"/></svg><span>Red badge: open client questions.</span>
+    <svg viewBox="-12 -12 24 24" aria-hidden="true"><circle r="6" class="wbadge"/></svg><span>Orange badge: items waiting over 30 days.</span>
+    <span></span><span><b>Big bubbles are areas</b>: the Jira components, such as Loans or Wallet. Areas never close, so later features land in the same place. The centre bubble's ring mixes every feature on the map.</span>
+    <span></span><span>A feature sits in the area its Jira tickets carry. With no tickets yet, it uses the area set on the dashboard. With neither, it sits in "No area".</span>
+    <span></span><span><b>The number in the middle</b> counts what's inside, after filters: in an area, its features; in a feature, its items (agenda points, waiting items and to-dos). "+9" on Quiet areas is how many are folded in. A tick replaces the number when everything inside is Done.</span>
+    ${ringSvg(0, true)}<span>"Quiet areas" holds every area with no work now. Click it to show them, each with the month its last ticket was finished.</span>
+    <svg viewBox="-12 -12 24 24" aria-hidden="true" class="clink"><circle r="9"/><g transform="translate(-6,-6) scale(.5)"><path d="${CLAR_ICON}"/></g></svg><span>Document button on a feature: opens its clarification page.</span>
+    <span></span><span>"Hide done > 2 weeks" (on by default) hides features finished more than two weeks ago.</span>
+    ${KINDS.map(t => icon(t.icon, "open") + `<span>${t.name}</span>`).join("")}
+    <span></span><span>An item's colour is its status: <span class="pill s-hot">Hot</span> <span class="pill s-old">Over 30 days</span> <span class="pill s-open">Open</span>. Each kind shows up to 3 items; with more, the 2 most urgent show and a dashed bubble says "+ N more".</span>
+  </div>`;
+}
+function rootHtml() {
+  const list = DATA.epics.filter(epicVisible), ina = filtering() ? [] : inactiveOf();
+  const all = list.flatMap(e => e.features.flatMap(kidsOf));
+  const rows = list.map(e => {
+    const kids = e.features.flatMap(kidsOf);
+    return `<tr><td><button data-epic="${e.id}">${esc(e.label)}</button></td><td class="n">${featsOf(e).length}</td><td class="n">${openQs(e) || "–"}</td><td class="n">${countKind(kids, "agenda")}</td><td class="n">${countKind(kids, "waiting")}</td><td class="n">${countKind(kids, "todo")}</td></tr>`;
+  }).join("");
+  const inaRows = ina.map(e => `<li><button data-epic="${e.id}">${icon(FEATURE_ICON, "none")}<span>${esc(e.label)}</span><span class="age">${month(e.jira?.lastDone)}</span></button></li>`).join("");
+  return `<h2>${esc(prod)}: ${list.length} active areas</h2>
+    <p>${countKind(all, "agenda")} agenda points, ${countKind(all, "waiting")} waiting items and ${countKind(all, "todo")} to-dos. Click an area, then a feature, to see its items. Drag to move. Scroll or pinch to zoom.</p>
+    <h3>How to read it</h3>${legendHtml()}
+    <h3>Areas</h3>
+    <table class="sum"><thead><tr><th>Area</th><th class="n">Feat.</th><th class="n" title="Open questions">Qs</th><th class="n">Agenda</th><th class="n">Wait</th><th class="n">To-do</th></tr></thead><tbody>${rows}</tbody></table>
+    ${ina.length ? `<h3>Quiet areas (${ina.length}), by last finished ticket</h3><ul class="items">${inaRows}</ul>` : ""}`;
+}
+function jiraHtml(e) {
+  const j = e.jira;
+  if (e.loose) return "";
+  if (!j) return "";
+  const base = JIRA_BASE, inProg = j.open.filter(o => o.category === "indeterminate").length;
+  return `<h3>In Jira</h3><p>${j.description ? esc(j.description) + " " : ""}${j.open.length} open tickets (${inProg} being built or tested), ${j.done} done. Last ticket finished ${j.lastDone || "never"}. <a href="${esc(j.search)}" target="_blank" rel="noopener">All its tickets in Jira ↗</a></p>
+    ${j.shipped.length ? `<h3>Last finished tickets</h3><ul class="items">${j.shipped.map(x => `<li><a class="row" href="${esc(base + x.key)}" target="_blank" rel="noopener">${icon(KINDS[2].icon, "done")}<span>${esc(x.summary)} <span class="age">${x.key}</span></span><span class="age">${x.date || ""}</span></a></li>`).join("")}</ul>` : ""}`;
+}
+function epicHtml(e) {
+  const stages = stagesOf(e), est = mainStage(stages);
+  const feats = featsOf(e).map(f => {
+    const st = featStatus(f);
+    return `<li><button data-feat="${f.id}">${icon(FEATURE_ICON, st)}<span>${esc(f.label)}</span><span class="side"><span class="pill s-${st}">${STATUS[st]}</span></span></button></li>`;
+  }).join("");
+  const kindPill = e.loose ? "" : e.noarea ? `<span class="pill s-none">No area yet</span>` : !isActive(e) ? `<span class="pill s-none">Quiet area</span>` : `<span class="pill s-epic">Area</span>`;
+  return `<button class="back" data-back="1">← ${esc(prod)}</button><h2>${esc(e.label)}</h2>
+    <div class="meta">${kindPill}<span class="pill plain">${plural(featsOf(e).length, "feature")}</span><span class="pill plain">${plural(openQs(e), "open question")}</span></div>
+    ${e.loose ? "" : `<div class="ready"><div class="bar stack">${mix(stages).map(([k, n]) => `<i class="s-${k}" style="width:${(n / stages.length) * 100}%"></i>`).join("")}</div><small>${featsOf(e).length ? mixText(stages) : STATUS[est] + ", from its own Jira tickets"}</small></div>`}
+    ${e.noarea ? `<p>These features have no Jira tickets with a component, and no area set on the dashboard. Give them an area and they move there.</p>` : ""}
+    ${feats ? `<h3>Features and topics</h3><ul class="items">${feats}</ul>` : `<p>Nothing on the dashboard for this area right now.</p>`}
+    ${jiraHtml(e)}`;
+}
+function itemList(f, list) {
+  return `<ul class="items">${list.map(c => isResolved(c)
+    ? `<li><button data-kid="${f.children.indexOf(c)}">${icon("M5 12l5 5l10 -10", "done")}<span class="res-t">${esc(c.title)}</span><span class="age">resolved</span></button></li>`
+    : `<li><button data-kid="${f.children.indexOf(c)}">${icon(kindOf(c.kind).icon, c.status)}<span>${esc(c.title)}</span><span class="age">${ageText(c)}</span></button></li>`).join("")}</ul>`;
+}
+function featHtml(f) {
+  const x = f.feature, st = featStatus(f);
+  let h = `<button class="back" data-back="1">← ${esc(epic.label)}</button><h2>${esc(f.label)}</h2>
+    <div class="meta"><span class="pill s-${st}">${STATUS[st]}</span><span class="pill plain">${esc(f.prod)}</span></div>`;
+  h += `<div class="ready"><small>${esc(whyText(f))}. Area: ${esc(f.areaHow || "")}${f.doneDate ? `. Finished ${f.doneDate}` : ""}.</small></div>`;
+  if (DATA.board.cards.some(c => c.fid === f.id)) h += `<p><button class="back" data-showboard="${esc(f.id)}">Show on the board →</button></p>`;
+  if (x) {
+    h += `<p>${esc(cut(x.s, 420))}</p>`;
+    if (x.clar) h += `<p><a class="btn" href="${esc(x.clar)}" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path class="glyph" d="${CLAR_ICON}"/></svg>${esc(x.clarLabel || "Clarification page")}</a></p>`;
+    if (x.open.length) h += `<h3>Open questions (${x.open.length})</h3><ol class="qs">${x.open.map(q => `<li>${esc(q)}</li>`).join("")}</ol>`;
+  } else {
+    h += `<p>No feature entry on the dashboard yet. These items share a topic but have no spec or clarification page.</p>`;
+  }
+  for (const t of KINDS) {
+    const list = kidsOf(f).filter(c => c.kind === t.k).sort(critical);
+    if (list.length) h += `<h3>${t.plural} (${list.length})</h3>` + itemList(f, list);
+  }
+  if (f.tickets.length) h += `<h3>Jira tickets (${f.tickets.length})</h3><ul class="items">${f.tickets.map(t => `<li><a class="row" href="${esc(JIRA_BASE + t.key)}" target="_blank" rel="noopener">${icon(KINDS[2].icon, t.stage)}<span>${esc(t.summary)} <span class="age">${t.key}</span></span><span class="pill s-${t.stage}">${esc(t.status)}</span></a></li>`).join("")}</ul>`;
+  return h;
+}
+/* One line on what filled the ring. */
+function whyText(f) {
+  const tk = f.tickets, done = tk.filter(t => t.stage === "done").length;
+  const qs = f.answered == null ? "" : `${Math.round(f.answered * 100)}% of questions answered`;
+  const byStage = mix(tk.map(t => t.stage)).map(([k, n]) => `${n} ${STATUS[k]}`).join(", ");
+  switch (f.stageKey) {
+    case "done": return `${STATUS.done}: all ${plural(tk.length, "ticket")} Done`;
+    case "qa": case "dev": case "ready":
+      return tk.length ? `${STATUS[f.stageKey]}, its slowest open ticket. Tickets: ${byStage}` : `${STATUS[f.stageKey]}, no tickets linked yet`;
+    case "spec": return `${STATUS.spec}: ` + ([qs, f.specStatus ? `spec is ${f.specStatus}` : "", done && done === tk.length ? "earlier tickets all Done" : ""].filter(Boolean).join(", ") || "not approved yet");
+    default: return `${STATUS.concept}: ` + (f.feature ? ["concept or idea, no spec yet", qs].filter(Boolean).join(", ") : "only a name so far");
+  }
+}
+function itemHtml(c, backTo) {
+  const t = kindOf(c.kind);
+  return `<button class="back" data-back="1">← ${esc(backTo || feat.label)}</button>
+    <div class="ititle"><h2>${esc(c.title)}</h2><button class="copylink" id="copy-link" title="Copy a link to this item" aria-label="Copy a link to this item">${icon(COPY_ICON, "open")}</button></div>
+    <p class="m copied" id="copied" role="status"></p>
+    <div class="meta"><span class="pill plain">${t.name}</span><span class="pill s-${c.status}">${STATUS[c.status]}</span><span class="pill plain">${esc(c.prod)}</span></div>
+    <div class="who"><b>${esc(c.who)}</b> · since ${esc(c.since)}${c.age != null ? ` (${c.age} days)` : ""}</div>
+    ${c.s ? `<h3>Where it stands</h3>${richText(c.s)}` : ""}
+    ${c.l ? `<h3>Next</h3>${richText(c.l)}` : ""}
+    ${updateHtml(c)}`;
+}
+/* Dashboard text: lines starting "- " become a bullet list; other lines are paragraphs. */
+function richText(s) {
+  let h = "", list = [];
+  const flush = () => { if (list.length) { h += `<ul class="txt">${list.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`; list = []; } };
+  for (const ln of String(s).split("\n").map(x => x.trim())) {
+    if (/^[-•]\s+/.test(ln)) { list.push(ln.replace(/^[-•]\s+/, "")); continue; }
+    flush();
+    if (ln) h += `<p>${esc(ln)}</p>`;
+  }
+  flush();
+  return h;
+}
+/* Copy a link to one item, with its kind and title, ready to paste into a chat with Claude.
+   The link opens the map on that item (#i-<key>); the key is the one sync.py matches on. */
+const MAP_URL = DATA.mapUrl;
+const COPY_ICON ="M8 8m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z M16 8v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2";
+function copyItemLink(c) {
+  const out = document.getElementById("copied");
+  const text = `${kindOf(c.kind).name}: "${c.title}" ${MAP_URL}#i-${c.key}`;
+  const shown = () => { out.textContent = "Copied: " + text; };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => { out.textContent = "Link copied — paste it into your chat with Claude."; },
+      () => { shown(); selectText(out); });
+  } else { shown(); selectText(out); }
+}
+function selectText(el) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+
+/* The Update box: a note and a "Resolved" tick, saved in the page's store. */
+function updateHtml(c) {
+  const r = RES[c.key] || {}, notes = r.notes || [];
+  const list = notes.length ? `<ul class="unotes">${notes.slice().reverse().map(n => `<li><span class="age">${esc(n.at)}</span> ${esc(n.text)}</li>`).join("")}</ul>` : "";
+  if (c.done) return `<h3>Update</h3>${list}<p class="m">Resolved — closed on the dashboard.</p>`;
+  if (!DB) return `<h3>Update</h3>${list}<p class="m">Notes and the Resolved tick can be saved on the published map only.</p>`;
+  return `<h3>Update</h3>${list}
+    <label class="unote" for="u-note">What happened?</label>
+    <textarea id="u-note" placeholder="e.g. The client replied: the fee stays $50"></textarea>
+    <label class="ucheck"><input type="checkbox" id="u-res"${r.resolved ? " checked" : ""}> Resolved — close this item</label>
+    <div class="urow"><button class="btn" id="u-save">Save</button><span class="m" id="u-msg">${r.resolved ? "Closed here; it leaves the dashboard at the next sync." : ""}</span></div>`;
+}
+async function saveUpdate(c) {
+  const msg = document.getElementById("u-msg"), text = document.getElementById("u-note").value.trim();
+  const resolved = document.getElementById("u-res").checked, r = RES[c.key] || {};
+  if (!text && resolved === !!r.resolved) { msg.textContent = "Write a note or change the tick first."; return; }
+  const btn = document.getElementById("u-save"); btn.disabled = true; msg.textContent = "Saving…";
+  const notes = (r.notes || []).slice();
+  if (text) notes.push({ at: new Date().toISOString().slice(0, 10), text });
+  try {
+    await DB.collection("resolutions").doc(c.key).set({ key: c.key, id: c.id, kind: c.kind, title: c.title, resolved, notes, updatedAt: new Date().toISOString() });
+    msg.textContent = resolved ? "Saved — marked resolved." : "Saved.";
+  } catch (e) {
+    msg.textContent = "Could not save (" + (e && e.code ? e.code : "unknown") + "). Try again.";
+  }
+  btn.disabled = false;
+}
+function renderPanel() {
+  const cur = view === "board" ? bpick : picked;
+  panel.innerHTML = view === "board" ? (bpick ? itemHtml(bpick, "Board") : bsel ? cardHtml(bsel) : boardRootHtml())
+    : picked ? itemHtml(picked) : feat ? featHtml(feat) : epic ? epicHtml(epic) : rootHtml();
+  panel.scrollTop = 0;
+  const us = document.getElementById("u-save");
+  if (us) us.onclick = () => saveUpdate(cur);
+  const cl = document.getElementById("copy-link");
+  if (cl) cl.onclick = () => copyItemLink(cur);
+  panel.querySelectorAll("[data-showboard]").forEach(b => b.onclick = () => showOnBoard(b.dataset.showboard));
+  panel.querySelectorAll("[data-showmap]").forEach(b => b.onclick = () => showOnMap(b.dataset.showmap));
+  if (view === "board") {
+    panel.querySelectorAll("[data-back]").forEach(b => b.onclick = () => { if (bpick) bpick = null; else bsel = null; refresh(false); });
+    return;
+  }
+  panel.querySelectorAll("[data-epic]").forEach(b => b.onclick = () => go(DATA.epics.find(e => e.id === b.dataset.epic)));
+  panel.querySelectorAll("[data-feat]").forEach(b => b.onclick = () => goFeat(epic.features.find(f => f.id === b.dataset.feat)));
+  panel.querySelectorAll("[data-kid]").forEach(b => b.onclick = () => pick(feat.children[+b.dataset.kid]));
+  panel.querySelectorAll("[data-back]").forEach(b => b.onclick = back);
+}
+
+/* ---------- Controls ---------- */
+const seg = document.getElementById("prod");
+for (const p of PRODUCTS) {
+  const b = document.createElement("button");
+  b.id = "prod-" + p.replace(/\W/g, ""); b.setAttribute("role", "radio"); b.setAttribute("aria-checked", p === prod); b.textContent = p;
+  b.onclick = () => {
+    if (prod === p) return;
+    prod = p; seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-checked", x === b));
+    epic = feat = picked = bsel = bpick = null; earlierSel = null; showInactive = false; refresh(true);
+  };
+  seg.appendChild(b);
+}
+const chips = document.getElementById("chips");
+function applyFilter() {
+  for (const t of KINDS) document.getElementById("chip-" + t.k).setAttribute("aria-pressed", picks.has(t.k));
+  chips.classList.toggle("filtering", filtering());
+  resetBtn.disabled = !filtering() && hideOldDone;
+  doneBtn.setAttribute("aria-pressed", hideOldDone);
+  // Leave a bubble that the filter just emptied.
+  if (epic && !epicVisible(epic)) epic = null;
+  if (feat && (!epic || !featsOf(epic).includes(feat))) feat = null;
+  if (filtering()) showInactive = false;
+  picked = null; refresh(true);
+}
+for (const t of KINDS) {
+  const b = document.createElement("button");
+  b.className = "chip"; b.setAttribute("aria-pressed", "false"); b.id = "chip-" + t.k;
+  b.innerHTML = icon(t.icon, "open") + esc(t.plural);
+  b.onclick = () => { picks.has(t.k) ? picks.delete(t.k) : picks.add(t.k); applyFilter(); };
+  chips.appendChild(b);
+}
+const resetBtn = document.createElement("button");
+resetBtn.className = "chip reset"; resetBtn.id = "reset-filters"; resetBtn.disabled = true;
+resetBtn.setAttribute("aria-label", "Reset filters"); resetBtn.title = "Reset filters";
+resetBtn.innerHTML = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path class="glyph muted" d="M8 4h12v2.172a2 2 0 0 1 -.586 1.414l-3.914 3.914m-.5 3.5v4l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227 M3 3l18 18"/></svg>`;
+resetBtn.onclick = () => { picks.clear(); hideOldDone = true; applyFilter(); };
+const doneBtn = document.createElement("button");
+doneBtn.className = "chip"; doneBtn.id = "chip-old-done"; doneBtn.setAttribute("aria-pressed", "true");
+doneBtn.innerHTML = icon("M5 12l5 5l10 -10", "done") + "Hide done &gt; 2 weeks";
+doneBtn.onclick = () => { hideOldDone = !hideOldDone; applyFilter(); };
+chips.appendChild(doneBtn);
+chips.appendChild(resetBtn);
+
+/* ---------- Board: rows are Jira releases, columns are areas, one card per feature ----------
+   Upcoming releases first, then "Not planned yet", the last release, and one earlier release picked
+   from a list. The colour bar on a card is its stage. Waiting items, to-dos and agenda points sit in
+   lanes above the releases, under their area. */
+let view = "map", bsel = null, bpick = null, earlierSel = null, REG = [];
+const laneOpen = new Set();  // item lanes start folded to one count per area, so the releases stay in view
+const mapwrap = document.querySelector(".mapwrap"), boardwrap = document.getElementById("boardwrap");
+const BLOCK_ICON = "M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M5.7 5.7l12.6 12.6";
+const NONE_ROW = { id: "none", title: "Not planned yet", note: "No release in Jira, or in its Backlog. Also dashboard features with no tickets yet." };
+const relTitle = n => { const [num, ...rest] = n.split(" - "); return rest.length ? [num.replace(/^Release\s+/i, "").replace(/\.$/, ""), rest.join(" - ")] : [n.replace(/\.\s*-?\s*$/, ""), ""]; };
+const featById = id => { for (const e of DATA.epics) { const f = e.features.find(x => x.id === id); if (f) return [e, f]; } return [null, null]; };
+function boardRows() {
+  const rs = DATA.board.releases[prod] || [], up = rs.filter(r => !r.released), shipped = rs.filter(r => r.released);
+  const rows = up.map(r => ({ id: r.name, r }));
+  rows.push(NONE_ROW);
+  if (shipped[0]) rows.push({ id: shipped[0].name, r: shipped[0], last: true });
+  if (shipped.length > 1) {
+    const pick = shipped.slice(1).find(r => r.name === earlierSel) || shipped[1];
+    rows.push({ id: pick.name, r: pick, earlier: shipped.slice(1) });
+  }
+  return rows;
+}
+function cardsIn(row) {
+  return DATA.board.cards.filter(c => c.row === row.id && inProd(c)
+    && !(row.id === "none" && hideOldDone && c.stage === "done" && (c.doneDate || "") < doneCut));
+}
+function laneItems() {
+  const out = [];
+  for (const e of DATA.epics) {
+    if (!inProd(e)) continue;
+    const area = e.jira ? e.label : "No area";
+    for (const f of e.features) for (const c of kidsOf(f)) {
+      if (hideOldDone && isResolved(c)) continue;
+      out.push({ c, area, f });
+    }
+  }
+  return out;
+}
+function cardBadges(c) {
+  const [, f] = c.fid ? featById(c.fid) : [null, null];
+  const q = f && f.feature ? f.feature.open.length : 0, w = f ? waitingLong(f.children) : 0;
+  return { f, q, w };
+}
+function renderBoard() {
+  REG = [];
+  const rows = boardRows(), items = laneItems();
+  const lanes = KINDS.filter(t => showsKind(t.k)).map(t => ({ t, list: items.filter(x => x.c.kind === t.k) }));
+  const used = new Set(items.map(x => x.area));
+  for (const r of rows) for (const c of cardsIn(r)) used.add(c.area || "No area");
+  const cols = [...(DATA.board.areas[prod] || []).filter(a => used.has(a)), ...[...used].filter(a => !(DATA.board.areas[prod] || []).includes(a) && a !== "No area").sort(), ...(used.has("No area") ? ["No area"] : [])];
+  if (!cols.length) { boardwrap.innerHTML = `<p class="board-empty">Nothing to show for ${esc(prod)}.</p>`; return; }
+  const reg = x => { REG.push(x); return REG.length - 1; };
+  let h = `<div class="board" style="--n:${cols.length}"><div class="ch corner">Release<small>${esc(prod)}</small></div>`;
+  h += cols.map(a => `<div class="ch">${esc(a)}</div>`).join("");
+  for (const { t, list } of lanes) {
+    if (!list.length) continue;
+    const open = laneOpen.has(t.k) || picks.has(t.k);
+    h += `<div class="rl lane"><button class="lanet" data-lane="${t.k}" aria-expanded="${open}"><b>${open ? "▾" : "▸"} ${icon(t.icon, "open")} ${esc(t.plural)}</b></button><span class="rd">${list.length} open · from the dashboard</span></div>`;
+    for (const a of cols) {
+      const here = list.filter(x => x.area === a).sort((p, q) => critical(p.c, q.c));
+      if (!open) { h += `<div class="bc lane">${here.length ? `<button class="lanecount" data-lane="${t.k}">${here.length} ${esc(here.length === 1 ? t.name.toLowerCase() : t.plural.toLowerCase())}</button>` : ""}</div>`; continue; }
+      h += `<div class="bc lane">${here.map(({ c }) => {
+        const res = isResolved(c);
+        return `<button class="bitem s-${res ? "done" : c.status}${bpick === c ? " on" : ""}${res ? " res" : ""}" data-i="${reg(c)}"><span class="bt">${icon(res ? "M5 12l5 5l10 -10" : t.icon, res ? "done" : c.status)}<span>${esc(cut(c.title, 90))}</span></span><span class="bs">${esc(c.who)}${c.age != null ? " · " + ageText(c) : ""}${res ? " · resolved" : ""}</span></button>`;
+      }).join("")}</div>`;
+    }
+  }
+  for (const row of rows) {
+    const list = cardsIn(row);
+    let lab;
+    if (row === NONE_ROW) lab = `<b>${esc(row.title)}</b><span class="rn">${esc(row.note)}</span>`;
+    else {
+      const [num, name] = relTitle(row.r.name), r = row.r;
+      const when = r.released ? `Released ${r.date || ""}` : r.overdue ? `Date passed: ${r.date}` : r.date ? `Due ${r.date}` : "No date set";
+      lab = `<b>${row.last ? "Last release · " : row.earlier ? "Earlier · " : ""}${esc(num)}</b>${name ? `<span class="rn">${esc(name)}</span>` : ""}<span class="rd${r.overdue ? " late" : ""}">${esc(when)}</span>`;
+      if (row.earlier) lab += `<select id="earlier" aria-label="Pick an earlier release">${row.earlier.map(x => `<option value="${esc(x.name)}"${x.name === row.id ? " selected" : ""}>${esc(relTitle(x.name)[0])} · ${esc(x.date || "")}</option>`).join("")}</select>`;
+    }
+    lab += `<span class="rd">${plural(list.length, "card")}</span>`;
+    h += `<div class="rl">${lab}</div>`;
+    for (const a of cols) {
+      const here = list.filter(c => (c.area || "No area") === a).sort((p, q) => ORDER.indexOf(q.stage) - ORDER.indexOf(p.stage) || p.title.localeCompare(q.title));
+      h += `<div class="bc">${here.map(c => {
+        const { q, w } = cardBadges(c), k = c.kind === "feature" ? FEATURE_ICON : c.kind === "epic" ? EPIC_ICON : KINDS[2].icon;
+        const n = c.tickets.length;
+        return `<button class="bcard s-${c.stage}${bsel && bsel.id === c.id ? " on" : ""}" data-c="${reg(c)}" aria-label="${esc(c.title)}: ${STATUS[c.stage]}">
+          <span class="bt">${icon(k, c.stage)}<span>${esc(c.title)}</span><span class="bk">${q ? `<i class="q" title="Open client questions">${q}</i>` : ""}${w ? `<i class="w" title="Items waiting over 30 days">${w}</i>` : ""}${c.blocked ? icon(BLOCK_ICON, "hot") : c.stage === "done" ? icon("M5 12l5 5l10 -10", "done") : ""}</span></span>
+          <span class="bs">${STATUS[c.stage]}${c.blocked ? " · Blocked" : ""} <span>· ${n ? plural(n, "ticket") : "no tickets yet"}</span></span>
+        </button>`;
+      }).join("")}</div>`;
+    }
+  }
+  boardwrap.innerHTML = h + "</div>";
+  boardwrap.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { bsel = REG[+b.dataset.c]; bpick = null; refresh(false); });
+  boardwrap.querySelectorAll("[data-i]").forEach(b => b.onclick = () => { bpick = REG[+b.dataset.i]; refresh(false); });
+  boardwrap.querySelectorAll("[data-lane]").forEach(b => b.onclick = () => {
+    const k = b.dataset.lane, open = laneOpen.has(k) || picks.has(k);
+    if (open) { laneOpen.delete(k); picks.delete(k); applyFilter(); } else { laneOpen.add(k); renderBoard(); }
+  });
+  const sel = document.getElementById("earlier");
+  if (sel) sel.onchange = () => { earlierSel = sel.value; bsel = null; refresh(false); };
+}
+const EPIC_ICON = "M12 4l-8 4l8 4l8 -4l-8 -4 M4 12l8 4l8 -4 M4 16l8 4l8 -4";
+function cardHtml(c) {
+  const { f, q } = cardBadges(c), x = f && f.feature;
+  const rowName = c.row === "none" ? NONE_ROW.title : relTitle(c.row).filter(Boolean).join(" · ");
+  const kind = c.kind === "feature" ? "Dashboard feature" : c.kind === "epic" ? "Jira epic" : "Tickets with no epic";
+  let h = `<button class="back" data-back="1">← Board</button><h2>${esc(c.title)}</h2>
+    <div class="meta"><span class="pill s-${c.stage}">${STATUS[c.stage]}</span>${c.blocked ? `<span class="pill s-hot">Blocked</span>` : ""}<span class="pill plain">${kind}</span><span class="pill plain">${esc(c.area || "No area")}</span></div>
+    <div class="who">Release: <b>${esc(rowName)}</b></div>`;
+  if (x) {
+    h += `<p>${esc(cut(x.s, 420))}</p>`;
+    if (x.clar) h += `<p><a class="btn" href="${esc(x.clar)}" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path class="glyph" d="${CLAR_ICON}"/></svg>${esc(x.clarLabel || "Clarification page")}</a></p>`;
+    if (q) h += `<h3>Open questions (${q})</h3><ol class="qs">${x.open.map(s => `<li>${esc(s)}</li>`).join("")}</ol>`;
+  }
+  if (f) {
+    const kids = f.children.filter(k => inProd(k) && !(hideOldDone && isResolved(k)));
+    h += `<p>${countKind(kids, "agenda")} agenda points, ${countKind(kids, "waiting")} waiting items and ${countKind(kids, "todo")} to-dos on this feature.</p>
+      <p><button class="back" data-showmap="${esc(f.id)}">Show on the map →</button></p>`;
+  }
+  if (c.kind === "epic") h += `<p><a href="${esc(JIRA_BASE + c.epic)}" target="_blank" rel="noopener">Open the epic in Jira ↗</a></p>`;
+  if (c.tickets.length) {
+    h += `<h3>Jira tickets in this release (${c.tickets.length})</h3><ul class="items">${c.tickets.map(t => `<li><a class="row" href="${esc(JIRA_BASE + t.key)}" target="_blank" rel="noopener">${icon(KINDS[2].icon, t.stage)}<span>${esc(t.summary)} <span class="age">${t.key}${t.who ? " · " + esc(t.who) : ""}</span></span><span class="pill s-${t.stage}">${esc(t.status)}</span></a></li>`).join("")}</ul>`;
+  } else h += `<p>No Jira tickets yet. The stage comes from the dashboard and the spec.</p>`;
+  return h;
+}
+function boardRootHtml() {
+  const rows = boardRows(), n = rows.reduce((s, r) => s + cardsIn(r).length, 0);
+  const late = rows.filter(r => r.r && r.r.overdue);
+  return `<h2>${esc(prod)}: releases by area</h2>
+    <p>${plural(n, "card")} across ${plural(rows.length, "row")}. Click a card for its tickets. Scroll sideways for more areas.</p>
+    ${late.length ? `<p><b>Release date passed:</b> ${late.map(r => esc(relTitle(r.r.name)[0]) + " (" + esc(r.r.date) + ")").join(", ")}. The release is still open in Jira.</p>` : ""}
+    <h3>How to read it</h3><div class="legend">
+    <span></span><span><b>Rows are Jira releases.</b> Upcoming first, then "Not planned yet", the last release, and an earlier one you pick from the list.</span>
+    <span></span><span><b>Columns are areas</b>, the same Jira components as the map. Empty ones are hidden.</span>
+    <span></span><span><b>One card per feature.</b> A feature on the dashboard keeps its name; other tickets group by their Jira epic, or as "Other tickets". A feature with tickets in two releases has a card in each.</span>
+    ${["concept", "spec", "ready", "dev", "qa", "done"].map(k => `${ringSvg([k])}<span><span class="pill s-${k}">${STATUS[k]}</span></span>`).join("")}
+    <span></span><span>The colour bar is the card's stage: its slowest open ticket in that release.</span>
+    ${icon(BLOCK_ICON, "hot")}<span>A ticket in the card is Blocked.</span>
+    <svg viewBox="-12 -12 24 24" aria-hidden="true"><circle r="6" class="qbadge"/></svg><span>Red badge: open client questions.</span>
+    <svg viewBox="-12 -12 24 24" aria-hidden="true"><circle r="6" class="wbadge"/></svg><span>Orange badge: items waiting over 30 days.</span>
+    ${icon(FEATURE_ICON, "open")}<span>Dashboard feature</span>
+    ${icon(EPIC_ICON, "open")}<span>Jira epic</span>
+    <span></span><span>The lanes on top are the dashboard's waiting items, to-dos and agenda points, under their area. The type chips pick which lanes show; "Hide done > 2 weeks" hides resolved items and old finished work with no release.</span>
+    </div>`;
+}
+function setTab(v) {
+  view = v;
+  mapwrap.hidden = v !== "map"; boardwrap.hidden = v !== "board";
+  viewSeg.querySelectorAll("button").forEach(b => b.setAttribute("aria-checked", b.dataset.v === v));
+  try { history.replaceState(null, "", v === "board" ? "#board" : location.pathname + location.search); } catch (e) {}
+}
+function showOnBoard(fid) {
+  const rows = boardRows().map(r => r.id);
+  const c = DATA.board.cards.filter(x => x.fid === fid && inProd(x)).sort((p, q) => rows.indexOf(p.row) - rows.indexOf(q.row)).find(x => rows.includes(x.row));
+  setTab("board"); bsel = c || null; bpick = null;
+  if (c && c.row === "none" && c.stage === "done") { hideOldDone = false; doneBtn.setAttribute("aria-pressed", "false"); resetBtn.disabled = false; }
+  refresh(false);
+  const node = boardwrap.querySelector(".bcard.on");
+  if (node) node.scrollIntoView({ block: "center", inline: "center" });
+}
+function showOnMap(fid) {
+  const [e, f] = featById(fid);
+  setTab("map");
+  if (e) {
+    if (!isActive(e)) showInactive = true;
+    if (oldDone(f)) { hideOldDone = false; doneBtn.setAttribute("aria-pressed", "false"); resetBtn.disabled = false; }
+    epic = e; feat = f; picked = null;
+  }
+  refresh(true);
+}
+const viewSeg = document.getElementById("view");
+for (const [v, label] of [["map", "Map"], ["board", "Board"]]) {
+  const b = document.createElement("button");
+  b.dataset.v = v; b.setAttribute("role", "radio"); b.setAttribute("aria-checked", v === view); b.textContent = label;
+  b.onclick = () => { if (view !== v) { setTab(v); refresh(true); } };
+  viewSeg.appendChild(b);
+}
+
+/* ---------- Opening a feature from a link: <map link>#<feature id> ----------
+   The Back button on each clarification page links here with its feature's id, so the map opens on
+   that feature's bubble: its product, its area, and the feature itself. */
+function openFromHash() {
+  const id = decodeURIComponent((location.hash || "").slice(1));
+  if (!id) return false;
+  // "#i-<item key>" opens one item (the copy-link icon in an item's panel); "#<feature id>" a feature.
+  let e, f, item = null;
+  if (id.startsWith("i-")) {
+    for (const x of DATA.epics) for (const y of x.features) {
+      const c = y.children.find(k => k.key === id.slice(2));
+      if (c && !item) { e = x; f = y; item = c; }
+    }
+    if (!item) return false;
+  } else {
+    e = DATA.epics.find(x => x.features.some(y => y.id === id));
+    if (!e) return false;
+    f = e.features.find(x => x.id === id);
+  }
+  const of = item && item.prod !== "Both" ? item.prod : (f.prod !== "Both" ? f.prod : e.prod);
+  const want = PRODUCTS.includes(of) ? of : PRODUCTS[0];
+  if (want !== prod) {
+    prod = want;
+    seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-checked", x.textContent === prod));
+  }
+  if (oldDone(f)) { hideOldDone = false; doneBtn.setAttribute("aria-pressed", "false"); resetBtn.disabled = false; }
+  picks.clear(); chips.classList.remove("filtering");
+  for (const t of KINDS) document.getElementById("chip-" + t.k).setAttribute("aria-pressed", "false");
+  if (!isActive(e)) showInactive = true;
+  if (item) expanded.add(f.id + ":" + item.kind);  // not hidden behind "+ N more"
+  epic = e; feat = f; picked = item;
+  return true;
+}
+window.addEventListener("hashchange", () => {
+  if (location.hash === "#board") { if (view !== "board") { setTab("board"); refresh(false); } }
+  else if (openFromHash()) { setTab("map"); refresh(true); }
+});
+
+document.getElementById("updated").textContent = "Built from the BA dashboard and Jira, " + DATA.updated;
+if (location.hash === "#board") setTab("board"); else openFromHash();
+setView(); refresh(false);
+// The store answers late (never during this first run) and only on the published page.
+if (window.claude && typeof window.claude.use === "function") {
+  window.claude.use("db").then(db => {
+    if (!db) return;
+    DB = db;
+    db.collection("resolutions").onSnapshot(snap => {
+      const m = {};
+      snap.docs.forEach(d => { m[d.id] = d.data(); });
+      RES = m;
+      const typing = document.activeElement && document.activeElement.id === "u-note";
+      if (view === "board") renderBoard(); else render();
+      if (!typing) { const top = panel.scrollTop; renderPanel(); panel.scrollTop = top; }
+    }, () => {});
+    renderPanel();
+  }, () => {});
+}
+requestAnimationFrame(fitFocus);
+window.addEventListener("resize", fitFocus);
+</script>

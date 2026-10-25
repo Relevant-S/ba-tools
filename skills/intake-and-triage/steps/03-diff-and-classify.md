@@ -146,6 +146,7 @@ proposed_action:
   type: dashboard
   list: awaiting            # awaiting | todos | agenda
   item:
+    feature: <the id of the dashboard feature or topic it belongs to; leave out when none fits>
     prod: <a product name from the dashboard's products list, or Both>
     who: <who has the next move — a person's name, or the BA>
     since: <YYYY-MM-DD — the date of the intake it came from>

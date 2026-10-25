@@ -1,6 +1,33 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 — 2026-10-25
+
+- **The dashboard page is now Map + Board.** `ba-dashboard` builds one page with two tabs and publishes it
+  to the same link: **Map** (product → area, which is a Jira component → feature → items; six stages,
+  the same on every project, as colours and stage-mix rings; red badge for open client questions,
+  orange for items waiting over 30 days; a note and "Resolved" tick on each item that `map/sync.py`
+  writes back) and **Board** (rows are Jira releases, columns are areas, one card per feature). New
+  folder `skills/ba-dashboard/map/`: `build.py` (`--refresh` re-reads Jira), the page template, three
+  read-only Jira scripts, `sync.py`. First built on Acme Lending (24–25 Oct).
+- **Nothing project-specific in the build.** Grouping now lives in `dashboard.yaml`: a feature's `id`,
+  `short`, `tickets` and `jira_area`; a new `topics:` list for work with no feature row; an item's
+  `feature:` puts it under its bubble. The profile gains `tools.dashboard.page` and
+  `tools.dashboard.map` (`products`, `stage_of_status`). `dashboard.py build` checks the new fields.
+- **Offer the dashboard right after the project brief.** `ba-dashboard` → *Starting one* seeds features
+  from the brief; `ba-setup check` warns when a project has a brief but no dashboard, or still has the
+  old table page; the new-project flow has it as step 3b.
+- **Dashboard rules that were project-only are now in the skill:** bring the clarification page, spec
+  status and release folder in line on every update; the client copy in Slack (when the project has
+  `dashboard-slack.yaml`).
+- **Clarification pages — new layout.** Name, description, problem and solution; "Open in Figma" on every
+  screen; answered questions collapsed with "Change this answer"; a side panel with progress, Send and a
+  timeline (`decisions` with who and when, `events` for rounds and stage changes). The stage comes from the
+  dashboard map (`docs/BA/mind-map/stages.json`, by the page's `url`), and "Back to the map" opens the map
+  on the feature. Send also carries `changes` (requests to change an earlier decision). Old pages with
+  `settled:` still build; `scripts/_convert_v2.py` moves one to the new fields. The example page is the
+  new layout.
+- `intake-and-triage` dashboard items carry `feature:`; `ba-spec` adds a filed ticket to the feature's
+  `tickets:` on the dashboard.
 
 - **`figma-build` gotchas G57–G59**, first recorded on Majordome (2026-09-30): a bound-variable paint keeps its
   opacity only when the opacity is in the paint you bind, and tints are safest re-set in a separate call (G57);

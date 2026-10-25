@@ -4,6 +4,116 @@ spec: docs/BA/specs/bond-portal/backlog/pause-share-certificates-on-shareholder-
 doc_title: Probate Decisions
 eyebrow: Bond Portal &middot; Design review &middot; V4
 title: Three loose ends on probate
+name: Probate
+url: https://claude.ai/artifact/<the page id>   # the published link — the page finds its stage in docs/BA/mind-map/stages.json by it
+round: Round V4 · sent 11 Sep 2026 by Vadim, your BA · replaces V3
+description: >-
+  What happens to an investor&rsquo;s shares and money when they die. You have answered every question
+  we asked; <strong>three narrow follow-ups are left</strong>, and only question 1 holds up a screen.
+problem: >-
+  When a shareholder dies, the platform has no way to hold their shares. Interest keeps being paid out
+  to the dead person&rsquo;s account, and the only fix is a manual correction afterwards.
+solution: >-
+  Death is <strong>recorded once on the person</strong>, and every holding it affects pauses together.
+  Money stops leaving while interest keeps accruing. When the executor brings the grant of probate,
+  <strong>one release</strong> pays out everything that was withheld.
+decisions:
+- id: admin-keys-heirs
+  date: 2026-09-11
+  who: Sam Carter
+  how: on this page, round V3
+  title: An Admin keys the heirs from the executor's written instruction
+  detail: The instruction is filed with the grant of probate. No executor login is built.
+- id: read-only-login
+  date: 2026-09-11
+  who: Sam Carter
+  how: on this page, round V3
+  title: A dead investor's login stays open, but read-only
+  detail: Not our recommendation. Someone with the credentials can still read statements, holdings and personal details.
+- id: estate-end
+  date: 2026-09-11
+  who: Sam Carter
+  how: on this page, round V3
+  title: No new shares for an estate, ever, and its wallet is emptied at the end
+  detail: A deceased investor never becomes an ordinary one again.
+- id: two-documents
+  date: 2026-09-10
+  who: Sam Carter
+  how: on this page, round V1
+  title: The executor brings two documents, and nothing else
+  detail: The death certificate, and the grant of probate or letters of administration.
+- id: payment-per-holding
+  date: 2026-09-10
+  who: Sam Carter
+  how: on this page, round V1
+  title: The released payment shows on each shareholder's Transactions tab, per holding
+  detail: Not once on the investor.
+- id: no-investor-message
+  date: 2026-09-10
+  who: Sam Carter
+  how: on this page, round V1
+  title: The investor side shows no probate message
+  detail: Family members sometimes have a dead person's credentials. Two drawn screens are cancelled.
+- id: early-redemption
+  date: 2026-09-10
+  who: Sam Carter
+  how: on this page, round V1
+  title: An estate may redeem early, and the fee still applies
+  detail: After release, shares stay active to maturity, only an Admin can trigger early redemption, and there are no reinvestments or new shares.
+- id: freeze-during-hold
+  date: 2026-09-10
+  who: Sam Carter
+  how: on this page, round V1
+  title: Everything is frozen during the hold except the release form
+  detail: No staff exception.
+- id: any-investor
+  date: 2026-09-10
+  who: Sam Carter
+  how: on this page, round V1
+  title: Probate works on any investor, even one with an unfinished profile
+  detail: Their money goes to a wallet and is released the same way.
+- id: half-finished-applications
+  date: 2026-09-10
+  who: Sam Carter
+  how: on this page, round V1
+  title: Applications caught part-way through are cancelled
+  detail: The money goes back to the estate, into a wallet. One rule for all four states.
+- id: heirs-wallets
+  date: 2026-09-10
+  who: Sam Carter
+  how: on the client call
+  title: The executor signs the transfer to the heirs
+  detail: The grant still gates the release. Money can go to a bank account, other investors' wallets, or both, through the existing wallet-transfer flow.
+- id: on-the-person
+  date: 2026-08-28
+  who: Sam Carter
+  how: on the client call
+  title: Death is recorded once on the investor, and every holding pauses together
+events:
+- date: 2026-09-23
+  kind: note
+  who: Vadim
+  title: Wallet withdrawal is built first, then probate
+- date: 2026-09-11
+  kind: round
+  who: Vadim
+  title: 'Sent round V4: three follow-ups'
+- date: 2026-09-11
+  kind: note
+  who: Sam Carter
+  title: Answered the last three questions on this page
+- date: 2026-09-10
+  kind: note
+  who: Sam Carter
+  title: Answered the first eight questions on this page
+- date: 2026-08-28
+  kind: stage
+  stage: spec
+  title: The pause rule is confirmed and the spec is being written
+- date: 2026-05-26
+  kind: note
+  who: Sam Carter
+  title: Probate first raised
 standfirst: |-
   <strong>You answered all three questions on 11 September, so everything we had asked you is now
   settled.</strong> Eleven decisions are written into the spec with your wording. What is below is
@@ -50,100 +160,6 @@ design:
     cap: >-
       After release. No reinvestments and no new shares, ever. Question 3 asks who empties the
       wallet once the last certificate matures.
-stages_label: What has been designed so far
-stages:
-- title: Holding is active
-  detail: Interest is disbursed normally, period after period.
-- title: Death is recorded
-  detail: |-
-    Marked once on the person, not on each holding. Everything that death affects pauses together.
-- title: In probate
-  detail: |-
-    Money stops leaving. Interest keeps accruing. A joint holding only pauses once every holder has died.
-- title: Released
-  detail: |-
-    The executor produces the grant of probate. One release covers the whole estate, and everything withheld is paid out.
-- title: The estate winds down
-  detail: |-
-    An Admin splits the money to the heirs. No new shares, ever. The wallet is emptied at the end.
-- title: Three loose ends
-  hold: true
-  detail: |-
-    Whose list of heirs wins, whether compliance should see the login decision, and who empties the last wallet.
-close_title: That is all three
-close_body: |
-  <p>
-    Your answers are held in this browser as you go, so you can close the tab and pick it up later.
-    They are not sent anywhere on their own.
-  </p>
-  <p>
-    When you are ready, press <strong>Copy all answers</strong> and paste the result into Slack or
-    an email back to Vadim. Partial is fine &mdash; anything still blank comes back marked as not
-    answered.
-  </p>
-  <p>
-    <strong>Question 1 is the only one holding a screen up.</strong> Question 2 changes nothing we
-    build &mdash; it asks whether your answer should be recorded somewhere beyond a design
-    document. Question 3 decides whether anything reminds us the last of the money is sitting
-    there.
-  </p>
-settled:
-- >
-  <strong>Settled on 11 September &mdash; the last three, and you will not be asked these
-  again.</strong> Recorded in the spec as decisions D-18, D-19 and D-20, with your wording.
-- >
-  <strong>Who keys the heirs.</strong> An Admin keys the split from the executor's written
-  instruction, and that instruction is uploaded and filed alongside the grant of probate. No
-  executor login is built. The release record then shows what was keyed, by whom, and against what.
-- >
-  <strong>The dead person's login.</strong> Left open but read-only &mdash; relatives can still see
-  the account and can no longer do anything to it. <em>This was not the option we recommended</em>,
-  so the trade-off is on the record: someone holding a dead person's credentials can still read
-  statements, holdings and personal details. Question 2 below is the only thing we would still like
-  from you on it.
-- >
-  <strong>The end of the estate.</strong> The bar on reinvestments and new shares is permanent
-  &mdash; there is no point at which a deceased investor becomes an ordinary one again. And the
-  wallet is emptied at the end rather than left sitting with a balance nobody is watching.
-- >
-  <strong>Settled on 10 September &mdash; the first eight.</strong> Recorded as decisions D-6 to
-  D-12, with your wording.
-- >
-  <strong>Executor documents.</strong> The two we had are the whole list &mdash; death certificate,
-  and the grant of probate or letters of administration. Nothing else. This also closes the
-  compliance checklist question that had been open since 25 August.
-- >
-  <strong>Where the released payment shows.</strong> On each shareholder's Transactions tab, per
-  holding. Not once on the investor.
-- >
-  <strong>The probate message on the investor side.</strong> Dropped. Two screens we had drawn are
-  cancelled rather than built &mdash; your reason was that family members sometimes have a dead
-  person's credentials, which is exactly who would have seen it.
-- >
-  <strong>Early redemption.</strong> An estate may redeem early and the fee still applies. After
-  release: existing shares stay active to maturity; early redemption is Admin-triggered only;
-  interest goes to the bank account captured on the release screen; and no reinvestments or new
-  shares.
-- >
-  <strong>Changes during the hold.</strong> Everything frozen except the release form. No staff
-  exception.
-- >
-  <strong>Incomplete profiles.</strong> Probate is available on any investor, whatever state they
-  are in. Their money goes to a wallet and is released through the same process.
-- >
-  <strong>Half-finished applications.</strong> Cancelled, money back to the estate, into a wallet
-  &mdash; one rule for all four states.
-- >
-  <strong>Heirs' wallets &mdash; settled on the 10 September call.</strong> The <em>executor</em> is
-  the signatory, so the problem of needing a dead person's signature goes away. The grant of probate
-  still gates the release. The money can go to a bank account, to other investors' wallets, or to
-  both. And we reuse the wallet-transfer flow already in QA rather than building a second one.
-- >
-  <strong>Still true, and still the biggest thing under this feature.</strong> Several of your
-  answers send estate money into a <em>wallet</em>, and withdrawing from a wallet has never been
-  built &mdash; every wallet balance is zero today. Your answer on the end of the estate adds to
-  it: emptying the wallet at the end needs that same missing capability. We are sizing it before
-  estimating the work.
 store_key: probate-decisions-v4
 copy_header: Probate — loose ends
 copy_noun: decisions

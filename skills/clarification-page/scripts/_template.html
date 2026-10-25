@@ -1,522 +1,478 @@
 <title>{{DOC_TITLE}}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
 <style>
-  :root {
-    --ground:#F2F5F5; --surface:#FFFFFF; --surface-2:#E9EFEE;
-    --ink:#101F1E; --ink-2:#334745; --muted:#5B6C6A; --faint:#687977;
-    --rule:#DCE5E4; --rule-strong:#C3D1CF;
-    --accent:#00819B; --accent-ink:#00647A; --accent-wash:#E2F0F3;
-    --on-accent:#FFFFFF;
-    --amber:#A9601A; --amber-wash:#FBF0E2; --amber-rule:#E8C99C;
-    --green:#2C7A52;
-    --shadow:0 1px 2px rgba(16,31,30,.05), 0 8px 24px -12px rgba(16,31,30,.14);
-    --serif:"Spectral", Georgia, "Times New Roman", serif;
-    --sans:"Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+/* Layout: questions column on the left; a sticky side panel on the right with progress, Send and the
+   timeline (decisions + stage changes). One column on phones, side panel first.
+   Palette and font = the BA dashboard and mind map. Static text uses entities: these pages carry no
+   charset of their own (the artifact wrapper supplies it). */
+:root {
+  --paper: #f3f6f6; --card: #ffffff; --ink: #111d1c; --ink-2: #3d4f4d; --ink-3: #6b7c7a;
+  --rule: #d3dddc; --rule-soft: #e6eceb; --accent: #0d5b60; --accent-bg: #e2eeee; --on-accent: #ffffff;
+  --wait: #9c5c05; --wait-bg: #f8eddc; --ok: #2c6b47; --ok-bg: #e2efe7;
+  --st-concept: #8a9694; --st-concept-bg: #edf1f1; --st-spec: #7046c2; --st-spec-bg: #efe9fa;
+  --st-ready: #2457c5; --st-ready-bg: #e5ecfb; --st-dev: #b0306e; --st-dev-bg: #f9e6ef;
+  --st-qa: #b98900; --st-qa-bg: #fbf2d6; --st-done: #2c7a45; --st-done-bg: #e2efe7;
+  --font: "Figtree", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0d1414; --card: #151f1e; --ink: #e8efee; --ink-2: #aebbb9; --ink-3: #7d8d8b;
+    --rule: #2a3736; --rule-soft: #1e2a29; --accent: #5cc2c6; --accent-bg: #14302f; --on-accent: #0d1414;
+    --wait: #e0a44e; --wait-bg: #33260f; --ok: #6fca94; --ok-bg: #15301f;
+    --st-concept: #8a9b99; --st-concept-bg: #1b2625; --st-spec: #b59af5; --st-spec-bg: #261f3b;
+    --st-ready: #82a8f5; --st-ready-bg: #182540; --st-dev: #ef7fb5; --st-dev-bg: #3a1a2a;
+    --st-qa: #e9c24b; --st-qa-bg: #33290c; --st-done: #6fca94; --st-done-bg: #15301f;
+    color-scheme: dark;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --ground:#0D1514; --surface:#151F1E; --surface-2:#1D2A28;
-      --ink:#E7EDEC; --ink-2:#C2CFCD; --muted:#8FA09E; --faint:#7D8E8C;
-      --rule:#243230; --rule-strong:#31423F;
-      --accent:#3FB6CE; --accent-ink:#7BD2E4; --accent-wash:#102E35;
-      --on-accent:#07201F;
-      --amber:#D9974E; --amber-wash:#2A1F11; --amber-rule:#5C441F;
-      --green:#5EB183;
-      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
-    }
-  }
-  :root[data-theme="dark"] {
-    --ground:#0D1514; --surface:#151F1E; --surface-2:#1D2A28;
-    --ink:#E7EDEC; --ink-2:#C2CFCD; --muted:#8FA09E; --faint:#7D8E8C;
-    --rule:#243230; --rule-strong:#31423F;
-    --accent:#3FB6CE; --accent-ink:#7BD2E4; --accent-wash:#102E35;
-    --on-accent:#07201F;
-    --amber:#D9974E; --amber-wash:#2A1F11; --amber-rule:#5C441F;
-    --green:#5EB183;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
-  }
+}
+:root[data-theme="dark"] {
+  --paper: #0d1414; --card: #151f1e; --ink: #e8efee; --ink-2: #aebbb9; --ink-3: #7d8d8b;
+  --rule: #2a3736; --rule-soft: #1e2a29; --accent: #5cc2c6; --accent-bg: #14302f; --on-accent: #0d1414;
+  --wait: #e0a44e; --wait-bg: #33260f; --ok: #6fca94; --ok-bg: #15301f;
+  --st-concept: #8a9b99; --st-concept-bg: #1b2625; --st-spec: #b59af5; --st-spec-bg: #261f3b;
+  --st-ready: #82a8f5; --st-ready-bg: #182540; --st-dev: #ef7fb5; --st-dev-bg: #3a1a2a;
+  --st-qa: #e9c24b; --st-qa-bg: #33290c; --st-done: #6fca94; --st-done-bg: #15301f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--paper); color: var(--ink); font: 15px/1.55 var(--font); }
+a { color: var(--accent); }
+button, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.s-concept { --c: var(--st-concept); --cb: var(--st-concept-bg); }
+.s-spec { --c: var(--st-spec); --cb: var(--st-spec-bg); }
+.s-ready { --c: var(--st-ready); --cb: var(--st-ready-bg); }
+.s-dev { --c: var(--st-dev); --cb: var(--st-dev-bg); }
+.s-qa { --c: var(--st-qa); --cb: var(--st-qa-bg); }
+.s-done { --c: var(--st-done); --cb: var(--st-done-bg); }
 
-  * { box-sizing:border-box; }
-  body {
-    background:var(--ground); color:var(--ink);
-    font-family:var(--sans); font-size:16px; line-height:1.6;
-    -webkit-font-smoothing:antialiased;
-  }
-  .wrap { max-width:920px; margin:0 auto; padding:0 24px 96px; }
+.wrap { max-width: 1140px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: start; }
+main { min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+aside { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 16px; max-height: calc(100vh - 40px); overflow-y: auto; }
+.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.crumbs { font-size: 14px; color: var(--ink-3); margin: 0; }
+.crumbs b { color: var(--ink); font-weight: 500; }
+h1 { margin: 0; font-size: 30px; line-height: 1.2; font-weight: 600; letter-spacing: -0.02em; text-wrap: balance; }
+.lede { margin: 6px 0 0; color: var(--ink-2); font-size: 16px; max-width: 64ch; }
+.lede strong { color: var(--ink); }
+.round { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--ink-3); }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; background: var(--cb); color: var(--c); white-space: nowrap; }
+.pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.card { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 20px 22px; }
+.card h2 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+.card p { margin: 0 0 10px; color: var(--ink-2); max-width: 70ch; }
+.card p:last-child { margin-bottom: 0; }
+.card strong { color: var(--ink); }
+.ps { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.tag { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.design-sum p { margin: 0 0 10px; color: var(--ink-2); }
+figure { margin: 14px 0 0; }
+figure img { width: 100%; border-radius: 8px; border: 1px solid var(--rule); display: block; }
+figcaption { font-size: 13px; color: var(--ink-3); margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: flex-start; justify-content: space-between; }
+figcaption span { flex: 1 1 260px; min-width: 0; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 600; font-size: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); text-decoration: none; }
+.btn:hover { filter: brightness(1.08); }
+.btn.ghost { background: var(--card); color: var(--ink-2); border: 1px solid var(--rule); }
+.btn.back { padding: 6px 12px 6px 10px; font-size: 13.5px; }
+.btn.small { padding: 5px 10px; font-size: 13px; }
+.btn svg { width: 14px; height: 14px; }
+.btn svg path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.disc { margin-top: 14px; background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.disc svg { transition: transform .15s; }
+.disc[aria-expanded="true"] svg { transform: rotate(180deg); }
+.dpanel { margin-top: 10px; }
+.design-detail p { color: var(--ink-2); }
+.design-where { font-size: 13px; color: var(--ink-3); }
+#open { display: flex; flex-direction: column; gap: 20px; }
+.section-h { margin: 12px 0 -6px; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.q { scroll-margin-top: 20px; }
+.q-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.q-meta { font-size: 12px; font-weight: 500; color: var(--ink-3); }
+.badge { font-size: 12px; font-weight: 600; border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+.badge.need { background: var(--wait-bg); color: var(--wait); }
+.badge.ok { background: var(--ok-bg); color: var(--ok); }
+.q h3 { margin: 0 0 8px; font-size: 17px; font-weight: 600; line-height: 1.35; }
+.q-body p { margin: 0 0 8px; color: var(--ink-2); font-size: 14.5px; }
+.q-body .lead { color: var(--ink); }
+.q-body blockquote { margin: 8px 0; padding: 8px 14px; border-radius: 8px; background: var(--rule-soft); font-style: italic; color: var(--ink-2); }
+.q-body cite { display: block; font-style: normal; font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
+.snag { background: var(--wait-bg); border-radius: 8px; padding: 10px 14px; margin: 8px 0; font-size: 14px; }
+.snag p { margin: 0; color: var(--ink); }
+.opts { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.opt { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 12px; align-items: start; text-align: left; width: 100%; border: 1px solid var(--rule); background: var(--card); border-radius: 8px; padding: 12px 14px; cursor: pointer; }
+.opt:hover { border-color: var(--ink-3); }
+.opt[aria-checked="true"] { border: 1.5px solid var(--accent); background: var(--accent-bg); padding: 11.5px 13.5px; }
+.radio { width: 16px; height: 16px; margin-top: 2px; border-radius: 50%; border: 1.5px solid var(--ink-3); position: relative; }
+.opt[aria-checked="true"] .radio { border-color: var(--accent); }
+.opt[aria-checked="true"] .radio::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--accent); }
+.opt-t { font-weight: 500; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rec { font-size: 11.5px; font-weight: 600; background: var(--accent-bg); color: var(--accent); border-radius: 6px; padding: 1px 8px; }
+.opt[aria-checked="true"] .rec { background: var(--card); }
+.opt-d { display: block; font-size: 14px; color: var(--ink-3); margin-top: 2px; }
+label.note { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+label.note span { color: var(--ink-3); font-weight: 400; }
+textarea { width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; background: var(--card); font-size: 14px; }
+.hint { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+.none-open { text-align: center; padding: 28px 22px; }
+.none-open h2 { font-size: 18px; }
 
-  .masthead { padding:56px 0 0; }
-  .eyebrow {
-    font-family:var(--mono); font-size:11.5px; letter-spacing:.14em;
-    text-transform:uppercase; color:var(--accent-ink); margin:0 0 18px;
-  }
-  h1 {
-    font-family:var(--serif); font-weight:600; font-size:clamp(34px,5vw,48px);
-    line-height:1.1; letter-spacing:-.015em; margin:0 0 18px; text-wrap:balance;
-  }
-  .standfirst {
-    font-family:var(--serif); font-size:19px; line-height:1.55; color:var(--ink-2);
-    max-width:62ch; margin:0 0 28px;
-  }
-  .standfirst em { color:var(--ink); font-style:italic; }
+details.answered { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; }
+details.answered > summary { list-style: none; cursor: pointer; padding: 16px 22px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-weight: 600; font-size: 16px; }
+details.answered > summary::-webkit-details-marker { display: none; }
+details.answered > summary .chev { width: 16px; height: 16px; transition: transform .15s; color: var(--ink-3); }
+details.answered > summary .chev path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+details.answered[open] > summary .chev { transform: rotate(90deg); }
+details.answered > summary small { font-weight: 400; color: var(--ink-3); font-size: 14px; }
+.dlist { border-top: 1px solid var(--rule-soft); }
+.dec { padding: 14px 22px; border-bottom: 1px solid var(--rule-soft); scroll-margin-top: 20px; }
+.dec:last-child { border-bottom: 0; }
+.dec.flash { animation: flash 1.6s ease-out; }
+@keyframes flash { from { background: var(--accent-bg); } to { background: transparent; } }
+.dec-top { display: flex; gap: 12px; justify-content: space-between; align-items: start; }
+.dec h4 { margin: 0; font-size: 15px; font-weight: 600; }
+.dec p { margin: 2px 0 0; font-size: 14px; color: var(--ink-2); }
+.dec .who { font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.change { margin-top: 10px; }
+.change .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.flag { font-size: 12px; font-weight: 600; color: var(--wait); }
 
-  .status {
-    display:flex; flex-wrap:wrap; align-items:center; gap:14px 22px;
-    padding:14px 18px; background:var(--surface); border:1px solid var(--rule);
-    border-radius:4px; box-shadow:var(--shadow); position:sticky; top:0; z-index:20;
-  }
-  .status-count {
-    font-family:var(--mono); font-size:13px; font-weight:500; color:var(--ink);
-    display:flex; align-items:center; gap:10px;
-  }
-  .pips { display:flex; gap:5px; }
-  .pip { width:22px; height:5px; border-radius:1px; background:var(--rule-strong); transition:background .18s; }
-  .pip.done { background:var(--green); }
-  .status-save { font-family:var(--mono); font-size:12px; color:var(--muted); margin-left:auto; }
-  .status-save.warn { color:var(--amber); }
+.side-h { margin: 0 0 10px; font-size: 16px; font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; }
+.side-h span { font-size: 14px; font-weight: 500; }
+.bar { height: 6px; border-radius: 3px; background: var(--rule-soft); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); transition: transform .2s; }
+.qlist { list-style: none; margin: 12px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.qlist a { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; align-items: start; text-decoration: none; color: var(--ink); font-size: 14px; }
+.qlist a.is-done { color: var(--ink-3); }
+.ic { width: 16px; height: 16px; margin-top: 2px; }
+.ic path, .ic circle { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.qlist a.is-done .ic { color: var(--ok); }
+.qlist a:not(.is-done) .ic { color: var(--wait); }
+.actions { display: flex; flex-direction: column; gap: 8px; }
+.actions .btn { width: 100%; padding: 10px 14px; }
+.sendnote { font-size: 12.5px; color: var(--ink-3); margin: 8px 0 0; }
+.sendnote.warn { color: var(--wait); font-weight: 500; }
+.tl { list-style: none; margin: 0; padding: 0; position: relative; }
+.tl::before { content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 2px; background: var(--rule-soft); }
+.tl-day { position: relative; padding-left: 24px; margin-bottom: 14px; }
+.tl-day:last-child { margin-bottom: 0; }
+.tl-dot { position: absolute; left: 0; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--card); border: 2px solid var(--ink-3); }
+.tl-dot.stage { background: var(--c); border-color: var(--c); }
+.tl-date { font-size: 12px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: .05em; }
+.tl-item { margin-top: 4px; font-size: 14px; }
+.tl-item .who { color: var(--ink-3); font-size: 12.5px; }
+.tl-dec { position: relative; padding-left: 12px; }
+.tl-dec::before { content: ""; position: absolute; left: 2px; top: 10px; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
+.tl-item button { background: none; border: 0; padding: 0; text-align: left; color: var(--ink); cursor: pointer; font-size: 14px; }
+.tl-item button:hover { color: var(--accent); text-decoration: underline; }
+.tl-item .chg { color: var(--wait); font-weight: 600; font-size: 12px; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 8px; font-size: 14px; transition: opacity .2s, transform .2s; pointer-events: none; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
 
-  .btn {
-    font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.01em;
-    padding:9px 16px; border-radius:3px; border:1px solid var(--rule-strong);
-    background:var(--surface); color:var(--ink); cursor:pointer;
-    transition:border-color .15s, background .15s, color .15s;
-  }
-  .btn:hover { border-color:var(--accent); color:var(--accent-ink); }
-  .btn-primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
-  .btn-primary:hover { background:var(--accent-ink); border-color:var(--accent-ink); color:var(--on-accent); }
-  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-
-  /* --- the opener: what this feature is ---------------------------------------
-     A reader who has never seen the feature needs one paragraph and one picture
-     before the questions make sense. Those two stay visible. Everything that grows
-     with each round — the rest of the gallery, the longer detail, the lifecycle
-     strip — sits behind the disclosure, collapsed once the reader has been here. */
-  .design { margin:38px 0 8px; }
-  .design-sum { font-size:16px; line-height:1.6; color:var(--ink-2); max-width:66ch; }
-  .design-sum p { margin:0 0 12px; max-width:66ch; }
-  .design-sum p:last-child { margin-bottom:0; }
-  .design-sum strong { color:var(--ink); font-weight:600; }
-  .design .hero { margin:22px 0 4px; }
-  .design-detail { margin:0 0 6px; }
-  .design-detail p { margin:0 0 12px; max-width:66ch; color:var(--ink-2); font-size:15px; }
-  .design-detail strong { color:var(--ink); font-weight:600; }
-  .design-where { margin:0 0 18px; font-family:var(--mono); font-size:12px; color:var(--faint); }
-  .design-where b { color:var(--muted); font-weight:500; }
-  /* Same disclosure as the journey map, so the two read as one family. */
-  .disc {
-    display:inline-flex; align-items:center; gap:8px; margin-top:16px;
-    padding:8px 15px; background:var(--surface); color:var(--accent-ink);
-    border:1px solid var(--rule-strong); border-radius:999px;
-    font-family:var(--sans); font-size:13px; font-weight:600; cursor:pointer;
-  }
-  .disc:hover { border-color:var(--accent); background:var(--accent-wash); }
-  .disc .caret { transition:transform .18s cubic-bezier(.16,1,.3,1); }
-  .disc[aria-expanded="true"] .caret { transform:rotate(180deg); }
-  .dpanel { margin-top:20px; padding-top:4px; }
-  .dpanel .lifecycle { margin-top:26px; }
-
-  .lifecycle { margin:38px 0 8px; }
-  .section-label {
-    font-family:var(--mono); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
-    color:var(--faint); margin:0 0 16px; padding-bottom:8px; border-bottom:1px solid var(--rule);
-  }
-  .stages {
-    display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
-    background:var(--rule); border:1px solid var(--rule); border-radius:4px; overflow:hidden;
-  }
-  .stage { background:var(--surface); padding:16px 16px 18px; }
-  .stage-n { font-family:var(--mono); font-size:11px; color:var(--faint); letter-spacing:.1em; }
-  .stage-t { font-family:var(--sans); font-weight:600; font-size:14.5px; margin:6px 0 5px; color:var(--ink); }
-  .stage-d { font-size:13px; line-height:1.5; color:var(--muted); margin:0; }
-  .stage.hold { background:var(--amber-wash); }
-  .stage.hold .stage-t { color:var(--amber); }
-  @media (max-width:720px) { .stages { grid-template-columns:1fr 1fr; } }
-  @media (max-width:460px) { .stages { grid-template-columns:1fr; } }
-
-  .q { padding:44px 0 8px; border-top:1px solid var(--rule); margin-top:44px; }
-  .q-section {
-    font-family:var(--mono); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
-    color:var(--faint); margin:0 0 26px; padding-bottom:8px; border-bottom:1px solid var(--rule);
-  }
-  .q-head { display:grid; grid-template-columns:52px 1fr; gap:0 10px; align-items:start; }
-  .q-num {
-    font-family:var(--mono); font-size:13px; font-weight:500; color:var(--accent);
-    padding-top:9px; letter-spacing:.04em;
-  }
-  .q-title {
-    font-family:var(--serif); font-weight:600; font-size:27px; line-height:1.25;
-    margin:0 0 4px; letter-spacing:-.01em; text-wrap:balance;
-  }
-  .q-meta {
-    font-family:var(--mono); font-size:11.5px; color:var(--faint);
-    letter-spacing:.06em; text-transform:uppercase; margin:0 0 20px;
-  }
-  .q-body { grid-column:2; }
-  @media (max-width:600px) {
-    .q-head { grid-template-columns:1fr; }
-    .q-body { grid-column:1; }
-    .q-num { padding-top:0; margin-bottom:6px; }
-  }
-  .q-body p { max-width:66ch; margin:0 0 14px; color:var(--ink-2); }
-  .q-body p.lead { color:var(--ink); }
-  .q-body strong { color:var(--ink); font-weight:600; }
-  blockquote {
-    margin:18px 0; padding:2px 0 2px 18px; border-left:2px solid var(--rule-strong);
-    font-family:var(--serif); font-style:italic; font-size:17px; line-height:1.5;
-    color:var(--ink-2); max-width:60ch;
-  }
-  blockquote cite {
-    display:block; font-style:normal; font-family:var(--mono); font-size:11.5px;
-    color:var(--faint); margin-top:8px; letter-spacing:.04em;
-  }
-  .snag {
-    background:var(--amber-wash); border:1px solid var(--amber-rule); border-radius:4px;
-    padding:14px 16px; margin:20px 0; max-width:66ch;
-  }
-  .snag p { margin:0; color:var(--ink); font-size:14.5px; max-width:none; }
-  .snag strong { color:var(--amber); }
-
-  figure { margin:24px 0 26px; }
-  .screen {
-    border:1px solid var(--rule-strong); border-radius:4px; overflow:hidden;
-    background:var(--surface-2); box-shadow:var(--shadow);
-  }
-  .screen img { display:block; width:100%; height:auto; }
-  figcaption { font-family:var(--mono); font-size:11.5px; color:var(--faint); margin-top:9px; letter-spacing:.03em; line-height:1.5; }
-
-  .answer { margin:26px 0 0; padding:22px; background:var(--surface); border:1px solid var(--rule); border-radius:4px; }
-  .answer-label {
-    font-family:var(--mono); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
-    color:var(--accent-ink); margin:0 0 14px;
-  }
-  .opts { display:flex; flex-direction:column; gap:8px; margin-bottom:18px; }
-  .opt {
-    display:flex; gap:12px; align-items:flex-start; padding:12px 14px;
-    border:1px solid var(--rule); border-radius:3px; cursor:pointer; background:var(--ground);
-    transition:border-color .15s, background .15s;
-  }
-  .opt:hover { border-color:var(--rule-strong); }
-  .opt input { margin:5px 0 0; accent-color:var(--accent); flex:none; }
-  .opt-text { font-size:14.5px; line-height:1.5; color:var(--ink-2); }
-  .opt-text b { display:block; font-weight:600; color:var(--ink); margin-bottom:2px; }
-  .opt.sel { border-color:var(--accent); background:var(--accent-wash); }
-  .opt.sel .opt-text b { color:var(--accent-ink); }
-  .hint { font-size:13px; color:var(--muted); margin:0 0 8px; }
-  textarea {
-    width:100%; min-height:84px; resize:vertical; padding:11px 13px;
-    font-family:var(--sans); font-size:14.5px; line-height:1.55; color:var(--ink);
-    background:var(--ground); border:1px solid var(--rule); border-radius:3px;
-  }
-  textarea:focus { border-color:var(--accent); outline:none; box-shadow:0 0 0 3px var(--accent-wash); }
-  textarea::placeholder { color:var(--faint); }
-
-  .close { margin-top:52px; padding-top:32px; border-top:2px solid var(--rule-strong); }
-  .close h2 { font-family:var(--serif); font-size:24px; font-weight:600; margin:0 0 12px; }
-  .close p { color:var(--ink-2); max-width:64ch; margin:0 0 14px; }
-  .actions { display:flex; flex-wrap:wrap; gap:14px; margin-top:22px; align-items:center; }
-  .toast { font-family:var(--mono); font-size:12px; color:var(--green); opacity:0; transition:opacity .2s; }
-  .toast.on { opacity:1; }
-  .offline {
-    margin-top:24px; padding:14px 16px; border:1px dashed var(--rule-strong);
-    border-radius:4px; font-size:13.5px; line-height:1.55; color:var(--muted); display:none;
-  }
-  .offline.on { display:block; }
-  .offline strong { color:var(--ink); }
-  @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
+@media (max-width: 900px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); }
+  aside { position: static; max-height: none; order: -1; }
+  .ps { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
-<style>
-/* generator additions: recommendation badge, and a Figma link under a screen */
-.opt-rec{display:inline-block;margin-left:.5rem;padding:.1rem .4rem;border-radius:3px;
-  background:#eef2f6;color:#1b4a6b;font:600 .68rem/1.4 "Public Sans",system-ui,sans-serif;
-  letter-spacing:.04em;text-transform:uppercase;vertical-align:.08em}
-.screen-link{display:block;margin-top:.3rem;font:500 .74rem/1.5 "Public Sans",system-ui,sans-serif}
-.screen-link a{color:#1b4a6b}
-</style>
+
 <div class="wrap">
-  <header class="masthead">
-    <p class="eyebrow">{{EYEBROW}}</p>
-    <h1>{{H1}}</h1>
-    <p class="standfirst">{{STANDFIRST}}</p>
-    <div class="status">
-      <div class="status-count">
-        <span id="count">{{COUNT_INIT}}</span>
-        <span class="pips" id="pips"></span>
-      </div>
-      <span class="status-save" id="save">&nbsp;</span>
-    </div>
-  </header>
+  <main>
+    <div class="topbar">{{BACK}}<p class="crumbs">Clarifications &rsaquo; <b>{{CRUMB}}</b></p></div>
+    <header>
+      <h1>{{H1}}</h1>
+      <div class="lede">{{DESCRIPTION}}</div>
+      <div class="round">{{STAGE_PILL}}<span>{{ROUND}}</span></div>
+    </header>
+
+{{PROBLEM_SOLUTION}}
 
 {{DESIGN}}
 
-{{STAGES}}
+    <div id="open"></div>
 
-  <div id="questions"></div>
+    <details class="answered" id="answered" hidden>
+      <summary><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6l-6 6"/></svg>Answered questions <small id="ans-count"></small></summary>
+      <div class="dlist" id="dlist"></div>
+    </details>
+  </main>
 
-  <section class="close">
-    <h2>{{CLOSE_H2}}</h2>
-    {{CLOSE_BODY}}
-    {{OFFLINE}}
-    <div class="actions">
+  <aside>
+    <section class="card" id="answers-card">
+      <h2 class="side-h">Your answers <span id="prog-t"></span></h2>
+      <div class="bar"><i id="prog"></i></div>
+      <ul class="qlist" id="qlist"></ul>
+      <div class="actions">
       {{ACTIONS}}
-    </div>
-  </section>
+      </div>
+      <p class="sendnote" id="save">Saved in this browser as you go. You can send now and answer the rest later.</p>
+    </section>
+    <section class="card" id="timeline-card">
+      <h2 class="side-h">Timeline</h2>
+      <ol class="tl" id="tl"></ol>
+    </section>
+  </aside>
 </div>
+<span class="toast" id="toast" role="status"></span>
 <script>
 (function () {
   "use strict";
 
-  var QUESTIONS = {{QUESTIONS_JSON}};
+  var DATA = {{DATA_JSON}};
+  var QUESTIONS = DATA.questions, DECISIONS = DATA.decisions, EVENTS = DATA.events, STAGES = DATA.stages;
   var STORE_KEY = {{STORE_KEY}};
   var COPY_HEADER = {{COPY_HEADER}};
-  var COPY_NOUN = {{COPY_NOUN}};
   var DB_DOC = {{DB_DOC}};
+  var ICON_OK = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5l4.5-5"/></svg>';
+  var ICON_OPEN = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.5"/></svg>';
 
-  var state = {};
-  QUESTIONS.forEach(function (q) { state[q.id] = { choice: null, notes: "" }; });
-
-  var saveTimers = {};
-  var elCount = document.getElementById("count");
-  var elPips = document.getElementById("pips");
-  var elSave = document.getElementById("save");
-  var host = document.getElementById("questions");
+  /* One state object, kept in this browser: a pick and a note per open question, and a requested
+     change per decision already made. */
+  var state = { picks: {}, notes: {}, changes: {} };
+  try {
+    var saved = JSON.parse(window.localStorage.getItem(STORE_KEY) || "null");
+    if (saved) {
+      if (saved.picks) { state = { picks: saved.picks || {}, notes: saved.notes || {}, changes: saved.changes || {} }; }
+      else { Object.keys(saved).forEach(function (k) {  // the old page kept {id: {choice, notes}}
+        if (saved[k] && saved[k].choice) { state.picks[k] = saved[k].choice; }
+        if (saved[k] && saved[k].notes) { state.notes[k] = saved[k].notes; }
+      }); }
+    }
+  } catch (err) { /* a corrupt or blocked store just means starting fresh */ }
+  function save() {
+    try { window.localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+    catch (err) { stamp("This browser cannot keep your answers — send or copy them before closing", true); }
+  }
 
   function esc(s) {
-    return String(s)
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
+  function fmt(iso) {
+    var d = new Date(iso + "T00:00:00Z");
+    return isNaN(d) ? iso : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  }
+  var elSave = document.getElementById("save");
+  function stamp(msg, warn) { elSave.textContent = msg; elSave.classList.toggle("warn", !!warn); }
+  var toast = document.getElementById("toast");
+  function flash(msg) { toast.textContent = msg; toast.classList.add("on"); setTimeout(function () { toast.classList.remove("on"); }, 2400); }
 
-  function buildQuestion(q, i) {
-    var s = document.createElement("section");
-    s.className = "q";
-    var h = q.section ? '<p class="q-section">' + esc(q.section) + '</p>' : '';
-    h += '<div class="q-head"><div class="q-num">' + (i + 1) + '</div>' +
-            '<div><h2 class="q-title">' + esc(q.title) + '</h2>' +
-            '<p class="q-meta">' + esc(q.meta) + '</p></div>' +
-            '<div class="q-body">' + q.body;
-    if (q.quote) {
-      h += '<blockquote>&ldquo;' + esc(q.quote.text) + '&rdquo;<cite>' + esc(q.quote.cite) + '</cite></blockquote>';
+  /* ---------- Open questions, grouped by section ---------- */
+  function renderOpen() {
+    var host = document.getElementById("open");
+    if (!QUESTIONS.length) {
+      host.innerHTML = '<section class="card none-open"><h2>No open questions</h2><p>Everything on this page has been answered. The decisions and the timeline stay here as the record.</p></section>';
+      return;
     }
-    if (q.body2) { h += q.body2; }
-    if (q.snag) { h += '<div class="snag">' + q.snag + '</div>'; }
-    (q.screens || []).forEach(function (scr) {
-      h += '<figure><div class="screen"><img src="' + scr.src + '" alt="' + esc(scr.cap) + '"></div>' +
-           '<figcaption>' + esc(scr.cap);
-      if (scr.figma) {
-        h += '<span class="screen-link"><a href="' + esc(scr.figma) + '" target="_blank" rel="noopener">' +
-             'Open this screen in Figma &rarr;</a></span>';
-      }
-      h += '</figcaption></figure>';
-    });
-    h += '<div class="answer"><p class="answer-label">Your answer</p>' +
-         '<div class="opts" role="radiogroup" aria-label="' + esc(q.title) + '">';
-    q.options.forEach(function (o) {
-      h += '<label class="opt"><input type="radio" name="' + esc(q.id) + '" value="' + esc(o.v) + '">' +
-           '<span class="opt-text"><b>' + esc(o.t) +
-           (o.rec ? '<span class="opt-rec">what we think you meant</span>' : '') +
-           '</b>' + esc(o.d) + '</span></label>';
-    });
-    h += '</div><p class="hint">' + esc(q.note) + '</p>' +
-         '<textarea data-note="' + esc(q.id) + '" placeholder="' + esc(q.notePlaceholder) + '"></textarea>' +
-         '</div></div></div>';
-    s.innerHTML = h;
-    return s;
-  }
-
-  QUESTIONS.forEach(function (q, i) { host.appendChild(buildQuestion(q, i)); });
-
-  function paint() {
-    QUESTIONS.forEach(function (q) {
-      var cur = state[q.id];
-      var inputs = host.querySelectorAll('input[name="' + q.id + '"]');
-      Array.prototype.forEach.call(inputs, function (input) {
-        var on = input.value === cur.choice;
-        input.checked = on;
-        input.parentNode.classList.toggle("sel", on);
-      });
-      var ta = host.querySelector('textarea[data-note="' + q.id + '"]');
-      if (ta && document.activeElement !== ta && ta.value !== cur.notes) { ta.value = cur.notes; }
-    });
-    var done = QUESTIONS.filter(function (q) { return !!state[q.id].choice; }).length;
-    elCount.textContent = done + " of " + QUESTIONS.length + " answered";
-    elPips.innerHTML = QUESTIONS.map(function (q) {
-      return '<span class="pip' + (state[q.id].choice ? " done" : "") + '"></span>';
-    }).join("");
-  }
-  paint();
-
-  function stamp(msg, warn) {
-    elSave.textContent = msg;
-    elSave.classList.toggle("warn", !!warn);
-  }
-
-  function persist() {
-    try {
-      window.localStorage.setItem(STORE_KEY, JSON.stringify(state));
-      stamp("Kept in this browser");
-    } catch (err) {
-      stamp("Copy your answers before closing this tab", true);
-    }
-  }
-
-  function restore() {
-    var raw = null;
-    try { raw = window.localStorage.getItem(STORE_KEY); } catch (err) { return; }
-    if (!raw) { return; }
-    try {
-      var saved = JSON.parse(raw);
-      QUESTIONS.forEach(function (q) {
-        if (!saved[q.id]) { return; }
-        state[q.id].choice = saved[q.id].choice || null;
-        state[q.id].notes = typeof saved[q.id].notes === "string" ? saved[q.id].notes : "";
-      });
-    } catch (err) { /* a corrupt value just means starting fresh */ }
-  }
-
-  function queue(id, wait) {
-    clearTimeout(saveTimers[id]);
-    saveTimers[id] = setTimeout(persist, wait);
-  }
-
-  host.addEventListener("change", function (e) {
-    if (!e.target || e.target.type !== "radio") { return; }
-    state[e.target.name].choice = e.target.value;
-    paint();
-    queue(e.target.name, 120);
-  });
-
-  host.addEventListener("input", function (e) {
-    var id = e.target && e.target.getAttribute ? e.target.getAttribute("data-note") : null;
-    if (!id) { return; }
-    state[id].notes = e.target.value;
-    queue(id, 800);
-  });
-
-  function answersText() {
-    var out = [COPY_HEADER + " \u2014 " + QUESTIONS.length + " questions",
-               "Answered " + new Date().toLocaleDateString(), ""];
+    var html = "", section = null;
     QUESTIONS.forEach(function (q, i) {
-      var cur = state[q.id];
-      var pick = q.options.filter(function (o) { return o.v === cur.choice; })[0];
+      if (q.section && q.section !== section) { section = q.section; html += '<h2 class="section-h">' + esc(section) + '</h2>'; }
+      var picked = state.picks[q.id];
+      html += '<section class="card q" id="' + esc(q.id) + '">' +
+        '<div class="q-top"><span class="q-meta">Question ' + (i + 1) + (q.meta ? ' &middot; ' + esc(q.meta) : '') + '</span>' +
+        '<span class="badge ' + (picked ? 'ok' : 'need') + '" id="b-' + esc(q.id) + '">' + (picked ? 'Answered' : 'Needs your answer') + '</span></div>' +
+        '<h3>' + esc(q.title) + '</h3><div class="q-body">' + q.body;
+      if (q.quote) { html += '<blockquote>&ldquo;' + esc(q.quote.text) + '&rdquo;<cite>' + esc(q.quote.cite) + '</cite></blockquote>'; }
+      if (q.body2) { html += q.body2; }
+      html += '</div>';
+      if (q.snag) { html += '<div class="snag">' + q.snag + '</div>'; }
+      (q.screens || []).forEach(function (scr) {
+        html += '<figure><img src="' + scr.src + '" alt="' + esc(scr.cap) + '" loading="lazy"><figcaption><span>' + esc(scr.cap) + '</span>' +
+          (scr.figma ? '<a class="btn ghost small" href="' + esc(scr.figma) + '" target="_blank" rel="noopener">Open in Figma</a>' : '') + '</figcaption></figure>';
+      });
+      html += '<div class="opts" role="radiogroup" aria-label="' + esc(q.title) + '">';
+      q.options.forEach(function (o) {
+        html += '<button type="button" class="opt" role="radio" aria-checked="' + (picked === o.v) + '" data-q="' + esc(q.id) + '" data-v="' + esc(o.v) + '">' +
+          '<span class="radio" aria-hidden="true"></span><span><span class="opt-t">' + esc(o.t) +
+          (o.rec ? '<span class="rec">Our recommendation</span>' : '') + '</span><span class="opt-d">' + esc(o.d) + '</span></span></button>';
+      });
+      html += '</div><label class="note" for="n-' + esc(q.id) + '">' + esc(q.note) + ' <span>(optional)</span></label>' +
+        '<textarea id="n-' + esc(q.id) + '" data-q="' + esc(q.id) + '" placeholder="' + esc(q.notePlaceholder) + '">' + esc(state.notes[q.id] || "") + '</textarea>' +
+        '<div class="hint">Your BA sees this note with your answer.</div></section>';
+    });
+    host.innerHTML = html;
+    Array.prototype.forEach.call(host.querySelectorAll(".opt"), function (b) {
+      b.addEventListener("click", function () {
+        var id = b.getAttribute("data-q");
+        state.picks[id] = b.getAttribute("data-v"); save(); stamp("Saved in this browser");
+        Array.prototype.forEach.call(host.querySelectorAll('.opt[data-q="' + id + '"]'), function (x) { x.setAttribute("aria-checked", x === b); });
+        var badge = document.getElementById("b-" + id); badge.className = "badge ok"; badge.textContent = "Answered";
+        renderSide();
+      });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll("textarea"), function (t) {
+      t.addEventListener("input", function () { state.notes[t.getAttribute("data-q")] = t.value; save(); });
+    });
+  }
+
+  /* ---------- Answered questions: collapsed; each can be changed ---------- */
+  function renderAnswered() {
+    var box = document.getElementById("answered");
+    if (!DECISIONS.length) { box.hidden = true; return; }
+    box.hidden = false;
+    var list = DECISIONS.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+    document.getElementById("ans-count").textContent = list.length + " · newest first · you can change any of them";
+    document.getElementById("dlist").innerHTML = list.map(function (dc) {
+      var ch = state.changes[dc.id];
+      var when = [dc.date ? "Decided " + fmt(dc.date) : "Decided", dc.who ? "by " + esc(dc.who) : "", dc.how ? esc(dc.how) : ""].filter(Boolean).join(" ").replace(" by", " by");
+      return '<div class="dec" id="d-' + esc(dc.id) + '"><div class="dec-top"><div><h4>' + esc(dc.title) + '</h4>' +
+        (dc.detail ? '<p>' + esc(dc.detail) + '</p>' : '') +
+        '<div class="who">' + when + (ch ? ' &middot; <span class="flag">Change requested</span>' : '') + '</div></div>' +
+        '<button class="linkbtn" data-change="' + esc(dc.id) + '">' + (ch ? 'Edit change' : 'Change this answer') + '</button></div>' +
+        '<div class="change" id="c-' + esc(dc.id) + '" hidden><label class="note" for="t-' + esc(dc.id) + '">What should it be instead?</label>' +
+        '<textarea id="t-' + esc(dc.id) + '" placeholder="Describe the new answer…">' + esc(ch || "") + '</textarea>' +
+        '<div class="row"><button class="btn small" data-keep="' + esc(dc.id) + '">Save the change</button>' +
+        '<button class="btn ghost small" data-cancel="' + esc(dc.id) + '">' + (ch ? 'Withdraw the change' : 'Cancel') + '</button></div></div></div>';
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll("[data-change]"), function (b) {
+      b.addEventListener("click", function () {
+        var c = document.getElementById("c-" + b.getAttribute("data-change"));
+        c.hidden = !c.hidden; if (!c.hidden) { c.querySelector("textarea").focus(); }
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-keep]"), function (b) {
+      b.addEventListener("click", function () {
+        var id = b.getAttribute("data-keep"), v = document.getElementById("t-" + id).value.trim();
+        if (v) { state.changes[id] = v; } else { delete state.changes[id]; }
+        save(); renderAnswered(); renderSide(); renderTimeline();
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-cancel]"), function (b) {
+      b.addEventListener("click", function () { delete state.changes[b.getAttribute("data-cancel")]; save(); renderAnswered(); renderSide(); renderTimeline(); });
+    });
+  }
+
+  /* ---------- Side panel: progress ---------- */
+  function renderSide() {
+    var card = document.getElementById("answers-card");
+    var n = QUESTIONS.filter(function (q) { return state.picks[q.id]; }).length;
+    var c = Object.keys(state.changes).length;
+    if (!QUESTIONS.length && !DECISIONS.length) { card.hidden = true; return; }
+    document.getElementById("prog-t").textContent = QUESTIONS.length ? n + " of " + QUESTIONS.length : "all answered";
+    document.getElementById("prog").style.transform = "scaleX(" + (QUESTIONS.length ? n / QUESTIONS.length : 1) + ")";
+    document.getElementById("qlist").innerHTML = QUESTIONS.map(function (q, i) {
+      return '<li><a href="#' + esc(q.id) + '" class="' + (state.picks[q.id] ? 'is-done' : '') + '">' + (state.picks[q.id] ? ICON_OK : ICON_OPEN) +
+        '<span>' + (i + 1) + ' &middot; ' + esc(q.title) + '</span></a></li>';
+    }).join("");
+    var send = document.getElementById("send");
+    if (send && !send.disabled) {
+      send.textContent = c ? (QUESTIONS.length ? "Send answers and " : "Send ") + c + " change" + (c > 1 ? "s" : "") : "Send answers";
+    }
+  }
+
+  /* ---------- Timeline: decisions, rounds and stage changes, newest first ---------- */
+  function renderTimeline() {
+    var days = {};
+    DECISIONS.forEach(function (dc) { if (dc.date) { (days[dc.date] = days[dc.date] || []).push({ kind: "decision", dc: dc }); } });
+    EVENTS.forEach(function (ev) { (days[ev.date] = days[ev.date] || []).push({ kind: ev.kind, ev: ev }); });
+    var order = Object.keys(days).sort().reverse();
+    if (!order.length) { document.getElementById("timeline-card").hidden = true; return; }
+    document.getElementById("tl").innerHTML = order.map(function (day) {
+      var its = days[day];
+      var stage = its.filter(function (it) { return it.kind === "stage"; })[0];
+      var decs = its.filter(function (it) { return it.kind === "decision"; });
+      var who = decs.map(function (it) { return it.dc.who; }).filter(function (w, i, a) { return w && a.indexOf(w) === i; });
+      var html = '<li class="tl-day"><span class="tl-dot' + (stage ? ' stage s-' + esc(stage.ev.stage) : '') + '"></span><div class="tl-date">' + fmt(day) + '</div>';
+      its.filter(function (it) { return it.kind !== "decision"; }).forEach(function (it) {
+        var ev = it.ev;
+        html += '<div class="tl-item">' + (it.kind === "stage" ? '<span class="pill s-' + esc(ev.stage) + '"><span class="dot"></span>' + esc(STAGES[ev.stage] || ev.stage) + '</span> ' : '') +
+          esc(ev.title) + (ev.who ? ' <span class="who">&middot; ' + esc(ev.who) + '</span>' : '') + '</div>';
+      });
+      if (decs.length) {
+        html += '<div class="tl-item"><span class="who">' + (who.length ? esc(who.join(", ")) + ' decided:' : 'Decided:') + '</span></div>';
+        decs.forEach(function (it) {
+          html += '<div class="tl-item tl-dec"><button data-jump="' + esc(it.dc.id) + '">' + esc(it.dc.title) + '</button>' +
+            (state.changes[it.dc.id] ? ' <span class="chg">change requested</span>' : '') + '</div>';
+        });
+      }
+      return html + '</li>';
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll("[data-jump]"), function (b) {
+      b.addEventListener("click", function () {
+        document.getElementById("answered").open = true;
+        var el = document.getElementById("d-" + b.getAttribute("data-jump"));
+        el.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+        el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+      });
+    });
+  }
+
+  /* ---------- What goes back: clipboard text for a person, a structured record for Claude ---------- */
+  function answersText() {
+    var out = [COPY_HEADER, "Answered " + new Date().toLocaleDateString(), ""];
+    QUESTIONS.forEach(function (q, i) {
+      var pick = q.options.filter(function (o) { return o.v === state.picks[q.id]; })[0];
       out.push((i + 1) + ". " + q.title);
-      out.push("   Answer: " + (pick ? pick.t : "\u2014 not answered \u2014"));
-      if (cur.notes.trim()) { out.push("   Notes: " + cur.notes.trim()); }
+      out.push("   Answer: " + (pick ? pick.t : "— not answered —"));
+      if ((state.notes[q.id] || "").trim()) { out.push("   Notes: " + state.notes[q.id].trim()); }
       out.push("");
+    });
+    DECISIONS.forEach(function (dc) {
+      if (state.changes[dc.id]) { out.push("Change to “" + dc.title + "”: " + state.changes[dc.id]); }
     });
     return out.join("\n");
   }
-
-  var toast = document.getElementById("toast");
-  function flash(msg) {
-    if (msg) { toast.textContent = msg; }
-    toast.classList.add("on");
-    setTimeout(function () { toast.classList.remove("on"); }, 2400);
-  }
-
-  function toClipboard(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(text);
-    }
-    window.prompt("Copy the answers below", text);
-    return Promise.reject(new Error("no clipboard api"));
-  }
-
-  document.getElementById("copy").addEventListener("click", function () {
-    toClipboard(answersText()).then(function () { flash("Copied to clipboard"); }, function () {});
-  });
-
-  // The structured twin of answersText(). Clipboard text is for a human to read in
-  // Slack; this is for Claude to read back out of the artifact's store, so it keeps the
-  // question id and the option value rather than only the prose, and it keeps the
-  // unanswered rows too — what is still open matters as much as what was decided.
   function answersPayload() {
     var rows = QUESTIONS.map(function (q, i) {
-      var cur = state[q.id];
-      var pick = q.options.filter(function (o) { return o.v === cur.choice; })[0];
-      return {
-        n: i + 1,
-        id: q.id,
-        spec_ref: q.spec_ref || null,
-        question: q.title,
-        answer: pick ? pick.t : null,
-        answer_value: cur.choice || null,
-        notes: cur.notes.trim() || null
-      };
+      var pick = q.options.filter(function (o) { return o.v === state.picks[q.id]; })[0];
+      return { n: i + 1, id: q.id, spec_ref: q.spec_ref || null, question: q.title,
+               answer: pick ? pick.t : null, answer_value: state.picks[q.id] || null,
+               notes: (state.notes[q.id] || "").trim() || null };
     });
-    return {
-      page: DB_DOC,
-      title: COPY_HEADER,
-      saved_at: new Date().toISOString(),
-      answered: rows.filter(function (r) { return r.answer; }).length,
-      total: rows.length,
-      answers: rows
-    };
+    var changes = DECISIONS.filter(function (dc) { return state.changes[dc.id]; }).map(function (dc) {
+      return { id: dc.id, decision: dc.title, decided: dc.date || null, new_answer: state.changes[dc.id] };
+    });
+    return { page: DB_DOC, title: COPY_HEADER, saved_at: new Date().toISOString(),
+             answered: rows.filter(function (r) { return r.answer; }).length, total: rows.length,
+             answers: rows, changes: changes };
   }
 
-  // Hidden until the store answers. `use` resolves late and never on the first run, so
-  // the page must render complete without it; a local file has no window.claude at all.
+  var copyBtn = document.getElementById("copy");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", function () {
+      var text = answersText();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { flash("Copied — paste it into Slack or an email to your BA"); },
+          function () { flash("Copying was blocked by this browser"); });
+      } else { flash("Copying is not available in this browser"); }
+    });
+  }
+  // Send writes the answer set into the artifact's own store (collection "answers", doc "latest"),
+  // which the BA's Claude session reads back. Hidden until the store answers; a local file has no
+  // window.claude, so the clipboard stays the route there.
   var elSend = document.getElementById("send");
   if (elSend && window.claude && typeof window.claude.use === "function") {
     window.claude.use("db").then(function (db) {
       if (!db) { return; }
       elSend.hidden = false;
+      renderSide();
       elSend.addEventListener("click", function () {
         var label = elSend.textContent;
-        elSend.disabled = true;
-        elSend.textContent = "Sending…";
-        function done(msg, warn) {
-          elSend.disabled = false;
-          elSend.textContent = label;
-          flash(msg);
-          stamp(msg, warn);
-        }
-        // The failure text carries the store's error code. Nobody reads this page with
-        // devtools open — on a client call the stamp is the only place a failure can
-        // show, so it has to say enough to act on rather than just that it went wrong.
+        elSend.disabled = true; elSend.textContent = "Sending…";
         db.doc("answers/latest").set(answersPayload()).then(
-          function () { done("Sent to Claude — " + new Date().toLocaleTimeString(), false); },
+          function () { elSend.disabled = false; elSend.textContent = label; flash("Sent to your BA"); stamp("Sent — " + new Date().toLocaleTimeString()); },
           function (err) {
             var code = (err && err.code) ? err.code : "unknown";
-            done("Could not send (" + code + ") — use Copy all answers", true);
-          }
-        );
+            elSend.disabled = false; elSend.textContent = label;
+            stamp("Could not send (" + code + ") — use Copy all answers", true);
+          });
       });
     }, function () {});
   }
 
-  restore();
-  paint();
-  var returning = QUESTIONS.some(function (q) {
-    return state[q.id].choice || state[q.id].notes;
-  });
-  if (returning) { stamp("Kept in this browser"); }
-
-  /* The design disclosure. Open for a first-time reader, collapsed for someone who
-     has already answered here — the context is worth a screen once and is then in
-     the way. An explicit toggle is remembered and beats the guess. */
+  /* ---------- The design disclosure ---------- */
   (function () {
-    var btn = document.getElementById("dmore");
-    var panel = document.getElementById("dpanel");
+    var btn = document.getElementById("dmore"), panel = document.getElementById("dpanel");
     if (!btn || !panel) { return; }
-    var KEY = STORE_KEY + "-design";
-
-    function set(open, remember) {
-      panel.hidden = !open;
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
-      if (remember) {
-        try { window.localStorage.setItem(KEY, open ? "1" : "0"); } catch (err) {}
-      }
-    }
-
-    var saved = null;
-    try { saved = window.localStorage.getItem(KEY); } catch (err) {}
-    if (saved === "1") { set(true, false); }
-    else if (saved === "0") { set(false, false); }
-    else { set(!returning, false); }
-
-    btn.addEventListener("click", function () { set(panel.hidden, true); });
+    btn.addEventListener("click", function () {
+      var open = panel.hidden;
+      panel.hidden = !open; btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
   })();
+
+  renderOpen(); renderAnswered(); renderSide(); renderTimeline();
 })();
 </script>

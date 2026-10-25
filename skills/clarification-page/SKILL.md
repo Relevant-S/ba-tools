@@ -33,11 +33,23 @@ dated and attributed. If an answer only lives on the page, the spec rots and the
 3. **Questions** — only what the client must answer. Per question: the title, the context, the options
    (`v` · `t` · `d`), and for each option **the consequence**, not just the choice. Where we have a view,
    mark one `rec: true` and say it is ours. Put contradictions in the `snag` box, plainly.
-4. **Say what is already decided** in `settled`, so the client is never asked twice.
-5. **Screens** — the Figma `node` id is the single source: it builds the link and names the file
+4. **The page frame**: `name` (short feature name), `url` (the page's published link — it is how the
+   page finds its stage in `docs/BA/mind-map/stages.json`, written by the dashboard build, so the page
+   and the dashboard map always show the same stage; fill it in after the first publish), `round`
+   ("Round V7 · sent 22 Oct 2026 by …"), `description` (1–2 sentences), `problem` and `solution`
+   (1–3 sentences each). The side panel shows progress, the Send button and a timeline; "Back to the
+   map" opens the dashboard on this feature. A project with no dashboard map yet shows the stage from
+   the `events` and no Back button.
+5. **Say what is already decided** in `decisions`, so the client is never asked twice: one entry per
+   decision — `id`, `date`, `who`, `how`, `title`, `detail`. Put `who` only when a source names the
+   person; never guess. They show collapsed under "Answered questions", where the client can request a
+   change, and dated in the side panel's timeline. `events` add rounds sent, documents received and
+   stage changes (`kind: stage`, `stage: concept|spec|ready|dev|qa|done`) to that timeline. An old page
+   with only `settled:` still builds (each line becomes an undated decision with no person).
+6. **Screens** — every screen gets an "Open in Figma" button to its frame. The Figma `node` id is the single source: it builds the link and names the file
    `screens/<slug>-<node with the colon as a hyphen>.png`. Pull each frame with the Figma connector's
    `get_screenshot` (`maxDimension: 1400`) and save it there.
-6. **Generate:**
+7. **Generate:**
 
    ```
    cd docs/BA/clarifications
@@ -47,7 +59,9 @@ dated and attributed. If an answer only lives on the page, the spec rots and the
    It writes `<slug>-decisions.html` beside the YAML, embeds the screens (downscaled to 1200px WebP —
    without Pillow they embed full size), and prints each screen's file date. If the YAML will not
    parse because a value contains a colon, run `scripts/_fixyaml.py <file>` once.
-7. **Never hand-edit the HTML.** Change the YAML and generate again.
+8. **Never hand-edit the HTML.** Change the YAML and generate again. The template is
+   `scripts/_template.html` in this skill — the only one; `docs/BA/clarifications/_generate.py` just
+   runs this skill's script.
 
 ## Publish
 
@@ -62,13 +76,26 @@ dated and attributed. If an answer only lives on the page, the spec rots and the
   `--new <file>` the first time, when the feature has no row yet. Then `build` and publish the
   dashboard to its link (`tools.dashboard.url`). **The dashboard is the register of clarification
   pages** — this is how a BA finds a page after it is created.
+- **Always publish with `capabilities: {"db": {}}`, on every publish of a question page.** The
+  **Send answers to Claude** button stays hidden unless the page may use its own small database. It
+  saves the answers to collection `answers`, doc `latest`. A page first published without this never
+  shows the button, and leaving the field out on a later publish only carries the missing setting
+  forward. A publish warning that the page "refers to the `db` capability but doesn't declare it" means
+  exactly this: publish again with the declaration. After the first publish with it, run one
+  `ArtifactData list` on `answers` to confirm the store answers (empty is fine). A page with no open
+  questions still lets the client request a change to a decision, so it keeps the declaration too;
+  only a page with no questions and no decisions has no buttons.
 - **There is no email button, and there cannot be** — an artifact page cannot open the reader's mail
-  client. *Copy all answers* is the whole mechanism.
+  client. *Send answers to Claude* and *Copy all answers* are the whole mechanism.
 
 ## When the answers come back
 
-1. The client pastes the answers — usually in Slack or email, which the fetch skills pick up as intake.
-2. Put each answer into the spec's **Decisions** (date, who, the answer, the source).
-3. Rebuild the page: answered questions move to `settled`, new questions take their place, **and
+1. If someone pressed **Send answers to Claude**, read them with `ArtifactData get` (the page's link,
+   collection `answers`, doc `latest`). Otherwise the client pastes them, usually in Slack or email,
+   and the fetch skills pick them up as intake.
+2. Put each answer into the spec's **Decisions** (date, who, the answer, the source). The sent record
+   also has `changes`: requests to change an earlier decision — treat each like a new answer.
+3. Rebuild the page: answered questions move to `decisions` (with date and who), new questions take
+   their place, add a `round` event, **and
    re-pull the screens** — a screenshot from two rounds ago is the one thing nobody thinks to check.
 4. Repeat until nothing is open.

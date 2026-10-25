@@ -14,10 +14,15 @@ Commands (run from the project root, or pass --root):
                                           point a feature row at its clarification page, and optionally
                                           replace its open-question list; --new creates the row if missing
   list                                    counts, and every feature with its clarification link
+  slack-plan                              the client copy in Slack: which List rows to create, change or
+                                          close, compared with docs/BA/dashboard-slack.yaml
+  slack-ack --file <results.json>         record the Slack list ids / row ids after the rows were written
 """
 import datetime as dt
+import hashlib
 import html
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -49,6 +54,7 @@ def args_after(name, default=None):
 ROOT = Path(args_after("--root", ".")).resolve()
 YML = ROOT / "docs/BA/dashboard.yaml"
 HTML = ROOT / "docs/BA/dashboard.html"
+SLACK = ROOT / "docs/BA/dashboard-slack.yaml"
 
 
 class Dumper(yaml.SafeDumper):
@@ -58,8 +64,9 @@ class Dumper(yaml.SafeDumper):
 Dumper.add_representer(str, lambda d, s: d.represent_scalar("tag:yaml.org,2002:str", s, style="|" if "\n" in s else None))
 HEAD = ("# BA dashboard data — the only place to edit the dashboard. The ba-dashboard skill builds\n"
         "# docs/BA/dashboard.html from it and publishes it to the link in the project profile\n"
-        "# (tools.dashboard.url). Four lists: features (one row per feature, with its clarification page),\n"
-        "# awaiting (parked on someone else), todos (on the BA), agenda (for the next client call).\n\n")
+        "# (tools.dashboard.url). Lists: features (one row per feature, with its clarification page),\n"
+        "# topics (work with no feature row yet), awaiting (parked on someone else), todos (on the BA),\n"
+        "# agenda (for the next client call). An item's `feature:` names the feature or topic it sits under on the map.\n\n")
 
 
 def load():
@@ -84,6 +91,18 @@ def check(d):
             miss = ITEM_KEYS - set(it)
             if miss:
                 problems.append(f"{name}[{i}] '{it.get('t', '?')}' is missing {sorted(miss)}")
+    # The map groups by id: a feature's `id` (else a slug of its title), a topic's `id`, an item's `feature`.
+    ids = [f.get("id") or re.sub(r"[^a-z0-9]+", "-", str(f.get("area", "")).lower()).strip("-")[:40] for f in d["features"]]
+    for i, t in enumerate(d.get("topics") or []):
+        if not t.get("id") or not t.get("title"):
+            problems.append(f"topics[{i}] needs an id and a title")
+        ids.append(t.get("id"))
+    for x in sorted({x for x in ids if ids.count(x) > 1}):
+        problems.append(f"the id '{x}' is used twice (features / topics)")
+    for name in LISTS:
+        for i, it in enumerate(d[name]):
+            if it.get("feature") and it["feature"] not in ids:
+                problems.append(f"{name}[{i}] '{it.get('t', '?')}' names feature '{it['feature']}', which no feature or topic has")
     for i, f in enumerate(d["features"]):
         miss = FEATURE_KEYS - set(f)
         if miss:
@@ -129,7 +148,7 @@ def cmd_init():
     YML.parent.mkdir(parents=True, exist_ok=True)
     save({"title": title, "updated": "", "products": prods,
           "lede": "Everything open on the BA side. Parked items are indexed by the person who owes the answer.",
-          "agenda_note": "", "footer": "", "features": [], "awaiting": [], "todos": [], "agenda": []})
+          "agenda_note": "", "footer": "", "features": [], "topics": [], "awaiting": [], "todos": [], "agenda": []})
     out({"ok": True, "created": str(YML)})
 
 
@@ -200,6 +219,104 @@ def cmd_list():
                        "clarification_page": (f.get("clar") or {}).get("url")} for f in d["features"]]})
 
 
+# --- the client copy in Slack -------------------------------------------------------------------------
+# Two Slack Lists, written through the Slack connector: features in flight, and items waiting on the
+# client. The script only decides what to write; the agent writes it and hands the row ids back (slack-ack).
+STAGE_LABEL = {"design": "Design", "spec": "Spec", "dev": "In development"}
+SLACK_HEAD = ("# The client copy of the BA dashboard, in Slack — two Slack Lists built from docs/BA/dashboard.yaml by\n"
+              "# `dashboard.py slack-plan`. The BA's own page stays the full view; these lists show the client only the\n"
+              "# features in flight and the items waiting on the client's side. Row ids below are written by slack-ack.\n"
+              "# client_owners: an awaiting item goes to Slack when the FIRST person named in its `who` matches one.\n\n")
+
+
+def plain(s):
+    # Line breaks stay, so bullet lists in the dashboard text reach Slack as lists.
+    text = re.sub(r"<[^>]+>", "", html.unescape(s or ""))
+    return "\n".join(re.sub(r"[ \t]+", " ", ln).strip() for ln in text.strip().splitlines())
+
+
+def slack_state():
+    if not SLACK.exists():
+        fail(f"{SLACK} not found — it holds the Slack lists and the client-owner names")
+    st = yaml.safe_load(SLACK.read_text(encoding="utf-8")) or {}
+    st.setdefault("lists", {}).setdefault("features", {}).setdefault("rows", {})
+    st["lists"].setdefault("waiting", {}).setdefault("rows", {})
+    return st
+
+
+def is_client_owner(who, owners):
+    first = re.split(r",| then | via |\+", who or "")[0].strip().lower()
+    return any(o.lower() in first for o in owners)
+
+
+def slack_rows(d, st):
+    feats = {}
+    for f in d["features"]:
+        if f.get("client") is False:
+            continue
+        feats[f["area"]] = {"Feature": plain(f["area"]), "Product": f["prod"], "Stage": STAGE_LABEL[f["stage"]],
+                            "With": plain(f["who"]), "Since": str(f["since"]),
+                            "Where it stands": plain(f.get("client_s") or f["s"]),
+                            "Open questions": "\n".join(f"• {plain(o)}" for o in f.get("open") or []) or "None"}
+    wait = {}
+    for a in d["awaiting"]:
+        if a.get("client") is False or not is_client_owner(a["who"], st.get("client_owners", [])):
+            continue
+        if a.get("done") and str(a["n"]) not in st["lists"]["waiting"]["rows"]:
+            continue                                  # answered before it ever reached Slack
+
+        wait[str(a["n"])] = {"Question": plain(a["t"]), "Product": a["prod"], "Owner": plain(a["who"]),
+                             "Waiting since": str(a["since"]),
+                             "Where it stands": plain(a.get("client_s") or a.get("s")),
+                             "Status": "Answered" if a.get("done") else "Partly answered" if a.get("part") else "Open"}
+    return {"features": feats, "waiting": wait}
+
+
+def digest(cols):
+    return hashlib.sha1(json.dumps(cols, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:12]
+
+
+def cmd_slack_plan():
+    d, st = load(), slack_state()
+    check(d)
+    plan = {"ok": True, "lists": {}, "create": [], "update": [], "close": []}
+    gone = {"features": {"Stage": "Done"}, "waiting": {"Status": "Closed"}}
+    for name, rows in slack_rows(d, st).items():
+        lst = st["lists"][name]
+        plan["lists"][name] = {"id": lst.get("id"), "url": lst.get("url")}
+        for key, cols in rows.items():
+            have = lst["rows"].get(key)
+            if not have:
+                plan["create"].append({"list": name, "key": key, "columns": cols, "hash": digest(cols)})
+            elif have.get("hash") != digest(cols):
+                plan["update"].append({"list": name, "key": key, "record_id": have["record_id"],
+                                       "columns": cols, "hash": digest(cols)})
+        for key, have in lst["rows"].items():
+            if key not in rows and not have.get("closed"):
+                plan["close"].append({"list": name, "key": key, "record_id": have["record_id"], "columns": gone[name]})
+    plan["counts"] = {k: len(plan[k]) for k in ("create", "update", "close")}
+    out(plan)
+
+
+def cmd_slack_ack():
+    st = slack_state()
+    res = json.loads(Path(args_after("--file") or fail("--file <results.json> is required")).read_text(encoding="utf-8"))
+    for name, meta in (res.get("lists") or {}).items():
+        st["lists"][name].update({k: v for k, v in meta.items() if v})
+    for r in res.get("rows", []):
+        row = st["lists"][r["list"]]["rows"].setdefault(r["key"], {})
+        row["record_id"] = r["record_id"]
+        if r.get("closed"):
+            row["closed"] = True
+        else:
+            row["hash"] = r["hash"]
+            row.pop("closed", None)
+    st["synced"] = dt.date.today().isoformat()
+    with open(SLACK, "w", encoding="utf-8", newline="\n") as f:
+        f.write(SLACK_HEAD + yaml.dump(st, Dumper=Dumper, allow_unicode=True, sort_keys=False, width=110))
+    out({"ok": True, "rows": {k: len(v["rows"]) for k, v in st["lists"].items()}})
+
+
 if __name__ == "__main__":
     c = sys.argv[1] if len(sys.argv) > 1 else ""
     if c == "build": cmd_build()
@@ -208,4 +325,6 @@ if __name__ == "__main__":
     elif c == "close": cmd_close(sys.argv[2] if len(sys.argv) > 2 else "")
     elif c == "set-clar": cmd_set_clar()
     elif c == "list": cmd_list()
+    elif c == "slack-plan": cmd_slack_plan()
+    elif c == "slack-ack": cmd_slack_ack()
     else: print(__doc__)
