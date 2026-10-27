@@ -1,0 +1,398 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/clarification-1.schema.json",
+  "title": "clarification/1",
+  "description": "One Clarification page Publish (one Round of the page): the envelope at the top level plus the page fields, design, decisions and questions. Readable twin: clarification-1.md. x-visibility says who may see each leaf field: client, id, portal or admin. Counts across lists (at most 30 screenshots in all) and uniqueness are named checks in checks.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "sent_at",
+    "sent_by",
+    "ba_tools_version",
+    "slug",
+    "store_key",
+    "name",
+    "round",
+    "design",
+    "questions"
+  ],
+  "properties": {
+    "contract": {
+      "description": "Which contract this Publish follows. Written by the skill.",
+      "type": "string",
+      "const": "clarification/1",
+      "x-visibility": "admin"
+    },
+    "sent_at": {
+      "description": "When the skill sent it, UTC, exactly YYYY-MM-DDTHH:MM:SS.sssZ.",
+      "type": "string",
+      "minLength": 24,
+      "maxLength": 24,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+      "format": "date-time",
+      "x-visibility": "admin"
+    },
+    "sent_by": {
+      "description": "The git user name of the BA who sent it.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "x-visibility": "admin"
+    },
+    "ba_tools_version": {
+      "description": "The ba-tools version that sent it.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "x-visibility": "admin"
+    },
+    "source_commit": {
+      "description": "The Project repo commit the data came from.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "x-visibility": "admin"
+    },
+    "slug": {
+      "description": "The page id: runs of a-z and 0-9 joined by single hyphens (no hyphen first, last or twice in a row), 1 to 80 characters. May appear in the page's web address. The pattern ends in (?![\\s\\S]) rather than $, because Python's $ also matches before a final line break.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?![\\s\\S])",
+      "x-visibility": "id"
+    },
+    "store_key": {
+      "description": "The Round key. A new key makes a new Round; the same key replaces the Round if it has no sent Answer. Server only.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "x-visibility": "portal"
+    },
+    "url": {
+      "description": "The page's published link; matched to a Feature's clar_url. Server only.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "format": "uri",
+      "x-visibility": "portal"
+    },
+    "name": {
+      "description": "The page name. From name, else title.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "x-visibility": "client"
+    },
+    "round": {
+      "description": "The Round label, for example: Round V4 · sent 11 Sep 2026.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "x-visibility": "client"
+    },
+    "description": {
+      "description": "Light HTML (light-html.json). From description, else standfirst.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "x-visibility": "client"
+    },
+    "problem": {
+      "description": "Light HTML (light-html.json).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "x-visibility": "client"
+    },
+    "solution": {
+      "description": "Light HTML (light-html.json).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "x-visibility": "client"
+    },
+    "design": {
+      "description": "The design summary: text, then the screens (the hero first).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary"],
+      "properties": {
+        "label": {
+          "description": "The heading of the design summary.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "x-visibility": "client"
+        },
+        "more_label": {
+          "description": "The label of the disclosure that holds the other screens and the detail.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "x-visibility": "client"
+        },
+        "summary": {
+          "description": "Light HTML (light-html.json).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 700,
+          "x-visibility": "client"
+        },
+        "detail": {
+          "description": "Light HTML (light-html.json).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000,
+          "x-visibility": "client"
+        },
+        "screens": {
+          "description": "The design screens. Counted with every Question's screens: at most 30 in all (check max_screenshots).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file"],
+            "properties": {
+              "file": {
+                "description": "A bare file name (no folders), unique within the page (check bare_file_names). It is also the name of the screenshot's part in the multipart Publish (check screens_match_parts). Server only.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "x-visibility": "portal"
+              },
+              "cap": {
+                "description": "The caption.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300,
+                "x-visibility": "client"
+              },
+              "hero": {
+                "description": "Whether this is the screen shown first. Server only: the Client view puts the hero first.",
+                "type": "boolean",
+                "x-visibility": "portal"
+              }
+            }
+          }
+        }
+      }
+    },
+    "decisions": {
+      "description": "Settled decisions, shown read-only. An old page's settled: lines come as decisions with no date, who or how.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title"],
+        "properties": {
+          "id": {
+            "description": "The decision's id. Server only.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "x-visibility": "portal"
+          },
+          "date": {
+            "description": "When it was decided, YYYY-MM-DD.",
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 10,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "format": "date",
+            "x-visibility": "client"
+          },
+          "who": {
+            "description": "Who decided.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "x-visibility": "client"
+          },
+          "how": {
+            "description": "How it was decided, for example: on the client call.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "x-visibility": "client"
+          },
+          "title": {
+            "description": "The decision.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "x-visibility": "client"
+          },
+          "detail": {
+            "description": "More about it.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "x-visibility": "client"
+          }
+        }
+      }
+    },
+    "questions": {
+      "description": "The Questions, in order. At most 50.",
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "body", "options"],
+        "properties": {
+          "id": {
+            "description": "The Question's id. Never changes between Rounds (R19). Unique in the page (check unique_question_id).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "x-visibility": "id"
+          },
+          "section": {
+            "description": "The section heading the Question sits under.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "x-visibility": "client"
+          },
+          "title": {
+            "description": "The Question.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "x-visibility": "client"
+          },
+          "meta": {
+            "description": "A line under the title, for example what the answer decides.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "x-visibility": "client"
+          },
+          "body": {
+            "description": "Light HTML (light-html.json).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000,
+            "x-visibility": "client"
+          },
+          "body2": {
+            "description": "Light HTML (light-html.json).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000,
+            "x-visibility": "client"
+          },
+          "snag": {
+            "description": "Light HTML (light-html.json). The snag box.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000,
+            "x-visibility": "client"
+          },
+          "quote": {
+            "description": "A quote shown with the Question.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["text"],
+            "properties": {
+              "text": {
+                "description": "The quote.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000,
+                "x-visibility": "client"
+              },
+              "cite": {
+                "description": "Who said it, or where it comes from.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000,
+                "x-visibility": "client"
+              }
+            }
+          },
+          "note": {
+            "description": "The prompt over the note box.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "x-visibility": "client"
+          },
+          "note_placeholder": {
+            "description": "The placeholder text in the note box.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "x-visibility": "client"
+          },
+          "options": {
+            "description": "The options, 1 to 20.",
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["v", "t"],
+              "properties": {
+                "v": {
+                  "description": "The option's value. Unique within the Question (check unique_option_v).",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80,
+                  "x-visibility": "id"
+                },
+                "t": {
+                  "description": "The option.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "x-visibility": "client"
+                },
+                "d": {
+                  "description": "What choosing it means.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000,
+                  "x-visibility": "client"
+                },
+                "rec": {
+                  "description": "The recommended option. At most one per Question (check one_rec_max).",
+                  "type": "boolean",
+                  "x-visibility": "client"
+                }
+              }
+            }
+          },
+          "screens": {
+            "description": "Screens shown with the Question. Counted with the design screens: at most 30 in all (check max_screenshots).",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["file"],
+              "properties": {
+                "file": {
+                  "description": "A bare file name (no folders), unique within the page (check bare_file_names). It is also the name of the screenshot's part in the multipart Publish (check screens_match_parts). Server only.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "x-visibility": "portal"
+                },
+                "cap": {
+                  "description": "The caption.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300,
+                  "x-visibility": "client"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

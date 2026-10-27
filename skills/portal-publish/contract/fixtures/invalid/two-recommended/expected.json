@@ -1,0 +1,10 @@
+{
+  "kind": "clarification",
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "one_rec_max",
+      "path": "/questions/0/options/1/rec"
+    }
+  ]
+}

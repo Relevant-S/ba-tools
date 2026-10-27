@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **`portal-publish` contract 1.1.0** (tag `portal-contract-1.1.0`). Adds the `clarification/1` page schema and its
+  readable twin; the `answers/1`, `ack-request/1` and `ack/1` schemas for handing Answers out; and the page form of
+  `publish-reply/1` (picked by `kind`). `index.json` accepts `dashboard/1` and `clarification/1`. New named checks
+  `unique_question_id`, `unique_option_v`, `one_rec_max`, `bare_file_names`, `one_hero_max`, `max_screenshots`,
+  `unique_decision_id` and `screens_match_parts` (raises `screenshot_mismatch`); `no_html_entities` now covers page
+  text. New fixtures, among them the converted `example-probate-decisions.yaml`; broken replies and requests are
+  shared invalid cases too; every 1.0.0 fixture is unchanged. `check_publish` takes `kind` and, for a page, the
+  screenshot part names. PyYAML is a new dev dependency (fixture build only).
 - **`portal-publish` contract v1** (tag `portal-contract-1.0.0`). New folder `skills/portal-publish/contract/`: the
   `dashboard/1` schema and its readable twin, the `publish-reply/1` and `status/1` reply schemas, `errors.json`,
   `light-html.json`, `index.json`, `checks.md` and valid/invalid fixtures. The Relevant Clients Portal keeps an exact

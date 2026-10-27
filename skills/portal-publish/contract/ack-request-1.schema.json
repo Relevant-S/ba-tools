@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/ack-request-1.schema.json",
+  "title": "ack-request/1",
+  "description": "The body of POST /api/v1/answers/ack: only the batch id from answers/1. It has no contract field (AD-12).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["batch_id"],
+  "properties": {
+    "batch_id": {
+      "description": "The batch_id from the answers/1 reply (UUID v7).",
+      "type": "string",
+      "format": "uuid",
+      "minLength": 36,
+      "maxLength": 36
+    }
+  }
+}

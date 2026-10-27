@@ -1,0 +1,10 @@
+{
+  "kind": "clarification",
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "one_hero_max",
+      "path": "/design/screens/1/hero"
+    }
+  ]
+}

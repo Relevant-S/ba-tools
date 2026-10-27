@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/ack-1.schema.json",
+  "title": "ack/1",
+  "description": "The 200 reply to POST /api/v1/answers/ack. Acknowledging the same batch again gives the same reply.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "batch_id", "handed_out", "confirmed_at"],
+  "properties": {
+    "contract": { "type": "string", "const": "ack/1" },
+    "batch_id": {
+      "description": "The acknowledged batch (UUID v7).",
+      "type": "string",
+      "format": "uuid",
+      "minLength": 36,
+      "maxLength": 36
+    },
+    "handed_out": {
+      "description": "How many Answers the batch handed out.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "confirmed_at": {
+      "description": "When the batch was first acknowledged, UTC, exactly YYYY-MM-DDTHH:MM:SS.sssZ.",
+      "type": "string",
+      "minLength": 24,
+      "maxLength": 24,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+      "format": "date-time"
+    }
+  }
+}

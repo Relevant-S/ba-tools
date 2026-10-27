@@ -1,9 +1,13 @@
 {
-  "contract_folder": "1.0.0",
-  "accepted": ["dashboard/1"],
+  "contract_folder": "1.1.0",
+  "accepted": ["dashboard/1", "clarification/1"],
   "schemas": {
     "dashboard/1": "dashboard-1.schema.json",
+    "clarification/1": "clarification-1.schema.json",
     "publish-reply/1": "publish-reply-1.schema.json",
-    "status/1": "status-1.schema.json"
+    "status/1": "status-1.schema.json",
+    "answers/1": "answers-1.schema.json",
+    "ack-request/1": "ack-request-1.schema.json",
+    "ack/1": "ack-1.schema.json"
   }
 }

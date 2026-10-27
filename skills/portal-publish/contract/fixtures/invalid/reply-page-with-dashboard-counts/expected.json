@@ -1,0 +1,25 @@
+{
+  "contract": "publish-reply/1",
+  "details": [
+    {
+      "check": "schema",
+      "path": "/counts/client_contacts"
+    },
+    {
+      "check": "schema",
+      "path": "/counts/features"
+    },
+    {
+      "check": "schema",
+      "path": "/counts/items"
+    },
+    {
+      "check": "schema",
+      "path": "/counts/questions"
+    },
+    {
+      "check": "schema",
+      "path": "/counts/screenshots"
+    }
+  ]
+}
