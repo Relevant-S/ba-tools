@@ -312,9 +312,19 @@ def contacts(root: Path, prof: dict) -> tuple[list[dict], str, str | None]:
                         "Ask the BA whether to go on without them.")
 
 
+RELEASE_NAME_MAX = 100   # dashboard/1: release_rows[].name and features[].releases[]
+
+
+def release_name(name: str) -> str:
+    """A Jira release name as sent: one over RELEASE_NAME_MAX is cut to that length, ending in "…". Rows and each
+    Feature's releases go through this one function, so they still match."""
+    return name if len(name) <= RELEASE_NAME_MAX else name[:RELEASE_NAME_MAX - 1] + "…"
+
+
 def map_facts(data: dict) -> tuple[dict, list[str], list[dict], dict]:
     """From the built map: each Feature bubble's stage, done date and area; the areas and release rows in order;
-    each Feature's releases. Two products are merged by name, first one first."""
+    each Feature's releases. Two products are merged by name, first one first. Long release names are cut
+    (`release_name`)."""
     bubbles, areas = {}, []
     for epic in data.get("epics") or []:
         if epic.get("loose"):
@@ -329,16 +339,17 @@ def map_facts(data: dict) -> tuple[dict, list[str], list[dict], dict]:
     board = data.get("board") or {}
     for product_rows in (board.get("releases") or {}).values():
         for r in product_rows:
-            if r["name"] not in seen:
-                seen.add(r["name"])
-                rows.append({"name": r["name"], "released": bool(r.get("released"))})
+            name = release_name(r["name"])
+            if name not in seen:
+                seen.add(name)
+                rows.append({"name": name, "released": bool(r.get("released"))})
     order = {r["name"]: i for i, r in enumerate(rows)}
     releases: dict[str, list[str]] = {}
     for card in board.get("cards") or []:
         if card.get("kind") == "feature" and card.get("row") and card["row"] != "none":
             got = releases.setdefault(card["fid"], [])
-            if card["row"] not in got:
-                got.append(card["row"])
+            if release_name(card["row"]) not in got:
+                got.append(release_name(card["row"]))
     for fid in releases:
         releases[fid].sort(key=lambda n: order.get(n, len(order)))
     return bubbles, areas, rows, releases
@@ -350,6 +361,11 @@ def build_payload(root: Path, prof: dict, sent_at: str | None = None):
     d = yaml.safe_load((root / DASHBOARD).read_text(encoding="utf-8")) or {}
     bubbles, areas, rows, releases = map_facts(read_map(root))
     warnings: list[str] = []
+    cut = [r["name"] for r in rows if r["name"].endswith("…") and len(r["name"]) == RELEASE_NAME_MAX]
+    if cut:
+        warnings.append(f"{len(cut)} Jira release name(s) are longer than {RELEASE_NAME_MAX} characters, so the "
+                        "Client sees them cut, ending in \"…\": " + "; ".join(f"'{n}'" for n in cut)
+                        + ". Shorten them in Jira to show them whole.")
     sources: dict[str, tuple[str, str, dict]] = {}   # "/features/0" -> (file, row label, {field: source field})
     left_out = {"features": 0, "items": 0}
 

@@ -52,7 +52,7 @@ Portal at Admin → Projects → the Project → Publishing, and "Regenerate key
    - runs `ba-dashboard`'s `dashboard.py build`, then `map/build.py`, so stages, areas and releases are current;
    - makes the payload — only the fields the contract names. A Feature or Item with `client: false` is left
      out, and so are the Items of a hidden Feature. `client_s` replaces `s`. To-dos and `done` Items stay in
-     the repo;
+     the repo. A Jira release name over 100 characters is cut to 100, ending in "…", with a warning;
    - checks it against the contract (`checks.py`). A failure names the file, the row and the field;
    - sends it to the Portal as a dry run, and writes the payload to a temp file outside the repo.
 2. **Show the BA, word for word:**

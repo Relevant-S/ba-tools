@@ -195,6 +195,18 @@ def test_map_facts_areas_releases_and_dates(project):
     assert key in {i["key"] for i in payload["items"]}
 
 
+def test_long_release_names_are_cut_the_same_in_rows_and_features():
+    long = "Release 1.9.0 - " + "Application expiration; Investment Preferences; Auto logout; " * 3
+    data = {"board": {"releases": {"p": [{"name": long, "released": True}, {"name": "2.0"}]},
+                      "cards": [{"kind": "feature", "fid": "f1", "row": long}, {"kind": "feature", "fid": "f1", "row": "2.0"}]}}
+    _, _, rows, releases = publish.map_facts(data)
+    cut = rows[0]["name"]
+    assert len(cut) == publish.RELEASE_NAME_MAX and cut.endswith("…") and long.startswith(cut[:-1])
+    assert rows[1]["name"] == "2.0"
+    assert releases["f1"] == [cut, "2.0"]
+    assert publish.release_name("x" * publish.RELEASE_NAME_MAX) == "x" * publish.RELEASE_NAME_MAX
+
+
 # ---- BA says no --------------------------------------------------------------------------------------
 
 def test_ba_says_no_discards_the_payload(capsys, project, portal, builds):
