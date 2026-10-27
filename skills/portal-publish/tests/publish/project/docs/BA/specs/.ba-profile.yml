@@ -1,0 +1,15 @@
+# Test project profile for tests/test_publish.py
+profile_version: 2
+ba_tools_version: 0.8.0
+project: Sample
+products:
+  - {key: app, name: App, jira_project: APP}
+  - {key: admin, name: Admin, jira_project: ADM}
+tools:
+  client_emails: {include: ['@client.example.com'], exclude: []}
+  portal:
+    url: 'http://portal.test/'
+  client_contacts:
+    - {name: Maria Lopez, email: maria.lopez@example.com, slack: maria.lopez}
+    - {name: Tom Baker, email: tom.baker@example.com}
+    - {name: Priya Shah}

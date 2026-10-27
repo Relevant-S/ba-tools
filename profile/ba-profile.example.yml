@@ -59,6 +59,10 @@ tools:
   client_emails:                              # whose email and whose calls count as client input
     include: ['<@client-domain.com, or a single address>']
     exclude: ['<no-reply or help-desk addresses>']
+  client_contacts:                            # the client people who answer questions — the Portal's "Waiting on you"
+    - { name: '<full name>', email: '<email, optional>', slack: '<Slack name or member id, optional>' }
+  portal:                                     # the Relevant Clients Portal — portal-publish sends the dashboard here
+    url: '<the Portal address, e.g. http://localhost:3000>'   # the Publish key goes in .env (PORTAL_PUBLISH_KEY), never here
   slack:
     channels: ['<channel name without #>']
   figma:

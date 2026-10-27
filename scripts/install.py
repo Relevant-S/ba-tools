@@ -25,7 +25,7 @@ import yaml
 TOOLS = Path(__file__).resolve().parent.parent
 SKILLS = TOOLS / "skills"
 TEMPLATE = SKILLS / "ba-spec/assets/spec-template.md"
-SKIP = {"state", "node_modules", "__pycache__"}
+SKIP = {"state", "node_modules", "__pycache__", ".venv", ".pytest_cache"}
 
 
 def version():

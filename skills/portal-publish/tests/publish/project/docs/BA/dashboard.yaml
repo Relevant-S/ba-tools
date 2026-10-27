@@ -1,0 +1,47 @@
+# Test project for tests/test_publish.py — a small dashboard with every case the payload filter must handle.
+title: Sample BA Dashboard
+updated: 2026-10-20
+products: [App, Admin]
+features:
+  - area: Sign-up with phone number
+    id: sign-up
+    short: Sign-up
+    prod: App
+    stage: spec
+    who: Maria Lopez
+    since: 2026-09-01
+    s: <p>Internal note — the client has not seen this.</p>
+    client_s: <p class="lead">Sign up with your phone number.</p>
+    open:
+      - Which employers get it first?
+      - ''
+    clar: {url: 'https://pages.example.com/clarifications/sign-up/', label: V1}
+    refs: <a href="docs/BA/specs/sign-up.md">spec</a>
+    tickets: [APP-1]
+  - area: Identity check
+    prod: App
+    stage: dev
+    who: Dev team
+    since: 2026-09-10
+    s: Checks the employee's ID.
+    short: ''
+  - area: Back office tools
+    id: back-office
+    prod: Admin
+    stage: design
+    who: BA
+    since: 2026-09-01
+    s: Internal only.
+    client: false
+topics:
+  - {id: refunds, title: Refunds, prod: App}
+awaiting:
+  - {n: 1, prod: App, who: Maria Lopez then Dev team, since: 2026-10-01, t: Confirm the wording for sign-up, s: candid note, client_s: <p>A short answer is fine.</p>, l: Reply in Slack., feature: sign-up}
+  - {n: 2, prod: App, who: Tom Baker, since: 2026-10-02, t: Already answered, s: done already, done: true, feature: sign-up}
+  - {n: 3, prod: App, who: Tom Baker, since: 2026-10-03, t: Internal only item, s: not for the client, client: false}
+  - {n: 4, prod: Admin, who: Priya Shah, since: 2026-10-04, t: Back office question, s: under a hidden feature, feature: back-office}
+  - {n: 5, prod: App, who: Priya Shah, since: 2026-10-05, t: Refund rules, s: under a topic, feature: refunds}
+todos:
+  - {prod: App, who: BA, since: 2026-10-05, t: BA to-do never sent, s: on the BA}
+agenda:
+  - {prod: App, who: Dev team, since: 2026-10-06, t: Decide the limit for identity check, feature: identity-check}

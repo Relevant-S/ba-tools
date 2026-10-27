@@ -1,0 +1,4 @@
+# Test file for tests/test_publish.py — only client_owners is read.
+channel: client-sample
+client_owners: [Maria Lopez, Tom Baker]
+lists: {}

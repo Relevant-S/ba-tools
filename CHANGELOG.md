@@ -7,6 +7,16 @@
   `light-html.json`, `index.json`, `checks.md` and valid/invalid fixtures. The Relevant Clients Portal keeps an exact
   copy. Python checks in `skills/portal-publish/checks.py`; tests: `uv run pytest` in that folder. The skill itself
   comes later.
+- **`portal-publish dashboard`** — sends the Dashboard to the Relevant Clients Portal. `publish.py dashboard plan`
+  builds the dashboard, makes the `dashboard/1` payload (no `client: false` Features or Items, `client_s` for `s`,
+  no to-dos or done Items), checks it against the contract, sends a dry run and prints what the Client will read;
+  after the BA's yes, `dashboard send` sends the same payload and reports the Portal's confirmation (`dashboard
+  discard` on a no). New profile keys `tools.portal.url` and `tools.client_contacts`; the Publish key lives in a
+  git-ignored `.env` (`PORTAL_PUBLISH_KEY`). `ba-setup project` asks for both keys; `ba-dashboard` → Publish runs
+  portal-publish when the profile has `tools.portal`. `install.py` no longer copies a skill's `.venv` or
+  `.pytest_cache`. `portal-publish page <slug>` answers "not built yet". New dependencies in
+  `skills/portal-publish/pyproject.toml`: `httpx` and `pyyaml` (run with `uv run --project <skills>/portal-publish`).
+  `tools.portal.url` must be `https://` except for localhost, 127.0.0.1, `*.localhost` and `*.test`.
 
 ## 0.7.0 — 2026-10-25
 

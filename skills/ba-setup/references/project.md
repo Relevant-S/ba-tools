@@ -36,11 +36,27 @@ Show each list as numbered lines; the BA answers with numbers.
    leave out, like a help desk or no-reply?"* → `tools.client_emails.include` / `exclude`. A domain is
    written with its `@` (`@client.com`). This one list decides which email threads **and** which
    recorded calls belong to this project.
-4. **Figma** — ask for the link of each file the BA works in: the design file(s) and the design system.
+4. **Client contacts** — ask: *"Who on the client side answers our questions? Name, and email or Slack name
+   if you have them."* → `tools.client_contacts`, one `{ name, email, slack }` per person (`name` is
+   required; leave out what you do not have). Look first in `docs/BA/dashboard-slack.yaml` (`client_owners`)
+   and the `who` of awaiting items in `docs/BA/dashboard.yaml`. The Portal uses this list only to show a
+   Client "Waiting on you"; it shows the names to nobody.
+5. **Client Portal** (only when the project publishes to the Relevant Clients Portal) — ask for the
+   Portal's address → `tools.portal.url` (for example `http://localhost:3000` while it runs locally; any
+   other host must use `https://`). Then
+   tell the BA where the key goes, and **never ask them to paste it into the chat**:
+   - an Admin gets the Project's Publish key in the Portal at Admin → Projects → the Project → Publishing
+     (it is shown in full once — "Regenerate key" makes a new one);
+   - the BA puts it in a file `.env` at the repo root, as `PORTAL_PUBLISH_KEY=<key>`;
+   - `.gitignore` must list `.env`. Check with `git check-ignore -q .env` (exit 0 = ignored); if it is not,
+     add `.env` to `.gitignore`. Never commit `.env`.
+
+   Not using the Portal: leave `tools.portal` out.
+6. **Figma** — ask for the link of each file the BA works in: the design file(s) and the design system.
    The file key is the part after `/design/` in the link. For each: `name`, `product`, `use`
    (`designs` or `design-system`) → `tools.figma.files`. Check each key with the Figma connector
    (`get_metadata` on the file) before writing it.
-5. **Confluence** (only when the project uses it) — run `list-confluence-spaces`; the BA picks the space.
+7. **Confluence** (only when the project uses it) — run `list-confluence-spaces`; the BA picks the space.
    Ask for the parent page link (new pages go under it); the page id is the number in the link →
    `tools.confluence`. If the project does not use Confluence, write `confluence: {}`.
 

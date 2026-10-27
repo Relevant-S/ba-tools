@@ -1,10 +1,12 @@
 [project]
 name = "portal-publish"
 version = "0.1.0"
-description = "portal-publish skill: the Portal data contract and its checks"
+description = "portal-publish skill: the Portal data contract, its checks, and publish.py (dashboard plan / send / discard; httpx, pyyaml)"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "httpx>=0.27,<1",
     "jsonschema[format-nongpl]>=4.23,<5",
+    "pyyaml>=6",
 ]
 
 [dependency-groups]

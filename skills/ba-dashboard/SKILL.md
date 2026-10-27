@@ -106,7 +106,10 @@ alone. For example: a question you cannot word without inventing a client positi
 4. **The share pin does not move by itself** — if the page is shared, tell the BA to move it from the
    artifact's share menu.
 5. If `docs/BA/dashboard-slack.yaml` exists, sync the client copy in Slack (next section).
-6. Commit `dashboard.yaml`, `dashboard.html`, `dashboard-slack.yaml` and `docs/BA/mind-map/` together
+6. When the profile has `tools.portal`, run `portal-publish dashboard` after the Slack sync. It shows the
+   BA what the Client will read in the Relevant Clients Portal and sends it only after a yes. If the BA
+   says no, nothing is sent.
+7. Commit `dashboard.yaml`, `dashboard.html`, `dashboard-slack.yaml` and `docs/BA/mind-map/` together
    (ask before pushing).
 
 When a clarification page's stage should change with this update, rebuild and republish that page too
