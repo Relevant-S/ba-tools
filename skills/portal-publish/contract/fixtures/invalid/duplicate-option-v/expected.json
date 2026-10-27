@@ -1,0 +1,10 @@
+{
+  "kind": "clarification",
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "unique_option_v",
+      "path": "/questions/2/options/2/v"
+    }
+  ]
+}

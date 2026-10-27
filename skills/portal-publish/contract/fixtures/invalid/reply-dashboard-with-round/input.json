@@ -1,0 +1,17 @@
+{
+  "contract": "publish-reply/1",
+  "publish_id": "019a2a6e-5c3b-7d41-9f0e-2b6c8d4a1e70",
+  "received_at": "2026-10-27T09:30:01.250Z",
+  "kind": "dashboard",
+  "counts": {
+    "features": 18,
+    "items": 148,
+    "client_contacts": 3
+  },
+  "dry_run": false,
+  "round": {
+    "key": "merchant-payouts-v7",
+    "label": "Round V7 · sent 20 Oct 2026 by Sample BA · replaces V6",
+    "new": true
+  }
+}

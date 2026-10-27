@@ -1,0 +1,10 @@
+{
+  "kind": "clarification",
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "unique_decision_id",
+      "path": "/decisions/1/id"
+    }
+  ]
+}

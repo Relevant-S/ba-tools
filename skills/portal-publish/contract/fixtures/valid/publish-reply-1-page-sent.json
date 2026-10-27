@@ -1,0 +1,16 @@
+{
+  "contract": "publish-reply/1",
+  "publish_id": "019a2b10-7e2c-7a35-8c4d-5e6f7a8b9c0d",
+  "received_at": "2026-10-27T10:15:02.480Z",
+  "kind": "page",
+  "counts": {
+    "questions": 6,
+    "screenshots": 4
+  },
+  "round": {
+    "key": "merchant-payouts-v7",
+    "label": "Round V7 · sent 20 Oct 2026 by Sample BA · replaces V6",
+    "new": true
+  },
+  "dry_run": false
+}

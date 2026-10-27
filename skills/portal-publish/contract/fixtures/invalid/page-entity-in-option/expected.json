@@ -1,0 +1,10 @@
+{
+  "kind": "clarification",
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "no_html_entities",
+      "path": "/questions/1/options/0/d"
+    }
+  ]
+}

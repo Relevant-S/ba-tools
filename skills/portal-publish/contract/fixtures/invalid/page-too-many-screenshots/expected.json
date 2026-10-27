@@ -1,0 +1,10 @@
+{
+  "kind": "clarification",
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "max_screenshots",
+      "path": "/questions/4/screens/0"
+    }
+  ]
+}

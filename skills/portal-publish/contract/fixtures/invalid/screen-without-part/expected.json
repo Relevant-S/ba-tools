@@ -1,0 +1,10 @@
+{
+  "kind": "clarification",
+  "code": "screenshot_mismatch",
+  "details": [
+    {
+      "check": "screens_match_parts",
+      "path": "/design/screens/1/file"
+    }
+  ]
+}

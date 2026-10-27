@@ -1,0 +1,10 @@
+{
+  "kind": "clarification",
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "bare_file_names",
+      "path": "/design/screens/1/file"
+    }
+  ]
+}

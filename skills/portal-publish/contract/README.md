@@ -8,14 +8,19 @@ in `portal/contract/`, with a `SOURCE` file naming the ba-tools tag and each fil
 |---|---|
 | `dashboard-1.schema.json` | The Dashboard Publish, JSON Schema draft 2020-12 |
 | `dashboard-1.md` | The same, readable |
-| `publish-reply-1.schema.json` | The Portal's reply to a Dashboard Publish (and its dry run) |
+| `clarification-1.schema.json` | The Clarification page Publish (one Round), JSON Schema draft 2020-12 |
+| `clarification-1.md` | The same, readable |
+| `publish-reply-1.schema.json` | The Portal's reply to a Publish, Dashboard or page form by `kind` (and its dry run) |
 | `status-1.schema.json` | The Portal's reply to `GET /api/v1/status` |
+| `answers-1.schema.json` | The Portal's reply to `POST /api/v1/answers/reserve`: a batch of sent Answers |
+| `ack-request-1.schema.json` | The body of `POST /api/v1/answers/ack`: `{ batch_id }` |
+| `ack-1.schema.json` | The Portal's reply to `POST /api/v1/answers/ack` |
 | `index.json` | The accepted Publish versions and which schema checks each `contract` value |
 | `checks.md` | Order of checks, result shape, and the named cross-field checks |
 | `errors.json` | Every API error code, its HTTP status and default message |
 | `light-html.json` | The tags and class kept in light-HTML fields |
 | `fixtures/valid/` | Files that must pass |
-| `fixtures/invalid/<case>/` | `input.json` must fail; `expected.json` gives the code and every (check, path) pair |
+| `fixtures/invalid/<case>/` | `input.json` must fail; `expected.json` gives the code and every (check, path) pair, and `"kind": "clarification"` for a page; a page case may add `parts.json` (see `checks.md` → Fixtures) |
 
 The codes and statuses in `errors.json` are the contract. Its messages are only a guide: the Portal may send its
 own message text.
