@@ -1,0 +1,773 @@
+{
+  "contract": "dashboard/1",
+  "sent_at": "2026-10-27T09:30:00.000Z",
+  "sent_by": "Sample BA",
+  "ba_tools_version": "0.8.0",
+  "source_commit": "4be1f0c9a2d7e3b5f6a8c1d0e9f7a6b5c4d3e2f1",
+  "features": [
+    {
+      "id": "sign-up-with-phone-number",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "key": "56b9d68bb6ad",
+      "kind": "agenda",
+      "who": "Maria Lopez then Dev team",
+      "since": "2026-09-01",
+      "title": "Confirm the wording for sign-up with phone number (#1)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "7b06d2897916",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-02",
+      "title": "Send the sample file for identity check (#2)",
+      "feature": "identity-check",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "d132261a76b0",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-03",
+      "title": "Approve the screen for employer search (#3)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "fed4cb83033e",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-04",
+      "title": "Decide the limit for advance request (#4)",
+      "feature": "advance-request"
+    },
+    {
+      "key": "81721d90470c",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-05",
+      "title": "Share the test account for sign-up with phone number (#5)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "0ddf13b3ac7d",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-06",
+      "title": "Review the flow for identity check (#6)",
+      "feature": "identity-check",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "a6a04338e924",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-07",
+      "title": "Agree the copy for employer search (#7)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "b21ec1e3e8c6",
+      "kind": "waiting",
+      "who": "Tom Baker then Dev team",
+      "since": "2026-10-08",
+      "title": "Check the numbers in advance request (#8)",
+      "feature": "advance-request"
+    },
+    {
+      "key": "98b27d947904",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-09",
+      "title": "Confirm the wording for sign-up with phone number (#9)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "9e8ada84e514",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-10",
+      "title": "Send the sample file for identity check (#10)"
+    }
+  ],
+  "areas": [
+    "Onboarding",
+    "Loans",
+    "Repayments",
+    "Payroll sync",
+    "Notifications",
+    "Back office"
+  ],
+  "release_rows": [
+    {
+      "name": "1.4",
+      "released": true
+    },
+    {
+      "name": "1.5",
+      "released": false
+    },
+    {
+      "name": "1.6",
+      "released": false
+    }
+  ],
+  "client_contacts": [
+    {
+      "name": "Contact 0"
+    },
+    {
+      "name": "Contact 1"
+    },
+    {
+      "name": "Contact 2"
+    },
+    {
+      "name": "Contact 3"
+    },
+    {
+      "name": "Contact 4"
+    },
+    {
+      "name": "Contact 5"
+    },
+    {
+      "name": "Contact 6"
+    },
+    {
+      "name": "Contact 7"
+    },
+    {
+      "name": "Contact 8"
+    },
+    {
+      "name": "Contact 9"
+    },
+    {
+      "name": "Contact 10"
+    },
+    {
+      "name": "Contact 11"
+    },
+    {
+      "name": "Contact 12"
+    },
+    {
+      "name": "Contact 13"
+    },
+    {
+      "name": "Contact 14"
+    },
+    {
+      "name": "Contact 15"
+    },
+    {
+      "name": "Contact 16"
+    },
+    {
+      "name": "Contact 17"
+    },
+    {
+      "name": "Contact 18"
+    },
+    {
+      "name": "Contact 19"
+    },
+    {
+      "name": "Contact 20"
+    },
+    {
+      "name": "Contact 21"
+    },
+    {
+      "name": "Contact 22"
+    },
+    {
+      "name": "Contact 23"
+    },
+    {
+      "name": "Contact 24"
+    },
+    {
+      "name": "Contact 25"
+    },
+    {
+      "name": "Contact 26"
+    },
+    {
+      "name": "Contact 27"
+    },
+    {
+      "name": "Contact 28"
+    },
+    {
+      "name": "Contact 29"
+    },
+    {
+      "name": "Contact 30"
+    },
+    {
+      "name": "Contact 31"
+    },
+    {
+      "name": "Contact 32"
+    },
+    {
+      "name": "Contact 33"
+    },
+    {
+      "name": "Contact 34"
+    },
+    {
+      "name": "Contact 35"
+    },
+    {
+      "name": "Contact 36"
+    },
+    {
+      "name": "Contact 37"
+    },
+    {
+      "name": "Contact 38"
+    },
+    {
+      "name": "Contact 39"
+    },
+    {
+      "name": "Contact 40"
+    },
+    {
+      "name": "Contact 41"
+    },
+    {
+      "name": "Contact 42"
+    },
+    {
+      "name": "Contact 43"
+    },
+    {
+      "name": "Contact 44"
+    },
+    {
+      "name": "Contact 45"
+    },
+    {
+      "name": "Contact 46"
+    },
+    {
+      "name": "Contact 47"
+    },
+    {
+      "name": "Contact 48"
+    },
+    {
+      "name": "Contact 49"
+    },
+    {
+      "name": "Contact 50"
+    },
+    {
+      "name": "Contact 51"
+    },
+    {
+      "name": "Contact 52"
+    },
+    {
+      "name": "Contact 53"
+    },
+    {
+      "name": "Contact 54"
+    },
+    {
+      "name": "Contact 55"
+    },
+    {
+      "name": "Contact 56"
+    },
+    {
+      "name": "Contact 57"
+    },
+    {
+      "name": "Contact 58"
+    },
+    {
+      "name": "Contact 59"
+    },
+    {
+      "name": "Contact 60"
+    },
+    {
+      "name": "Contact 61"
+    },
+    {
+      "name": "Contact 62"
+    },
+    {
+      "name": "Contact 63"
+    },
+    {
+      "name": "Contact 64"
+    },
+    {
+      "name": "Contact 65"
+    },
+    {
+      "name": "Contact 66"
+    },
+    {
+      "name": "Contact 67"
+    },
+    {
+      "name": "Contact 68"
+    },
+    {
+      "name": "Contact 69"
+    },
+    {
+      "name": "Contact 70"
+    },
+    {
+      "name": "Contact 71"
+    },
+    {
+      "name": "Contact 72"
+    },
+    {
+      "name": "Contact 73"
+    },
+    {
+      "name": "Contact 74"
+    },
+    {
+      "name": "Contact 75"
+    },
+    {
+      "name": "Contact 76"
+    },
+    {
+      "name": "Contact 77"
+    },
+    {
+      "name": "Contact 78"
+    },
+    {
+      "name": "Contact 79"
+    },
+    {
+      "name": "Contact 80"
+    },
+    {
+      "name": "Contact 81"
+    },
+    {
+      "name": "Contact 82"
+    },
+    {
+      "name": "Contact 83"
+    },
+    {
+      "name": "Contact 84"
+    },
+    {
+      "name": "Contact 85"
+    },
+    {
+      "name": "Contact 86"
+    },
+    {
+      "name": "Contact 87"
+    },
+    {
+      "name": "Contact 88"
+    },
+    {
+      "name": "Contact 89"
+    },
+    {
+      "name": "Contact 90"
+    },
+    {
+      "name": "Contact 91"
+    },
+    {
+      "name": "Contact 92"
+    },
+    {
+      "name": "Contact 93"
+    },
+    {
+      "name": "Contact 94"
+    },
+    {
+      "name": "Contact 95"
+    },
+    {
+      "name": "Contact 96"
+    },
+    {
+      "name": "Contact 97"
+    },
+    {
+      "name": "Contact 98"
+    },
+    {
+      "name": "Contact 99"
+    },
+    {
+      "name": "Contact 100"
+    },
+    {
+      "name": "Contact 101"
+    },
+    {
+      "name": "Contact 102"
+    },
+    {
+      "name": "Contact 103"
+    },
+    {
+      "name": "Contact 104"
+    },
+    {
+      "name": "Contact 105"
+    },
+    {
+      "name": "Contact 106"
+    },
+    {
+      "name": "Contact 107"
+    },
+    {
+      "name": "Contact 108"
+    },
+    {
+      "name": "Contact 109"
+    },
+    {
+      "name": "Contact 110"
+    },
+    {
+      "name": "Contact 111"
+    },
+    {
+      "name": "Contact 112"
+    },
+    {
+      "name": "Contact 113"
+    },
+    {
+      "name": "Contact 114"
+    },
+    {
+      "name": "Contact 115"
+    },
+    {
+      "name": "Contact 116"
+    },
+    {
+      "name": "Contact 117"
+    },
+    {
+      "name": "Contact 118"
+    },
+    {
+      "name": "Contact 119"
+    },
+    {
+      "name": "Contact 120"
+    },
+    {
+      "name": "Contact 121"
+    },
+    {
+      "name": "Contact 122"
+    },
+    {
+      "name": "Contact 123"
+    },
+    {
+      "name": "Contact 124"
+    },
+    {
+      "name": "Contact 125"
+    },
+    {
+      "name": "Contact 126"
+    },
+    {
+      "name": "Contact 127"
+    },
+    {
+      "name": "Contact 128"
+    },
+    {
+      "name": "Contact 129"
+    },
+    {
+      "name": "Contact 130"
+    },
+    {
+      "name": "Contact 131"
+    },
+    {
+      "name": "Contact 132"
+    },
+    {
+      "name": "Contact 133"
+    },
+    {
+      "name": "Contact 134"
+    },
+    {
+      "name": "Contact 135"
+    },
+    {
+      "name": "Contact 136"
+    },
+    {
+      "name": "Contact 137"
+    },
+    {
+      "name": "Contact 138"
+    },
+    {
+      "name": "Contact 139"
+    },
+    {
+      "name": "Contact 140"
+    },
+    {
+      "name": "Contact 141"
+    },
+    {
+      "name": "Contact 142"
+    },
+    {
+      "name": "Contact 143"
+    },
+    {
+      "name": "Contact 144"
+    },
+    {
+      "name": "Contact 145"
+    },
+    {
+      "name": "Contact 146"
+    },
+    {
+      "name": "Contact 147"
+    },
+    {
+      "name": "Contact 148"
+    },
+    {
+      "name": "Contact 149"
+    },
+    {
+      "name": "Contact 150"
+    },
+    {
+      "name": "Contact 151"
+    },
+    {
+      "name": "Contact 152"
+    },
+    {
+      "name": "Contact 153"
+    },
+    {
+      "name": "Contact 154"
+    },
+    {
+      "name": "Contact 155"
+    },
+    {
+      "name": "Contact 156"
+    },
+    {
+      "name": "Contact 157"
+    },
+    {
+      "name": "Contact 158"
+    },
+    {
+      "name": "Contact 159"
+    },
+    {
+      "name": "Contact 160"
+    },
+    {
+      "name": "Contact 161"
+    },
+    {
+      "name": "Contact 162"
+    },
+    {
+      "name": "Contact 163"
+    },
+    {
+      "name": "Contact 164"
+    },
+    {
+      "name": "Contact 165"
+    },
+    {
+      "name": "Contact 166"
+    },
+    {
+      "name": "Contact 167"
+    },
+    {
+      "name": "Contact 168"
+    },
+    {
+      "name": "Contact 169"
+    },
+    {
+      "name": "Contact 170"
+    },
+    {
+      "name": "Contact 171"
+    },
+    {
+      "name": "Contact 172"
+    },
+    {
+      "name": "Contact 173"
+    },
+    {
+      "name": "Contact 174"
+    },
+    {
+      "name": "Contact 175"
+    },
+    {
+      "name": "Contact 176"
+    },
+    {
+      "name": "Contact 177"
+    },
+    {
+      "name": "Contact 178"
+    },
+    {
+      "name": "Contact 179"
+    },
+    {
+      "name": "Contact 180"
+    },
+    {
+      "name": "Contact 181"
+    },
+    {
+      "name": "Contact 182"
+    },
+    {
+      "name": "Contact 183"
+    },
+    {
+      "name": "Contact 184"
+    },
+    {
+      "name": "Contact 185"
+    },
+    {
+      "name": "Contact 186"
+    },
+    {
+      "name": "Contact 187"
+    },
+    {
+      "name": "Contact 188"
+    },
+    {
+      "name": "Contact 189"
+    },
+    {
+      "name": "Contact 190"
+    },
+    {
+      "name": "Contact 191"
+    },
+    {
+      "name": "Contact 192"
+    },
+    {
+      "name": "Contact 193"
+    },
+    {
+      "name": "Contact 194"
+    },
+    {
+      "name": "Contact 195"
+    },
+    {
+      "name": "Contact 196"
+    },
+    {
+      "name": "Contact 197"
+    },
+    {
+      "name": "Contact 198"
+    },
+    {
+      "name": "Contact 199"
+    },
+    {
+      "name": "Contact 200"
+    }
+  ]
+}

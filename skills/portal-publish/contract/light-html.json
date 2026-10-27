@@ -1,0 +1,22 @@
+{
+  "description": "The light-HTML allow-list (data-contract R16). Used by the Portal on arrival to clean Feature summary and Item text. Tags not listed are removed and their text kept (so a link becomes its text); the tags in drop_with_content are removed with everything inside them; comments are removed.",
+  "fields": ["features[].summary", "items[].text"],
+  "tags": ["p", "br", "strong", "b", "em", "i", "ul", "ol", "li", "code", "span"],
+  "attributes": { "*": ["class"] },
+  "classes": { "*": ["lead"] },
+  "drop_with_content": [
+    "script",
+    "style",
+    "img",
+    "iframe",
+    "frame",
+    "frameset",
+    "object",
+    "embed",
+    "noscript",
+    "template",
+    "textarea",
+    "svg",
+    "math"
+  ]
+}

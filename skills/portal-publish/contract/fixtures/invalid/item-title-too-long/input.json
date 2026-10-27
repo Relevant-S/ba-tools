@@ -1,0 +1,183 @@
+{
+  "contract": "dashboard/1",
+  "sent_at": "2026-10-27T09:30:00.000Z",
+  "sent_by": "Sample BA",
+  "ba_tools_version": "0.8.0",
+  "source_commit": "4be1f0c9a2d7e3b5f6a8c1d0e9f7a6b5c4d3e2f1",
+  "features": [
+    {
+      "id": "sign-up-with-phone-number",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "key": "56b9d68bb6ad",
+      "kind": "agenda",
+      "who": "Maria Lopez then Dev team",
+      "since": "2026-09-01",
+      "title": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "7b06d2897916",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-02",
+      "title": "Send the sample file for identity check (#2)",
+      "feature": "identity-check",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "d132261a76b0",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-03",
+      "title": "Approve the screen for employer search (#3)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "fed4cb83033e",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-04",
+      "title": "Decide the limit for advance request (#4)",
+      "feature": "advance-request"
+    },
+    {
+      "key": "81721d90470c",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-05",
+      "title": "Share the test account for sign-up with phone number (#5)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "0ddf13b3ac7d",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-06",
+      "title": "Review the flow for identity check (#6)",
+      "feature": "identity-check",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "a6a04338e924",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-07",
+      "title": "Agree the copy for employer search (#7)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "b21ec1e3e8c6",
+      "kind": "waiting",
+      "who": "Tom Baker then Dev team",
+      "since": "2026-10-08",
+      "title": "Check the numbers in advance request (#8)",
+      "feature": "advance-request"
+    },
+    {
+      "key": "98b27d947904",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-09",
+      "title": "Confirm the wording for sign-up with phone number (#9)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "9e8ada84e514",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-10",
+      "title": "Send the sample file for identity check (#10)"
+    }
+  ],
+  "areas": [
+    "Onboarding",
+    "Loans",
+    "Repayments",
+    "Payroll sync",
+    "Notifications",
+    "Back office"
+  ],
+  "release_rows": [
+    {
+      "name": "1.4",
+      "released": true
+    },
+    {
+      "name": "1.5",
+      "released": false
+    },
+    {
+      "name": "1.6",
+      "released": false
+    }
+  ],
+  "client_contacts": [
+    {
+      "name": "Maria Lopez",
+      "email": "maria.lopez@example.com",
+      "slack": "maria.lopez"
+    },
+    {
+      "name": "Tom Baker",
+      "email": "tom.baker@example.com"
+    },
+    {
+      "name": "Priya Shah",
+      "slack": "U02ABCD1234"
+    }
+  ]
+}

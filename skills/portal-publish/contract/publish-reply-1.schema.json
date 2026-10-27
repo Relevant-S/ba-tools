@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/publish-reply-1.schema.json",
+  "title": "publish-reply/1 (Dashboard form)",
+  "description": "The 200 reply to POST /api/v1/publish/dashboard. On a dry run (?dry_run=1) it also carries client_view and client_contact_names, and nothing is stored or logged. The page form (counts.questions, counts.screenshots, round) comes with the clarification contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "publish_id", "received_at", "kind", "counts", "dry_run"],
+  "properties": {
+    "contract": { "type": "string", "const": "publish-reply/1" },
+    "publish_id": {
+      "description": "The id of the stored version (UUID v7). On a dry run nothing is stored, so it is null.",
+      "anyOf": [{ "type": "string", "format": "uuid", "minLength": 36, "maxLength": 36 }, { "type": "null" }]
+    },
+    "received_at": {
+      "description": "The Portal's receive time, UTC, exactly YYYY-MM-DDTHH:MM:SS.sssZ.",
+      "type": "string",
+      "minLength": 24,
+      "maxLength": 24,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+      "format": "date-time"
+    },
+    "kind": { "type": "string", "const": "dashboard" },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["features", "items", "client_contacts"],
+      "properties": {
+        "features": { "type": "integer", "minimum": 0, "maximum": 300 },
+        "items": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "client_contacts": { "type": "integer", "minimum": 0, "maximum": 200 }
+      }
+    },
+    "dry_run": { "type": "boolean" },
+    "client_view": {
+      "description": "ClientDashboard (AD-4): only client and id fields, plus the derived waitingOnYou, onAgenda, hiddenByDoneFilter and page. Items with no Feature, an unsent Feature, or awaiting with no matching contact are left out.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["areas", "release_rows", "features", "items"],
+      "properties": {
+        "areas": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+        },
+        "release_rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "released"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+              "released": { "type": "boolean" }
+            }
+          }
+        },
+        "features": {
+          "type": "array",
+          "maxItems": 300,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "title", "summary", "stage", "map_area", "hiddenByDoneFilter", "page"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1, "maxLength": 40 },
+              "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+              "short": { "type": "string", "minLength": 1, "maxLength": 40 },
+              "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+              "open": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+              },
+              "stage": { "type": "string", "enum": ["concept", "spec", "ready", "dev", "qa", "done"] },
+              "map_area": { "type": "string", "minLength": 1, "maxLength": 100 },
+              "releases": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+              },
+              "hiddenByDoneFilter": { "type": "boolean" },
+              "page": {
+                "description": "The Feature's Clarification page. Always null until Epic 4 (shown as Questions coming).",
+                "anyOf": [
+                  { "type": "null" },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["slug", "answered", "total"],
+                    "properties": {
+                      "slug": { "type": "string", "minLength": 1, "maxLength": 80 },
+                      "answered": { "type": "integer", "minimum": 0 },
+                      "total": { "type": "integer", "minimum": 0 }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "feature", "title", "waitingOnYou", "onAgenda"],
+            "properties": {
+              "key": { "type": "string", "minLength": 12, "maxLength": 12, "pattern": "^[0-9a-f]{12}$" },
+              "feature": {
+                "description": "The id of the Feature the Item sits under (an id value).",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+              "text": { "type": "string", "minLength": 1, "maxLength": 2000 },
+              "how_to_send": { "type": "string", "minLength": 1, "maxLength": 300 },
+              "waitingOnYou": { "type": "boolean" },
+              "onAgenda": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "client_contact_names": {
+      "description": "The names of the Client contacts sent, so the BA can check them before sending.",
+      "type": "array",
+      "maxItems": 200,
+      "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+    }
+  },
+  "if": { "properties": { "dry_run": { "const": true } }, "required": ["dry_run"] },
+  "then": {
+    "required": ["client_view", "client_contact_names"],
+    "properties": { "publish_id": { "type": "null" }, "client_view": true, "client_contact_names": true }
+  },
+  "else": {
+    "properties": { "publish_id": { "type": "string" }, "client_view": false, "client_contact_names": false }
+  }
+}

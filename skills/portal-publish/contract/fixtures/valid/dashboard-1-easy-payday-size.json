@@ -1,0 +1,1534 @@
+{
+  "contract": "dashboard/1",
+  "sent_at": "2026-10-27T09:30:00.000Z",
+  "sent_by": "Sample BA",
+  "ba_tools_version": "0.8.0",
+  "source_commit": "4be1f0c9a2d7e3b5f6a8c1d0e9f7a6b5c4d3e2f1",
+  "features": [
+    {
+      "id": "sign-up-with-phone-number",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "clar_url": "https://pages.example.com/clarifications/fee-preview-before-confirming/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-06"
+    },
+    {
+      "id": "early-repayment",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/payroll-file-import/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-12"
+    },
+    {
+      "id": "push-notifications",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "clar_url": "https://pages.example.com/clarifications/email-receipts/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "clar_url": "https://pages.example.com/clarifications/monthly-finance-export/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-18"
+    }
+  ],
+  "items": [
+    {
+      "key": "56b9d68bb6ad",
+      "kind": "agenda",
+      "who": "Maria Lopez then Dev team",
+      "since": "2026-09-01",
+      "title": "Confirm the wording for sign-up with phone number (#1)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "7b06d2897916",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-02",
+      "title": "Send the sample file for identity check (#2)",
+      "feature": "identity-check",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "d132261a76b0",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-03",
+      "title": "Approve the screen for employer search (#3)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "fed4cb83033e",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-04",
+      "title": "Decide the limit for advance request (#4)",
+      "feature": "advance-request"
+    },
+    {
+      "key": "d2a6e5bea44a",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-05",
+      "title": "Share the test account for advance limits by salary band (#5)",
+      "feature": "advance-limits-by-salary-band",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "b231551d20fe",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-06",
+      "title": "Review the flow for fee preview before confirming (#6)",
+      "feature": "fee-preview-before-confirming",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "a01426785419",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-07",
+      "title": "Agree the copy for early repayment (#7)",
+      "feature": "early-repayment",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "a20b237b5b4e",
+      "kind": "waiting",
+      "who": "Tom Baker then Dev team",
+      "since": "2026-10-08",
+      "title": "Check the numbers in repayment on payday (#8)",
+      "feature": "repayment-on-payday"
+    },
+    {
+      "key": "0d463df9fcf4",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-09",
+      "title": "Confirm the wording for failed repayment retries (#9)",
+      "feature": "failed-repayment-retries",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "6ad5c93a85de",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-10",
+      "title": "Send the sample file for payroll file import (#10)"
+    },
+    {
+      "key": "aa977fbd7594",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-11",
+      "title": "Approve the screen for payroll provider connections (#11)",
+      "feature": "payroll-provider-connections",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "6f81f8c5c559",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-12",
+      "title": "Decide the limit for deduction report for employers (#12)",
+      "feature": "deduction-report-for-employers"
+    },
+    {
+      "key": "ce378e8c8f5d",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-13",
+      "title": "Share the test account for push notifications (#13)",
+      "feature": "push-notifications",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "aeecbd399b91",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-14",
+      "title": "Review the flow for email receipts (#14)",
+      "feature": "email-receipts",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "db709d62b995",
+      "kind": "waiting",
+      "who": "Priya Shah then Dev team",
+      "since": "2026-09-15",
+      "title": "Agree the copy for sms reminders before payday (#15)",
+      "feature": "sms-reminders-before-payday",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "9d7b12ec1797",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-16",
+      "title": "Check the numbers in admin user search (#16)",
+      "feature": "admin-user-search"
+    },
+    {
+      "key": "9eb94c83f531",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-17",
+      "title": "Confirm the wording for refunds and write-offs (#17)",
+      "feature": "refunds-and-write-offs",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "27b4d4cd71ee",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-18",
+      "title": "Send the sample file for monthly finance export (#18)",
+      "feature": "monthly-finance-export",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "2291e221188c",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-19",
+      "title": "Approve the screen for sign-up with phone number (#19)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "edd7fb329b39",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-20",
+      "title": "Decide the limit for identity check (#20)"
+    },
+    {
+      "key": "db3b97d0b217",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-21",
+      "title": "Share the test account for employer search (#21)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "c201906e7f5f",
+      "kind": "agenda",
+      "who": "Dev team then Dev team",
+      "since": "2026-10-22",
+      "title": "Review the flow for advance request (#22)",
+      "feature": "advance-request"
+    },
+    {
+      "key": "db82edceb55b",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-23",
+      "title": "Agree the copy for advance limits by salary band (#23)",
+      "feature": "advance-limits-by-salary-band",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "36f0bbaddbfb",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-24",
+      "title": "Check the numbers in fee preview before confirming (#24)",
+      "feature": "fee-preview-before-confirming"
+    },
+    {
+      "key": "9fe5dc798580",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-25",
+      "title": "Confirm the wording for early repayment (#25)",
+      "feature": "early-repayment",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "ab713274c547",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-26",
+      "title": "Send the sample file for repayment on payday (#26)",
+      "feature": "repayment-on-payday",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "99b177017f9a",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-27",
+      "title": "Approve the screen for failed repayment retries (#27)",
+      "feature": "failed-repayment-retries",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "809984a82d04",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-28",
+      "title": "Decide the limit for payroll file import (#28)",
+      "feature": "payroll-file-import"
+    },
+    {
+      "key": "b372f7d86eae",
+      "kind": "waiting",
+      "who": "Anna then Dev team",
+      "since": "2026-09-01",
+      "title": "Share the test account for payroll provider connections (#29)",
+      "feature": "payroll-provider-connections",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "c12ee6bfed93",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-02",
+      "title": "Review the flow for deduction report for employers (#30)",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "20818dbcd560",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-03",
+      "title": "Agree the copy for push notifications (#31)",
+      "feature": "push-notifications",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "014b32e67697",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-04",
+      "title": "Check the numbers in email receipts (#32)",
+      "feature": "email-receipts"
+    },
+    {
+      "key": "b0a86a04e260",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-05",
+      "title": "Confirm the wording for sms reminders before payday (#33)",
+      "feature": "sms-reminders-before-payday",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "105ce47eae2c",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-06",
+      "title": "Send the sample file for admin user search (#34)",
+      "feature": "admin-user-search"
+    },
+    {
+      "key": "a91cc0fc5a01",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-07",
+      "title": "Approve the screen for refunds and write-offs (#35)",
+      "feature": "refunds-and-write-offs",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "df168b342efb",
+      "kind": "waiting",
+      "who": "Jonas Berg then Dev team",
+      "since": "2026-10-08",
+      "title": "Decide the limit for monthly finance export (#36)",
+      "feature": "monthly-finance-export"
+    },
+    {
+      "key": "e9ea61b24928",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-09",
+      "title": "Share the test account for sign-up with phone number (#37)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "76c7fee8315e",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-10",
+      "title": "Review the flow for identity check (#38)",
+      "feature": "identity-check",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "52110c561e0c",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-11",
+      "title": "Agree the copy for employer search (#39)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "10271199ac1b",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-12",
+      "title": "Check the numbers in advance request (#40)"
+    },
+    {
+      "key": "d8e302907696",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-13",
+      "title": "Confirm the wording for advance limits by salary band (#41)",
+      "feature": "advance-limits-by-salary-band",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "410323ecbec0",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-14",
+      "title": "Send the sample file for fee preview before confirming (#42)",
+      "feature": "fee-preview-before-confirming",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "3f8e2df23ea2",
+      "kind": "agenda",
+      "who": "Maria Lopez then Dev team",
+      "since": "2026-09-15",
+      "title": "Approve the screen for early repayment (#43)",
+      "feature": "early-repayment",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "ca64eed302f4",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-16",
+      "title": "Decide the limit for repayment on payday (#44)",
+      "feature": "repayment-on-payday"
+    },
+    {
+      "key": "5e75b4b7cb3f",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-17",
+      "title": "Share the test account for failed repayment retries (#45)",
+      "feature": "failed-repayment-retries",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "9a91d13f5f31",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-18",
+      "title": "Review the flow for payroll file import (#46)",
+      "feature": "payroll-file-import"
+    },
+    {
+      "key": "6dcdf0a1c993",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-19",
+      "title": "Agree the copy for payroll provider connections (#47)",
+      "feature": "payroll-provider-connections",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "477bc873daeb",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-20",
+      "title": "Check the numbers in deduction report for employers (#48)",
+      "feature": "deduction-report-for-employers"
+    },
+    {
+      "key": "8a298c862e83",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-21",
+      "title": "Confirm the wording for push notifications (#49)",
+      "feature": "push-notifications",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "0f6a4cb6d6f2",
+      "kind": "waiting",
+      "who": "Tom Baker then Dev team",
+      "since": "2026-10-22",
+      "title": "Send the sample file for email receipts (#50)",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "2522b9c26490",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-23",
+      "title": "Approve the screen for sms reminders before payday (#51)",
+      "feature": "sms-reminders-before-payday",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "558acaa62e4b",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-24",
+      "title": "Decide the limit for admin user search (#52)",
+      "feature": "admin-user-search"
+    },
+    {
+      "key": "607c9ad40241",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-25",
+      "title": "Share the test account for refunds and write-offs (#53)",
+      "feature": "refunds-and-write-offs",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "b065146b25a9",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-26",
+      "title": "Review the flow for monthly finance export (#54)",
+      "feature": "monthly-finance-export",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "d8c6b44cfee1",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-27",
+      "title": "Agree the copy for sign-up with phone number (#55)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "9fff9335cd6b",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-28",
+      "title": "Check the numbers in identity check (#56)",
+      "feature": "identity-check"
+    },
+    {
+      "key": "3958710659d3",
+      "kind": "waiting",
+      "who": "Priya Shah then Dev team",
+      "since": "2026-09-01",
+      "title": "Confirm the wording for employer search (#57)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "dee1219edc5e",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-02",
+      "title": "Send the sample file for advance request (#58)",
+      "feature": "advance-request"
+    },
+    {
+      "key": "9288de7034c2",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-03",
+      "title": "Approve the screen for advance limits by salary band (#59)",
+      "feature": "advance-limits-by-salary-band",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "0be08a71c116",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-04",
+      "title": "Decide the limit for fee preview before confirming (#60)"
+    },
+    {
+      "key": "ac0d63fb08bb",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-05",
+      "title": "Share the test account for early repayment (#61)",
+      "feature": "early-repayment",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "f4201b6870e3",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-06",
+      "title": "Review the flow for repayment on payday (#62)",
+      "feature": "repayment-on-payday",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "cf81fad77fe5",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-07",
+      "title": "Agree the copy for failed repayment retries (#63)",
+      "feature": "failed-repayment-retries",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "06a66d6ffbfe",
+      "kind": "agenda",
+      "who": "Dev team then Dev team",
+      "since": "2026-10-08",
+      "title": "Check the numbers in payroll file import (#64)",
+      "feature": "payroll-file-import"
+    },
+    {
+      "key": "d5768937142d",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-09",
+      "title": "Confirm the wording for payroll provider connections (#65)",
+      "feature": "payroll-provider-connections",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "bce87739c4d4",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-10",
+      "title": "Send the sample file for deduction report for employers (#66)",
+      "feature": "deduction-report-for-employers",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "4fa58ac1e6b0",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-11",
+      "title": "Approve the screen for push notifications (#67)",
+      "feature": "push-notifications",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "e1dac8cd1757",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-12",
+      "title": "Decide the limit for email receipts (#68)",
+      "feature": "email-receipts"
+    },
+    {
+      "key": "164ac81060a7",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-13",
+      "title": "Share the test account for sms reminders before payday (#69)",
+      "feature": "sms-reminders-before-payday",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "ada4cd4e4644",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-14",
+      "title": "Review the flow for admin user search (#70)"
+    },
+    {
+      "key": "aa49cc376116",
+      "kind": "waiting",
+      "who": "Anna then Dev team",
+      "since": "2026-09-15",
+      "title": "Agree the copy for refunds and write-offs (#71)",
+      "feature": "refunds-and-write-offs",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "b90c9542d3d5",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-16",
+      "title": "Check the numbers in monthly finance export (#72)",
+      "feature": "monthly-finance-export"
+    },
+    {
+      "key": "a96fbf67912d",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-17",
+      "title": "Confirm the wording for sign-up with phone number (#73)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "0cb33db0975f",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-18",
+      "title": "Send the sample file for identity check (#74)",
+      "feature": "identity-check",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "843e6f659162",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-19",
+      "title": "Approve the screen for employer search (#75)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "60f7f36c7b82",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-20",
+      "title": "Decide the limit for advance request (#76)",
+      "feature": "advance-request"
+    },
+    {
+      "key": "fa384013b024",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-21",
+      "title": "Share the test account for advance limits by salary band (#77)",
+      "feature": "advance-limits-by-salary-band",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "641e65870566",
+      "kind": "waiting",
+      "who": "Jonas Berg then Dev team",
+      "since": "2026-10-22",
+      "title": "Review the flow for fee preview before confirming (#78)",
+      "feature": "fee-preview-before-confirming",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "af5e7c1c98e7",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-23",
+      "title": "Agree the copy for early repayment (#79)",
+      "feature": "early-repayment",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "5844bf487f25",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-24",
+      "title": "Check the numbers in repayment on payday (#80)"
+    },
+    {
+      "key": "e99bcc8102fd",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-25",
+      "title": "Confirm the wording for failed repayment retries (#81)",
+      "feature": "failed-repayment-retries",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "926db99bef27",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-26",
+      "title": "Send the sample file for payroll file import (#82)",
+      "feature": "payroll-file-import"
+    },
+    {
+      "key": "10fd89b07929",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-27",
+      "title": "Approve the screen for payroll provider connections (#83)",
+      "feature": "payroll-provider-connections",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "80690a0fb921",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-28",
+      "title": "Decide the limit for deduction report for employers (#84)",
+      "feature": "deduction-report-for-employers"
+    },
+    {
+      "key": "2a1ad88a74da",
+      "kind": "agenda",
+      "who": "Maria Lopez then Dev team",
+      "since": "2026-09-01",
+      "title": "Share the test account for push notifications (#85)",
+      "feature": "push-notifications",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "90c97b72252a",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-02",
+      "title": "Review the flow for email receipts (#86)",
+      "feature": "email-receipts",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "29607fc34819",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-03",
+      "title": "Agree the copy for sms reminders before payday (#87)",
+      "feature": "sms-reminders-before-payday",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "9a14258d9cb9",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-04",
+      "title": "Check the numbers in admin user search (#88)",
+      "feature": "admin-user-search"
+    },
+    {
+      "key": "7bcbf723f076",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-05",
+      "title": "Confirm the wording for refunds and write-offs (#89)",
+      "feature": "refunds-and-write-offs",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "aa41be48775b",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-06",
+      "title": "Send the sample file for monthly finance export (#90)",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "ec99926bec86",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-07",
+      "title": "Approve the screen for sign-up with phone number (#91)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "76f906296298",
+      "kind": "waiting",
+      "who": "Tom Baker then Dev team",
+      "since": "2026-10-08",
+      "title": "Decide the limit for identity check (#92)",
+      "feature": "identity-check"
+    },
+    {
+      "key": "12a6215ec1ed",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-09",
+      "title": "Share the test account for employer search (#93)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "d1f2937cfd5c",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-10",
+      "title": "Review the flow for advance request (#94)",
+      "feature": "advance-request"
+    },
+    {
+      "key": "5ee26d9d2ec4",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-11",
+      "title": "Agree the copy for advance limits by salary band (#95)",
+      "feature": "advance-limits-by-salary-band",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "53869cc73bcc",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-12",
+      "title": "Check the numbers in fee preview before confirming (#96)",
+      "feature": "fee-preview-before-confirming"
+    },
+    {
+      "key": "0dc1911d6f83",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-13",
+      "title": "Confirm the wording for early repayment (#97)",
+      "feature": "early-repayment",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "8a01a034f0a9",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-14",
+      "title": "Send the sample file for repayment on payday (#98)",
+      "feature": "repayment-on-payday",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "2cadb5dc04d5",
+      "kind": "waiting",
+      "who": "Priya Shah then Dev team",
+      "since": "2026-09-15",
+      "title": "Approve the screen for failed repayment retries (#99)",
+      "feature": "failed-repayment-retries",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "04243e47f9b0",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-16",
+      "title": "Decide the limit for payroll file import (#100)"
+    },
+    {
+      "key": "8a34af895325",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-17",
+      "title": "Share the test account for payroll provider connections (#101)",
+      "feature": "payroll-provider-connections",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "75570873eb74",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-18",
+      "title": "Review the flow for deduction report for employers (#102)",
+      "feature": "deduction-report-for-employers",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "9c38102cc41e",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-19",
+      "title": "Agree the copy for push notifications (#103)",
+      "feature": "push-notifications",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "084a87056e79",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-20",
+      "title": "Check the numbers in email receipts (#104)",
+      "feature": "email-receipts"
+    },
+    {
+      "key": "e3c096467837",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-21",
+      "title": "Confirm the wording for sms reminders before payday (#105)",
+      "feature": "sms-reminders-before-payday",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "4b62e62a66e6",
+      "kind": "agenda",
+      "who": "Dev team then Dev team",
+      "since": "2026-10-22",
+      "title": "Send the sample file for admin user search (#106)",
+      "feature": "admin-user-search"
+    },
+    {
+      "key": "248e56d088bd",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-23",
+      "title": "Approve the screen for refunds and write-offs (#107)",
+      "feature": "refunds-and-write-offs",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "16c4d2bb025a",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-24",
+      "title": "Decide the limit for monthly finance export (#108)",
+      "feature": "monthly-finance-export"
+    },
+    {
+      "key": "e18577e50607",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-25",
+      "title": "Share the test account for sign-up with phone number (#109)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "23ed0e9c1b91",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-26",
+      "title": "Review the flow for identity check (#110)",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "6d1c014b907d",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-27",
+      "title": "Agree the copy for employer search (#111)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "c2f5d9045d4b",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-28",
+      "title": "Check the numbers in advance request (#112)",
+      "feature": "advance-request"
+    },
+    {
+      "key": "a04b8d10954c",
+      "kind": "waiting",
+      "who": "Anna then Dev team",
+      "since": "2026-09-01",
+      "title": "Confirm the wording for advance limits by salary band (#113)",
+      "feature": "advance-limits-by-salary-band",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "4b3755e30ce1",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-02",
+      "title": "Send the sample file for fee preview before confirming (#114)",
+      "feature": "fee-preview-before-confirming",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "b52179950b53",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-03",
+      "title": "Approve the screen for early repayment (#115)",
+      "feature": "early-repayment",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "901d7077b381",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-04",
+      "title": "Decide the limit for repayment on payday (#116)",
+      "feature": "repayment-on-payday"
+    },
+    {
+      "key": "718f6c75e6ae",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-05",
+      "title": "Share the test account for failed repayment retries (#117)",
+      "feature": "failed-repayment-retries",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "d56cd0f7fcd1",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-06",
+      "title": "Review the flow for payroll file import (#118)",
+      "feature": "payroll-file-import"
+    },
+    {
+      "key": "602a1b519646",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-07",
+      "title": "Agree the copy for payroll provider connections (#119)",
+      "feature": "payroll-provider-connections",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "1d5e9aac6bc5",
+      "kind": "waiting",
+      "who": "Jonas Berg then Dev team",
+      "since": "2026-10-08",
+      "title": "Check the numbers in deduction report for employers (#120)"
+    },
+    {
+      "key": "d4d5cdf1dcc4",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-09",
+      "title": "Confirm the wording for push notifications (#121)",
+      "feature": "push-notifications",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "d3f7df562cc2",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-10",
+      "title": "Send the sample file for email receipts (#122)",
+      "feature": "email-receipts",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "180678c717b1",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-11",
+      "title": "Approve the screen for sms reminders before payday (#123)",
+      "feature": "sms-reminders-before-payday",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "b366216b9f9b",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-12",
+      "title": "Decide the limit for admin user search (#124)",
+      "feature": "admin-user-search"
+    },
+    {
+      "key": "a1ce7f122f24",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-13",
+      "title": "Share the test account for refunds and write-offs (#125)",
+      "feature": "refunds-and-write-offs",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "72bcb5502b45",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-14",
+      "title": "Review the flow for monthly finance export (#126)",
+      "feature": "monthly-finance-export",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "2b1f98964e30",
+      "kind": "agenda",
+      "who": "Maria Lopez then Dev team",
+      "since": "2026-09-15",
+      "title": "Agree the copy for sign-up with phone number (#127)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "e38ae24b628f",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-16",
+      "title": "Check the numbers in identity check (#128)",
+      "feature": "identity-check"
+    },
+    {
+      "key": "d15ca8403a89",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-17",
+      "title": "Confirm the wording for employer search (#129)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "2aa3c5d81b16",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-18",
+      "title": "Send the sample file for advance request (#130)"
+    },
+    {
+      "key": "d26fde52a2f5",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-19",
+      "title": "Approve the screen for advance limits by salary band (#131)",
+      "feature": "advance-limits-by-salary-band",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "44fb2b8883b1",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-20",
+      "title": "Decide the limit for fee preview before confirming (#132)",
+      "feature": "fee-preview-before-confirming"
+    },
+    {
+      "key": "5710cc56c8b6",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-21",
+      "title": "Share the test account for early repayment (#133)",
+      "feature": "early-repayment",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "d364bbbe8bef",
+      "kind": "waiting",
+      "who": "Tom Baker then Dev team",
+      "since": "2026-10-22",
+      "title": "Review the flow for repayment on payday (#134)",
+      "feature": "repayment-on-payday",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "27cf58642711",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-23",
+      "title": "Agree the copy for failed repayment retries (#135)",
+      "feature": "failed-repayment-retries",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "10a37e33fa05",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-24",
+      "title": "Check the numbers in payroll file import (#136)",
+      "feature": "payroll-file-import"
+    },
+    {
+      "key": "45a1fee2515f",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-25",
+      "title": "Confirm the wording for payroll provider connections (#137)",
+      "feature": "payroll-provider-connections",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "7d6eea5cc145",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-26",
+      "title": "Send the sample file for deduction report for employers (#138)",
+      "feature": "deduction-report-for-employers",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "8f0f6ab8495d",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-27",
+      "title": "Approve the screen for push notifications (#139)",
+      "feature": "push-notifications",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "9c2136d82ca8",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-28",
+      "title": "Decide the limit for email receipts (#140)"
+    },
+    {
+      "key": "e7dea2e9f6de",
+      "kind": "waiting",
+      "who": "Priya Shah then Dev team",
+      "since": "2026-09-01",
+      "title": "Share the test account for sms reminders before payday (#141)",
+      "feature": "sms-reminders-before-payday",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "da26208a865b",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-02",
+      "title": "Review the flow for admin user search (#142)",
+      "feature": "admin-user-search"
+    },
+    {
+      "key": "e3a103dfa9a1",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-03",
+      "title": "Agree the copy for refunds and write-offs (#143)",
+      "feature": "refunds-and-write-offs",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "595a5ba81baa",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-04",
+      "title": "Check the numbers in monthly finance export (#144)",
+      "feature": "monthly-finance-export"
+    },
+    {
+      "key": "8c8bf6b6809e",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-05",
+      "title": "Confirm the wording for sign-up with phone number (#145)",
+      "feature": "sign-up-with-phone-number",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "2d41f5ac6cfd",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-06",
+      "title": "Send the sample file for identity check (#146)",
+      "feature": "identity-check",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "7a1a6b6e02cf",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-07",
+      "title": "Approve the screen for employer search (#147)",
+      "feature": "employer-search",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "2bd09a5838f2",
+      "kind": "agenda",
+      "who": "Dev team then Dev team",
+      "since": "2026-10-08",
+      "title": "Decide the limit for advance request (#148)",
+      "feature": "advance-request"
+    }
+  ],
+  "areas": [
+    "Onboarding",
+    "Loans",
+    "Repayments",
+    "Payroll sync",
+    "Notifications",
+    "Back office"
+  ],
+  "release_rows": [
+    {
+      "name": "1.4",
+      "released": true
+    },
+    {
+      "name": "1.5",
+      "released": false
+    },
+    {
+      "name": "1.6",
+      "released": false
+    }
+  ],
+  "client_contacts": [
+    {
+      "name": "Maria Lopez",
+      "email": "maria.lopez@example.com",
+      "slack": "maria.lopez"
+    },
+    {
+      "name": "Tom Baker",
+      "email": "tom.baker@example.com"
+    },
+    {
+      "name": "Priya Shah",
+      "slack": "U02ABCD1234"
+    }
+  ]
+}

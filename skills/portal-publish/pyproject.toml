@@ -1,0 +1,20 @@
+[project]
+name = "portal-publish"
+version = "0.1.0"
+description = "portal-publish skill: the Portal data contract and its checks"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "jsonschema[format-nongpl]>=4.23,<5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

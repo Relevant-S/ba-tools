@@ -1,0 +1,46 @@
+{
+  "bad_request": {
+    "status": 400,
+    "message": "The request is not in the expected format."
+  },
+  "invalid_key": {
+    "status": 401,
+    "message": "This key is not valid for this Project."
+  },
+  "batch_unknown": {
+    "status": 404,
+    "message": "There is no batch with this id for this Project."
+  },
+  "project_archived": {
+    "status": 409,
+    "message": "This Project is archived, so it takes no new sends."
+  },
+  "round_has_answers": {
+    "status": 409,
+    "message": "This round already has sent answers, so it cannot be replaced."
+  },
+  "batch_expired": {
+    "status": 409,
+    "message": "This batch has expired: its answers are in a newer batch."
+  },
+  "payload_too_large": {
+    "status": 413,
+    "message": "The send is too large: a Dashboard can be at most 2 MB, a page at most 90 MB."
+  },
+  "contract_version_not_accepted": {
+    "status": 422,
+    "message": "This contract version is not accepted."
+  },
+  "contract_invalid": {
+    "status": 422,
+    "message": "The data does not match the contract."
+  },
+  "screenshot_mismatch": {
+    "status": 422,
+    "message": "A named screenshot was not sent, or a sent file is not named in the page."
+  },
+  "server_error": {
+    "status": 500,
+    "message": "Something went wrong."
+  }
+}

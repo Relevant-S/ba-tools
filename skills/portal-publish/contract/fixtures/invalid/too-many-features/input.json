@@ -1,0 +1,3754 @@
+{
+  "contract": "dashboard/1",
+  "sent_at": "2026-10-27T09:30:00.000Z",
+  "sent_by": "Sample BA",
+  "ba_tools_version": "0.8.0",
+  "source_commit": "4be1f0c9a2d7e3b5f6a8c1d0e9f7a6b5c4d3e2f1",
+  "features": [
+    {
+      "id": "sign-up-with-phone-number-0",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-1",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-2",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-3",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-4",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-5",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "clar_url": "https://pages.example.com/clarifications/fee-preview-before-confirming/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-06"
+    },
+    {
+      "id": "early-repayment-6",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-7",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-8",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-9",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/payroll-file-import/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-10",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-11",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-12"
+    },
+    {
+      "id": "push-notifications-12",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-13",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "clar_url": "https://pages.example.com/clarifications/email-receipts/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-14",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-15",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-16",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-17",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "clar_url": "https://pages.example.com/clarifications/monthly-finance-export/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-18"
+    },
+    {
+      "id": "sign-up-with-phone-number-18",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-19",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-20",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-21",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/advance-request/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-22",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-23",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-04"
+    },
+    {
+      "id": "early-repayment-24",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-25",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "clar_url": "https://pages.example.com/clarifications/repayment-on-payday/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-26",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-27",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-28",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-29",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "clar_url": "https://pages.example.com/clarifications/deduction-report-for-employers/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-10"
+    },
+    {
+      "id": "push-notifications-30",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-31",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-32",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-33",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/admin-user-search/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-34",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-35",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-16"
+    },
+    {
+      "id": "sign-up-with-phone-number-36",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-37",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-38",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-39",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-40",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-41",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "clar_url": "https://pages.example.com/clarifications/fee-preview-before-confirming/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-02"
+    },
+    {
+      "id": "early-repayment-42",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-43",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-44",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-45",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/payroll-file-import/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-46",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-47",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-08"
+    },
+    {
+      "id": "push-notifications-48",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-49",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "clar_url": "https://pages.example.com/clarifications/email-receipts/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-50",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-51",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-52",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-53",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "clar_url": "https://pages.example.com/clarifications/monthly-finance-export/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-14"
+    },
+    {
+      "id": "sign-up-with-phone-number-54",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-55",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-56",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-57",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/advance-request/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-58",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-59",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-20"
+    },
+    {
+      "id": "early-repayment-60",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-61",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "clar_url": "https://pages.example.com/clarifications/repayment-on-payday/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-62",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-63",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-64",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-65",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "clar_url": "https://pages.example.com/clarifications/deduction-report-for-employers/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-06"
+    },
+    {
+      "id": "push-notifications-66",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-67",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-68",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-69",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/admin-user-search/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-70",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-71",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-12"
+    },
+    {
+      "id": "sign-up-with-phone-number-72",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-73",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-74",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-75",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-76",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-77",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "clar_url": "https://pages.example.com/clarifications/fee-preview-before-confirming/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-18"
+    },
+    {
+      "id": "early-repayment-78",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-79",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-80",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-81",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/payroll-file-import/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-82",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-83",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-04"
+    },
+    {
+      "id": "push-notifications-84",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-85",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "clar_url": "https://pages.example.com/clarifications/email-receipts/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-86",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-87",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-88",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-89",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "clar_url": "https://pages.example.com/clarifications/monthly-finance-export/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-10"
+    },
+    {
+      "id": "sign-up-with-phone-number-90",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-91",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-92",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-93",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/advance-request/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-94",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-95",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-16"
+    },
+    {
+      "id": "early-repayment-96",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-97",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "clar_url": "https://pages.example.com/clarifications/repayment-on-payday/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-98",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-99",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-100",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-101",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "clar_url": "https://pages.example.com/clarifications/deduction-report-for-employers/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-02"
+    },
+    {
+      "id": "push-notifications-102",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-103",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-104",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-105",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/admin-user-search/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-106",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-107",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-08"
+    },
+    {
+      "id": "sign-up-with-phone-number-108",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-109",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-110",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-111",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-112",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-113",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "clar_url": "https://pages.example.com/clarifications/fee-preview-before-confirming/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-14"
+    },
+    {
+      "id": "early-repayment-114",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-115",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-116",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-117",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/payroll-file-import/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-118",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-119",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-20"
+    },
+    {
+      "id": "push-notifications-120",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-121",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "clar_url": "https://pages.example.com/clarifications/email-receipts/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-122",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-123",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-124",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-125",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "clar_url": "https://pages.example.com/clarifications/monthly-finance-export/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-06"
+    },
+    {
+      "id": "sign-up-with-phone-number-126",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-127",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-128",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-129",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/advance-request/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-130",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-131",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-12"
+    },
+    {
+      "id": "early-repayment-132",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-133",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "clar_url": "https://pages.example.com/clarifications/repayment-on-payday/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-134",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-135",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-136",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-137",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "clar_url": "https://pages.example.com/clarifications/deduction-report-for-employers/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-18"
+    },
+    {
+      "id": "push-notifications-138",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-139",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-140",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-141",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/admin-user-search/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-142",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-143",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-04"
+    },
+    {
+      "id": "sign-up-with-phone-number-144",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-145",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-146",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-147",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-148",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-149",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "clar_url": "https://pages.example.com/clarifications/fee-preview-before-confirming/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-10"
+    },
+    {
+      "id": "early-repayment-150",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-151",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-152",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-153",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/payroll-file-import/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-154",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-155",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-16"
+    },
+    {
+      "id": "push-notifications-156",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-157",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "clar_url": "https://pages.example.com/clarifications/email-receipts/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-158",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-159",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-160",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-161",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "clar_url": "https://pages.example.com/clarifications/monthly-finance-export/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-02"
+    },
+    {
+      "id": "sign-up-with-phone-number-162",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-163",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-164",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-165",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/advance-request/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-166",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-167",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-08"
+    },
+    {
+      "id": "early-repayment-168",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-169",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "clar_url": "https://pages.example.com/clarifications/repayment-on-payday/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-170",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-171",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-172",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-173",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "clar_url": "https://pages.example.com/clarifications/deduction-report-for-employers/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-14"
+    },
+    {
+      "id": "push-notifications-174",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-175",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-176",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-177",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/admin-user-search/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-178",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-179",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-20"
+    },
+    {
+      "id": "sign-up-with-phone-number-180",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-181",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-182",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-183",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-184",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-185",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "clar_url": "https://pages.example.com/clarifications/fee-preview-before-confirming/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-06"
+    },
+    {
+      "id": "early-repayment-186",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-187",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-188",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-189",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/payroll-file-import/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-190",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-191",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-12"
+    },
+    {
+      "id": "push-notifications-192",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-193",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "clar_url": "https://pages.example.com/clarifications/email-receipts/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-194",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-195",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-196",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-197",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "clar_url": "https://pages.example.com/clarifications/monthly-finance-export/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-18"
+    },
+    {
+      "id": "sign-up-with-phone-number-198",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-199",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-200",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-201",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/advance-request/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-202",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-203",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-04"
+    },
+    {
+      "id": "early-repayment-204",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-205",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "clar_url": "https://pages.example.com/clarifications/repayment-on-payday/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-206",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-207",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-208",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-209",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "clar_url": "https://pages.example.com/clarifications/deduction-report-for-employers/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-10"
+    },
+    {
+      "id": "push-notifications-210",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-211",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-212",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-213",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/admin-user-search/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-214",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-215",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-16"
+    },
+    {
+      "id": "sign-up-with-phone-number-216",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-217",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-218",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-219",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-220",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-221",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "clar_url": "https://pages.example.com/clarifications/fee-preview-before-confirming/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-02"
+    },
+    {
+      "id": "early-repayment-222",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-223",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-224",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-225",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/payroll-file-import/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-226",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-227",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-08"
+    },
+    {
+      "id": "push-notifications-228",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-229",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "clar_url": "https://pages.example.com/clarifications/email-receipts/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-230",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-231",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-232",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-233",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "clar_url": "https://pages.example.com/clarifications/monthly-finance-export/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-14"
+    },
+    {
+      "id": "sign-up-with-phone-number-234",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-235",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-236",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-237",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/advance-request/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-238",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-239",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-20"
+    },
+    {
+      "id": "early-repayment-240",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-241",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "clar_url": "https://pages.example.com/clarifications/repayment-on-payday/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-242",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-243",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-244",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-245",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "clar_url": "https://pages.example.com/clarifications/deduction-report-for-employers/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-06"
+    },
+    {
+      "id": "push-notifications-246",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-247",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-248",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-249",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/admin-user-search/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-250",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-251",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-12"
+    },
+    {
+      "id": "sign-up-with-phone-number-252",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-253",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-254",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-255",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-256",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-257",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "clar_url": "https://pages.example.com/clarifications/fee-preview-before-confirming/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-18"
+    },
+    {
+      "id": "early-repayment-258",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-259",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-260",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-261",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/payroll-file-import/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-262",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-263",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-04"
+    },
+    {
+      "id": "push-notifications-264",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-265",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "clar_url": "https://pages.example.com/clarifications/email-receipts/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-266",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-267",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-268",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-269",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "clar_url": "https://pages.example.com/clarifications/monthly-finance-export/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-10"
+    },
+    {
+      "id": "sign-up-with-phone-number-270",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-271",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-272",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-273",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/advance-request/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-274",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-275",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-16"
+    },
+    {
+      "id": "early-repayment-276",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-277",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "clar_url": "https://pages.example.com/clarifications/repayment-on-payday/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-278",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-279",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-280",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-281",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "clar_url": "https://pages.example.com/clarifications/deduction-report-for-employers/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-02"
+    },
+    {
+      "id": "push-notifications-282",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "email-receipts-283",
+      "title": "Email receipts",
+      "summary": "<p class=\"lead\">Email receipts — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Notifications",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "sms-reminders-before-payday-284",
+      "title": "SMS reminders before payday",
+      "summary": "<p class=\"lead\">SMS reminders before payday — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Notifications",
+      "short": "SMS",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "admin-user-search-285",
+      "title": "Admin user search",
+      "summary": "<p class=\"lead\">Admin user search — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Back office",
+      "short": "User search",
+      "open": [
+        "Which employers get admin user search first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/admin-user-search/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "refunds-and-write-offs-286",
+      "title": "Refunds and write-offs",
+      "summary": "<p class=\"lead\">Refunds and write-offs — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Back office",
+      "short": "Refunds",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "monthly-finance-export-287",
+      "title": "Monthly finance export",
+      "summary": "<p class=\"lead\">Monthly finance export — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Back office",
+      "short": "Finance export",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-08"
+    },
+    {
+      "id": "sign-up-with-phone-number-288",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Onboarding",
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "identity-check-289",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Onboarding",
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "employer-search-290",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Onboarding",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "advance-request-291",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Loans",
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "advance-limits-by-salary-band-292",
+      "title": "Advance limits by salary band",
+      "summary": "<p class=\"lead\">Advance limits by salary band — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Loans",
+      "short": "Limits",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "fee-preview-before-confirming-293",
+      "title": "Fee preview before confirming",
+      "summary": "<p class=\"lead\">Fee preview before confirming — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Loans",
+      "short": "Fee preview",
+      "clar_url": "https://pages.example.com/clarifications/fee-preview-before-confirming/",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-14"
+    },
+    {
+      "id": "early-repayment-294",
+      "title": "Early repayment",
+      "summary": "<p class=\"lead\">Early repayment — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Repayments",
+      "open": [
+        "Which employers get early repayment first?",
+        "Is the copy final in every language?"
+      ]
+    },
+    {
+      "id": "repayment-on-payday-295",
+      "title": "Repayment on payday",
+      "summary": "<p class=\"lead\">Repayment on payday — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "map_area": "Repayments",
+      "short": "Payday repay",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "failed-repayment-retries-296",
+      "title": "Failed repayment retries",
+      "summary": "<p class=\"lead\">Failed repayment retries — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "map_area": "Repayments",
+      "short": "Retries",
+      "releases": [
+        "1.6"
+      ]
+    },
+    {
+      "id": "payroll-file-import-297",
+      "title": "Payroll file import",
+      "summary": "<p class=\"lead\">Payroll file import — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "map_area": "Payroll sync",
+      "short": "Payroll import",
+      "open": [
+        "Which employers get payroll file import first?",
+        "Is the copy final in every language?"
+      ],
+      "clar_url": "https://pages.example.com/clarifications/payroll-file-import/",
+      "releases": [
+        "1.4"
+      ]
+    },
+    {
+      "id": "payroll-provider-connections-298",
+      "title": "Payroll provider connections",
+      "summary": "<p class=\"lead\">Payroll provider connections — what it does for the employee.</p><p>Status: <strong>qa</strong>. Next step agreed on the last call.</p>",
+      "stage": "qa",
+      "map_area": "Payroll sync",
+      "releases": [
+        "1.5"
+      ]
+    },
+    {
+      "id": "deduction-report-for-employers-299",
+      "title": "Deduction report for employers",
+      "summary": "<p class=\"lead\">Deduction report for employers — what it does for the employee.</p><p>Status: <strong>done</strong>. Next step agreed on the last call.</p>",
+      "stage": "done",
+      "map_area": "Payroll sync",
+      "short": "Deductions",
+      "releases": [
+        "1.6"
+      ],
+      "done_date": "2026-10-20"
+    },
+    {
+      "id": "push-notifications-300",
+      "title": "Push notifications",
+      "summary": "<p class=\"lead\">Push notifications — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "map_area": "Notifications",
+      "short": "Push",
+      "open": [
+        "Which employers get push notifications first?",
+        "Is the copy final in every language?"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "key": "56b9d68bb6ad",
+      "kind": "agenda",
+      "who": "Maria Lopez then Dev team",
+      "since": "2026-09-01",
+      "title": "Confirm the wording for sign-up with phone number (#1)",
+      "feature": "sign-up-with-phone-number-0",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "7b06d2897916",
+      "kind": "waiting",
+      "who": "Tom Baker",
+      "since": "2026-10-02",
+      "title": "Send the sample file for identity check (#2)",
+      "feature": "identity-check-1",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "d132261a76b0",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-03",
+      "title": "Approve the screen for employer search (#3)",
+      "feature": "employer-search-2",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "fed4cb83033e",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-04",
+      "title": "Decide the limit for advance request (#4)",
+      "feature": "advance-request-3"
+    },
+    {
+      "key": "d2a6e5bea44a",
+      "kind": "waiting",
+      "who": "Anna",
+      "since": "2026-09-05",
+      "title": "Share the test account for advance limits by salary band (#5)",
+      "feature": "advance-limits-by-salary-band-4",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "b231551d20fe",
+      "kind": "waiting",
+      "who": "Jonas Berg",
+      "since": "2026-10-06",
+      "title": "Review the flow for fee preview before confirming (#6)",
+      "feature": "fee-preview-before-confirming-5",
+      "how_to_send": "Reply in the project Slack channel or by email to the BA."
+    },
+    {
+      "key": "a01426785419",
+      "kind": "agenda",
+      "who": "Maria Lopez",
+      "since": "2026-09-07",
+      "title": "Agree the copy for early repayment (#7)",
+      "feature": "early-repayment-6",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "a20b237b5b4e",
+      "kind": "waiting",
+      "who": "Tom Baker then Dev team",
+      "since": "2026-10-08",
+      "title": "Check the numbers in repayment on payday (#8)",
+      "feature": "repayment-on-payday-7"
+    },
+    {
+      "key": "0d463df9fcf4",
+      "kind": "waiting",
+      "who": "Priya Shah",
+      "since": "2026-09-09",
+      "title": "Confirm the wording for failed repayment retries (#9)",
+      "feature": "failed-repayment-retries-8",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "6ad5c93a85de",
+      "kind": "agenda",
+      "who": "Dev team",
+      "since": "2026-10-10",
+      "title": "Send the sample file for payroll file import (#10)"
+    }
+  ],
+  "areas": [
+    "Onboarding",
+    "Loans",
+    "Repayments",
+    "Payroll sync",
+    "Notifications",
+    "Back office"
+  ],
+  "release_rows": [
+    {
+      "name": "1.4",
+      "released": true
+    },
+    {
+      "name": "1.5",
+      "released": false
+    },
+    {
+      "name": "1.6",
+      "released": false
+    }
+  ],
+  "client_contacts": [
+    {
+      "name": "Maria Lopez",
+      "email": "maria.lopez@example.com",
+      "slack": "maria.lopez"
+    },
+    {
+      "name": "Tom Baker",
+      "email": "tom.baker@example.com"
+    },
+    {
+      "name": "Priya Shah",
+      "slack": "U02ABCD1234"
+    }
+  ]
+}

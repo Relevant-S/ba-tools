@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **`portal-publish` contract v1** (tag `portal-contract-1.0.0`). New folder `skills/portal-publish/contract/`: the
+  `dashboard/1` schema and its readable twin, the `publish-reply/1` and `status/1` reply schemas, `errors.json`,
+  `light-html.json`, `index.json`, `checks.md` and valid/invalid fixtures. The Relevant Clients Portal keeps an exact
+  copy. Python checks in `skills/portal-publish/checks.py`; tests: `uv run pytest` in that folder. The skill itself
+  comes later.
+
 ## 0.7.0 — 2026-10-25
 
 - **The dashboard page is now Map + Board.** `ba-dashboard` builds one page with two tabs and publishes it

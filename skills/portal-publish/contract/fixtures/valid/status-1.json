@@ -1,0 +1,10 @@
+{
+  "contract": "status/1",
+  "project_name": "Sample Project",
+  "archived": false,
+  "waiting": 0,
+  "last_fetched_at": null,
+  "accepted_contracts": [
+    "dashboard/1"
+  ]
+}

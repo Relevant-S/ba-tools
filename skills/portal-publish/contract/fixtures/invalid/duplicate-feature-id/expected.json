@@ -1,0 +1,9 @@
+{
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "unique_feature_id",
+      "path": "/features/3/id"
+    }
+  ]
+}

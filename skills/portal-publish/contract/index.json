@@ -1,0 +1,9 @@
+{
+  "contract_folder": "1.0.0",
+  "accepted": ["dashboard/1"],
+  "schemas": {
+    "dashboard/1": "dashboard-1.schema.json",
+    "publish-reply/1": "publish-reply-1.schema.json",
+    "status/1": "status-1.schema.json"
+  }
+}
