@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+- **`fetch-portal`** — new skill: brings the Client's Answers from the Relevant Clients Portal into
+  `docs/BA/intake/`, one file per Clarification page (`YYYY-MM-DD-HHMM-portal-<slug>.md`, `source: portal`), for
+  `/intake-and-triage`. `fetch.py` reserves a batch (`POST /api/v1/answers/reserve`), writes the files under a
+  `.tmp` name, acks (`POST /api/v1/answers/ack`, 3 tries) and only then renames them; leftover `.tmp` files from an
+  earlier run are acked (or deleted) first. Same settings as `portal-publish` (`tools.portal.url`, `.env` key);
+  every reply is checked with `portal-publish/checks.py` and its contract (`answers/1`, `ack/1`), never a copy.
+  `intake-and-triage` and `clarification-page` now point to it on projects with `tools.portal`. Dependencies in
+  `skills/fetch-portal/pyproject.toml` (`httpx`, `jsonschema`, `pyyaml`); tests: `uv run pytest` in that folder.
+  Built and tested only against a fake Portal: the real hand-out API (Story 4.7) is not built yet, so it has not
+  been tried end to end. A `portal-<batch>.complete` marker means every page of a batch is on disk; a batch cut
+  off mid-write is deleted, never acked.
+- **`portal-publish page <slug>`** — sends one Clarification page, with its screenshots, to the Relevant Clients
+  Portal. `publish.py page plan <slug>` finds `docs/BA/clarifications/<slug>-decisions.yaml` (else `<slug>.yaml`),
+  runs `_fixyaml.py` on it, builds the `clarification/1` page from the contract's fields only (old `settled:` lines
+  become decisions with no date or person; `spec`, `events`, Figma ids, `spec_ref` and the rest stay in the repo),
+  sends each screenshot under a bare, unique file name (`name-2.png` on a clash), checks the contract and the limits
+  (PNG / JPEG / WebP, 10 MB each, 90 MB in all), sends a multipart dry run and prints what the Client will read.
+  After the BA's yes, `page send` re-checks every screenshot and sends the same page (`page discard` on a no). A
+  placeholder `url` is left out with a warning; a page with no `round:` line stops. "Round <label> already has
+  answers — give it a new round key" when the Portal refuses a re-send. `clarification-page` → Publish runs
+  portal-publish when the profile has `tools.portal`.
+
 - **`portal-publish` contract 1.1.0** (tag `portal-contract-1.1.0`). Adds the `clarification/1` page schema and its
   readable twin; the `answers/1`, `ack-request/1` and `ack/1` schemas for handing Answers out; and the page form of
   `publish-reply/1` (picked by `kind`). `index.json` accepts `dashboard/1` and `clarification/1`. New named checks

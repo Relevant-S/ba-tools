@@ -1,0 +1,22 @@
+[project]
+name = "fetch-portal"
+version = "0.1.0"
+description = "fetch-portal skill: fetch.py brings the Client's Answers from the Relevant Clients Portal into docs/BA/intake/ (reserve, write, ack, rename; httpx, pyyaml; checks with portal-publish's contract)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "httpx>=0.27,<1",
+    "jsonschema[format-nongpl]>=4.23,<5",
+    "pyyaml>=6",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

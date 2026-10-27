@@ -23,6 +23,8 @@ everywhere.
 | `skills/ba-setup/` | Setup, check and repair: your own keys and connectors (`me`), the project's area in each tool (`project`), and a green/red table of both (`check`). Also installs starter defaults for newcomers. |
 | `skills/figma-build/` | Builds in Figma: reproduces shipped screens, designs new features as concepts, sets up and changes design systems. Reads the product's design profile. |
 | `skills/fetch-fireflies/`, `fetch-gmail/`, `fetch-slack/` | Pull client calls, emails and Slack threads into `docs/BA/intake/` — only the project's own, using the client emails and channels in the profile. |
+| `skills/portal-publish/` | Sends the Dashboard to the Relevant Clients Portal after a dry run and the BA's yes. Holds the Portal's data contract and its checks. |
+| `skills/fetch-portal/` | Pulls the Client's Answers from the Relevant Clients Portal into `docs/BA/intake/`, one file per Clarification page. Same Portal address and key as `portal-publish`. |
 | `skills/intake-and-triage/` | Turns intake into a triage report: new specs, Jira edits, dashboard items, notes — and carries out what the BA approves. |
 | `skills/fetch-jira-backlog/` | Turns existing open tickets into spec stubs for `ba-spec`. |
 | `skills/clarification-page/` | Builds and publishes the page the client answers questions on. |

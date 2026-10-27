@@ -1,4 +1,5 @@
-"""portal-publish — send the project's Dashboard to the Relevant Clients Portal. Every command prints one JSON line.
+"""portal-publish — send the project's Dashboard, or one Clarification page, to the Relevant Clients Portal.
+Every command prints one JSON line.
 
     uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py <command> [--root <project>]
 
@@ -8,10 +9,20 @@ Commands (run from the project root, or pass --root):
                                       Writes the payload to a temp file outside the repo and prints its path.
   dashboard send --payload <file>     after the BA says yes: send that same payload for real, report, delete the file
   dashboard discard --payload <file>  after the BA says no: delete the payload file, send nothing
-  page <slug>                         not built yet (Story 4.3)
+  page plan <slug>                    find docs/BA/clarifications/<slug>-decisions.yaml (else <slug>.yaml), run
+                                      clarification-page's _fixyaml.py on it, build the clarification/1 page (only
+                                      the contract's fields; old `settled:` lines become decisions), collect its
+                                      screenshots (bare, unique file names), check everything, send it as a
+                                      multipart dry run and print what the Client will read (client_view).
+                                      Writes the page JSON plus each screenshot's path and SHA-256 to a temp file.
+                                      `page <slug>` does the same.
+  page send --payload <file>          after the BA says yes: re-read the screenshots (stop if one changed), send the
+                                      same page for real, report, delete the file
+  page discard --payload <file>       after the BA says no: delete the payload file, send nothing
 
 Settings: tools.portal.url in docs/BA/specs/.ba-profile.yml; PORTAL_PUBLISH_KEY in .env at the repo root, which git
-must ignore. The key is never printed. The "Waiting on you" list comes only from the Portal's dry-run reply.
+must ignore. The key is never printed. The "Waiting on you" list and the page's Client view come only from the
+Portal's dry-run reply.
 """
 from __future__ import annotations
 
@@ -26,6 +37,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.parse
 from pathlib import Path
 
 import httpx
@@ -471,12 +483,20 @@ def http_client() -> httpx.Client:
 
 def post(url: str, key: str, body: bytes, dry_run: bool, sources: dict) -> dict:
     """POST the payload. Returns the checked 200 reply; anything else stops the run."""
-    target = url + ENDPOINT + ("?dry_run=1" if dry_run else "")
+    return exchange(url, ENDPOINT, dry_run, sources, "dashboard",
+                    lambda client, target: client.post(target, content=body, headers={
+                        "Authorization": f"Bearer {key}", "Content-Type": "application/json",
+                        "Accept": "application/json"}))
+
+
+def exchange(url: str, endpoint: str, dry_run: bool, sources: dict, kind: str, send, *,
+             next_step: dict | None = None, where_fn=None, first_line=None) -> dict:
+    """Send one request with send(client, target) and handle the reply the same way for every kind of Publish.
+    Returns the checked 200 reply; anything else stops the run. kind is the command word: dashboard or page."""
+    target = url + endpoint + ("?dry_run=1" if dry_run else "")
     try:
         with http_client() as client:
-            r = client.post(target, content=body, headers={"Authorization": f"Bearer {key}",
-                                                           "Content-Type": "application/json",
-                                                           "Accept": "application/json"})
+            r = send(client, target)
     except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout, httpx.UnsupportedProtocol):
         raise Stop(f"The Portal is not reachable at {url}. Check that it is running and that tools.portal.url is "
                    "right. Nothing was sent.") from None
@@ -489,14 +509,15 @@ def post(url: str, key: str, body: bytes, dry_run: bool, sources: dict) -> dict:
                        "and that tools.portal.url is right. Nothing was sent.") from None
         raise MaybeSent(f"The send went out to {url}, but no reply came back, so it may have arrived. Before "
                         "sending again, check the Portal: Admin → Projects → the Project → Publishing. If the "
-                        "send is not there, run `dashboard send` again with the same --payload file (it was "
+                        f"send is not there, run `{kind} send` again with the same --payload file (it was "
                         "kept).") from None
     try:
         doc = r.json()
     except ValueError:
         doc = None
     if r.status_code == 200:
-        if not isinstance(doc, dict) or checks.check_reply(doc, REPLY) or doc.get("dry_run") is not dry_run:
+        if (not isinstance(doc, dict) or checks.check_reply(doc, REPLY) or doc.get("dry_run") is not dry_run
+                or doc.get("kind", "dashboard") != kind):
             raise Stop(f"The Portal's reply was not understood (HTTP {r.status_code}). It may be an older Portal. "
                        "Nothing more was sent.")
         return doc
@@ -504,11 +525,13 @@ def post(url: str, key: str, body: bytes, dry_run: bool, sources: dict) -> dict:
     if not isinstance(err, dict) or not err.get("code"):
         raise Stop(f"The Portal's reply was not understood (HTTP {r.status_code}). Nothing more was sent.")
     code = str(err["code"])
-    lines = [f"The Portal refused the send ({code}): {text(err.get('message')) or 'no message'}"]
+    steps = NEXT_STEP if next_step is None else next_step
+    head = first_line(code) if first_line else None
+    lines = [head or f"The Portal refused the send ({code}): {text(err.get('message')) or 'no message'}"]
     details = [x for x in (err.get("details") or []) if isinstance(x, dict)]
-    lines += [f"- {ln}" for ln in problem_lines(details, sources)]
-    if code in NEXT_STEP:
-        lines.append(NEXT_STEP[code])
+    lines += [f"- {ln}" for ln in (where_fn or problem_lines)(details, sources)]
+    if code in steps:
+        lines.append(steps[code])
     lines.append("Nothing more was sent.")
     raise Stop("\n".join(lines))
 
@@ -595,15 +618,15 @@ def cmd_plan(root: Path, refresh: bool) -> dict:
 
 
 def payload_arg(argv: list[str]) -> Path:
-    """Only a file `dashboard plan` wrote: portal-publish-*.json in the system temp folder. Nothing else is
+    """Only a file `dashboard plan` or `page plan` wrote: portal-publish-*.json in the system temp folder. Nothing else is
     read or deleted."""
     p = arg(argv, "--payload")
     if not p:
-        raise Stop("--payload <file> is required (the path `dashboard plan` printed).")
+        raise Stop("--payload <file> is required (the path `dashboard plan` or `page plan` printed).")
     path = Path(p).resolve()
     if not path.match(PAYLOAD_GLOB) or path.parent != Path(tempfile.gettempdir()).resolve():
-        raise Stop(f"{p} is not a payload file `dashboard plan` wrote (portal-publish-*.json in the temp folder "
-                   f"{tempfile.gettempdir()}). Nothing was sent or deleted.")
+        raise Stop(f"{p} is not a payload file `dashboard plan` or `page plan` wrote (portal-publish-*.json in the "
+                   f"temp folder {tempfile.gettempdir()}). Nothing was sent or deleted.")
     return path
 
 
@@ -618,7 +641,29 @@ def clean_old_payloads(now: float | None = None) -> None:
             pass
 
 
+def payload_kind(path: Path) -> str | None:
+    """"page" for a file `page plan` wrote, "dashboard" for one `dashboard plan` wrote, else None."""
+    try:
+        doc = json.loads(path.read_bytes().decode("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if isinstance(doc, dict) and doc.get("kind") == "page":
+        return "page"
+    if isinstance(doc, dict) and doc.get("contract") == CONTRACT:
+        return "dashboard"
+    return None
+
+
+def check_kind(path: Path, want: str, action: str) -> None:
+    """Stop, deleting nothing, when a page payload is given to a dashboard command or the reverse."""
+    got = payload_kind(path)
+    if got and got != want:
+        raise Stop(f"{path} is a {got} payload, not a {want} one: use `{got} {action}`. Nothing was sent or "
+                   "deleted.")
+
+
 def cmd_send(root: Path, path: Path) -> dict:
+    check_kind(path, "dashboard", "send")
     keep = False
     try:
         url, key, _ = settings(root)
@@ -646,11 +691,595 @@ def cmd_send(root: Path, path: Path) -> dict:
             "received_at": reply["received_at"], "report": report}
 
 
-def cmd_discard(path: Path) -> dict:
+def cmd_discard(path: Path, kind: str = "dashboard") -> dict:
+    check_kind(path, kind, "discard")
     existed = path.exists()
     path.unlink(missing_ok=True)
     return {"ok": True, "sent": None, "deleted": str(path) if existed else None,
             "report": "Nothing was sent. The payload file was deleted."}
+
+
+# ---------------------------------------------------------------- page <slug> (a Clarification page)
+
+CLARIFICATIONS = "docs/BA/clarifications"
+FIXYAML_PY = SKILLS / "clarification-page" / "scripts" / "_fixyaml.py"
+PAGE_ENDPOINT = "/api/v1/publish/page"
+PAGE_CONTRACT = "clarification/1"
+PUBLISH_PART = "publish"
+SCREEN_MAX_BYTES = 10 * 1024 * 1024      # each screenshot (contract clarification-1.md, AD-12)
+PAGE_MAX_BYTES = 90 * 1024 * 1024        # the publish part plus every screenshot
+
+
+def multipart_margin(parts: int) -> int:
+    """Room for the multipart framing in the 90 MB check."""
+    return 1024 * parts + 64 * 1024
+
+
+SLUG_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+
+# The fields the skill reads from the page YAML, per level. Anything else stays in the repo and is listed in
+# left_out. `src` is read to find the file; `title` and `standfirst` only stand in for `name` and `description`;
+# `settled` is read only when there is no `decisions` list.
+PAGE_FIELDS = {"slug", "store_key", "url", "name", "title", "round", "description", "standfirst", "problem",
+               "solution", "design", "decisions", "settled", "questions"}
+DESIGN_FIELDS = {"label", "more_label", "summary", "detail", "screens"}
+DESIGN_SCREEN_FIELDS = {"src", "cap", "hero"}
+DECISION_FIELDS = {"id", "date", "who", "how", "title", "detail"}
+QUESTION_FIELDS = {"id", "section", "title", "meta", "body", "body2", "snag", "quote", "note", "note_placeholder",
+                   "options", "screens"}
+QUOTE_FIELDS = {"text", "cite"}
+OPTION_FIELDS = {"v", "t", "d", "rec"}
+QUESTION_SCREEN_FIELDS = {"src", "cap"}
+
+PAGE_NEXT_STEP = {
+    **NEXT_STEP,
+    "contract_invalid": "Fix each field listed in the page YAML, then run `page plan <slug>` again.",
+    "payload_too_large": "The page is too big to send (at most 10 MB per screenshot, 90 MB in all). Make the "
+                         "screenshots smaller or fewer, then run `page plan <slug>` again.",
+    "bad_request": "The Portal could not read the send. Run `page plan <slug>` again; if it repeats, report it.",
+    "screenshot_mismatch": "A screenshot the page names did not arrive, or one arrived that the page does not "
+                           "name. Run `page plan <slug>` again; if it repeats, report it.",
+}
+
+
+def find_page_yaml(root: Path, slug_arg: str) -> Path:
+    if not SLUG_RE.fullmatch(slug_arg or ""):
+        raise Stop(f"'{slug_arg}' is not a page slug (only a-z, 0-9 and single hyphens). Nothing was sent.")
+    tried = [f"{CLARIFICATIONS}/{slug_arg}-decisions.yaml", f"{CLARIFICATIONS}/{slug_arg}.yaml"]
+    for rel in tried:
+        if (root / rel).is_file():
+            return root / rel
+    raise Stop(f"No page YAML for '{slug_arg}'. Looked for {tried[0]} and {tried[1]}. Check the slug "
+               "(it is the `slug:` line of the page YAML). Nothing was sent.")
+
+
+def fix_yaml(path: Path) -> int:
+    """Run clarification-page's _fixyaml.py on the BA's YAML (it quotes values holding a colon). Returns how many
+    lines it changed. When it changed none, the file is put back byte for byte (the script rewrites line endings
+    on Windows); when it changed some, the file keeps its own line endings."""
+    before = path.read_bytes()
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+    try:
+        r = subprocess.run([sys.executable, str(FIXYAML_PY), str(path)], capture_output=True, env=env, timeout=60)
+    except subprocess.TimeoutExpired:
+        path.write_bytes(before)
+        raise Stop("_fixyaml.py did not finish in a minute, so it was stopped. Nothing was sent.") from None
+    said = (r.stdout or b"").decode("utf-8", "replace")
+    m = re.search(r"->\s*(\d+)\s+quoted", said)
+    if r.returncode != 0 or not m:
+        path.write_bytes(before)
+        why = (r.stderr or b"").decode("utf-8", "replace").strip().splitlines()
+        raise Stop(f"_fixyaml.py failed on {path.name}: {why[-1] if why else said.strip() or r.returncode}. "
+                   "Nothing was sent.")
+    fixed = int(m.group(1))
+    if fixed == 0:
+        path.write_bytes(before)
+        return 0
+    after = path.read_bytes().replace(b"\r\n", b"\n")
+    if b"\r\n" in before:                       # keep the file's own line endings, whatever the OS wrote
+        after = after.replace(b"\n", b"\r\n")
+    try:
+        yaml.safe_load(after.decode("utf-8"))
+    except (yaml.YAMLError, UnicodeDecodeError) as e:
+        path.write_bytes(before)
+        raise Stop(f"After _fixyaml.py quoted {fixed} line(s) in {path.name}, the file still does not read as YAML "
+                   f"({e}). The file was put back as it was. Fix it by hand, then run again. "
+                   "Nothing was sent.") from None
+    path.write_bytes(after)
+    return fixed
+
+
+def light_text(s) -> str:
+    """An old `settled:` line as plain text: tags removed, entities turned into characters."""
+    t = html.unescape(re.sub(r"<[^>]+>", "", str(s or "")))
+    t = re.sub(r"<[^>]+>", "", t).replace("<", "‹").replace(">", "›")   # &lt;b&gt; unescaped: no tags in text
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def settled_decisions(settled) -> tuple[list[dict], list[int]]:
+    """Old pages: each `settled:` HTML line becomes a decision with no date, who or how. The <strong> part is the
+    title, the rest the detail (as clarification-page's _generate.py build_decisions). Also returns, per decision,
+    its index in the `settled:` list."""
+    lines = settled if isinstance(settled, list) else [settled]
+    out, where = [], []
+    for n, line in enumerate(lines):
+        line = str(line or "")
+        m = re.match(r"\s*<strong>(.*?)</strong>(.*)", line, re.S)
+        title, detail = (light_text(m.group(1)), light_text(m.group(2))) if m else (light_text(line), "")
+        if not title or title.lower().startswith("already decided"):
+            continue
+        dec: dict = {"id": f"s{len(out) + 1}"}
+        put(dec, "title", title.rstrip("."))
+        put(dec, "detail", detail.lstrip(".,;:—– ").strip())
+        out.append(dec)
+        where.append(n)
+    return out, where
+
+
+def is_placeholder_url(url: str) -> bool:
+    """A url the BA has not filled in yet (https://claude.ai/artifact/<the page id>, TBD, an address with no id).
+    A real link has http(s), a host and a non-empty last path part."""
+    if re.search(r"[<>\s]", url):
+        return True
+    try:
+        u = urllib.parse.urlsplit(url)
+        host = u.hostname
+    except ValueError:
+        return True
+    return not (u.scheme in ("http", "https") and host and u.path.split("/")[-1])
+
+
+def truthy(v) -> bool:
+    if isinstance(v, str):
+        return v.strip().lower() in ("true", "yes", "1")
+    return bool(v)
+
+
+def sniff(data: bytes) -> str | None:
+    """The image type by its first bytes: PNG, JPEG or WebP, else None."""
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
+EXTENSION_TYPE = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+
+
+def inside(path: Path, root: Path) -> bool:
+    """True when the resolved path sits inside the project repo."""
+    return path.resolve().is_relative_to(root.resolve())
+
+
+def bare_name(src: str) -> str:
+    return re.split(r"[\\/]", src.strip())[-1]
+
+
+def unique_name(name: str, taken: set[str]) -> str:
+    """The bare name, or name-2.png, name-3.png … when another screen took it (letter case aside)."""
+    if name.lower() not in taken:
+        return name
+    stem, dot, ext = name.rpartition(".")
+    stem, ext = (stem, dot + ext) if stem else (name, "")
+    n = 2
+    while f"{stem}-{n}{ext}".lower() in taken:
+        n += 1
+    return f"{stem}-{n}{ext}"
+
+
+def as_list(v) -> list:
+    return v if isinstance(v, list) else ([] if v in (None, "") else [v])
+
+
+def as_dict(v) -> dict:
+    return v if isinstance(v, dict) else {}
+
+
+def left_out_fields(cfg: dict) -> list[str]:
+    """Every field of the page YAML the skill does not send, as a path (questions[].spec_ref)."""
+    found: list[str] = []
+
+    def note(path: str) -> None:
+        if path not in found:
+            found.append(path)
+
+    def extra(obj, allowed: set, prefix: str) -> None:
+        for k in as_dict(obj):
+            if k not in allowed:
+                note(f"{prefix}{k}")
+
+    extra(cfg, PAGE_FIELDS, "")
+    if text(cfg.get("name")) and "title" in cfg:
+        note("title")
+    if text(cfg.get("description")) and "standfirst" in cfg:
+        note("standfirst")
+    if cfg.get("decisions") and "settled" in cfg:
+        note("settled")
+    design = as_dict(cfg.get("design"))
+    extra(design, DESIGN_FIELDS, "design.")
+    for s in as_list(design.get("screens")):
+        extra(s, DESIGN_SCREEN_FIELDS, "design.screens[].")
+    if cfg.get("decisions"):
+        for d in as_list(cfg.get("decisions")):
+            extra(d, DECISION_FIELDS, "decisions[].")
+    for q in as_list(cfg.get("questions")):
+        extra(q, QUESTION_FIELDS, "questions[].")
+        q = as_dict(q)
+        extra(q.get("quote"), QUOTE_FIELDS, "questions[].quote.")
+        for o in as_list(q.get("options")):
+            extra(o, OPTION_FIELDS, "questions[].options[].")
+        for s in as_list(q.get("screens")):
+            extra(s, QUESTION_SCREEN_FIELDS, "questions[].screens[].")
+    return found
+
+
+def build_page(root: Path, yaml_path: Path, cfg: dict, prof: dict, sent_at: str | None = None):
+    """The clarification/1 page (contract clarification-1.md), built by allow-list; its screenshot parts
+    (name, source path, type, bytes); where each sent value came from; what was left out; warnings.
+    A screenshot that is missing, not PNG / JPEG / WebP, or over 10 MB stops the run here."""
+    rel = yaml_path.relative_to(root).as_posix()
+    base = yaml_path.parent
+    warnings: list[str] = []
+    left_out = left_out_fields(cfg)
+    sources: dict[str, str] = {}             # "/questions/2" -> "questions[2] 'q3-…'"
+    parts: list[dict] = []
+    taken: set[str] = set()
+
+    def screen(s, where: str, label: str) -> dict:
+        s = s if isinstance(s, dict) else {"src": s}
+        src = text(s.get("src"))
+        sources[where] = label
+        if not src:
+            raise Stop(f"{rel} → {label} has no src (the screenshot file). Add it, then run `page plan` again. "
+                       "Nothing was sent.")
+        path = (base / src).resolve()
+        if not inside(path, root):
+            raise Stop(f"{rel} → {label} → src: {src} is outside the project repo ({path}). Screenshots must sit in "
+                       "the repo, next to the page YAML. Nothing was sent.")
+        if not path.is_file():
+            raise Stop(f"{rel} → {label} → src: the screenshot {src} is not there (looked for {path}). Add the "
+                       "file or fix the path (it is relative to the YAML's folder), then run `page plan` again. "
+                       "Nothing was sent.")
+        size = path.stat().st_size
+        if size > SCREEN_MAX_BYTES:
+            raise Stop(f"{rel} → {label} → src: {src} is {size / 1024 / 1024:.1f} MB; a screenshot may be at "
+                       "most 10 MB. Make it smaller, then run `page plan` again. Nothing was sent.")
+        data = path.read_bytes()
+        kind = sniff(data)
+        if kind is None:
+            raise Stop(f"{rel} → {label} → src: {src} is not a PNG, JPEG or WebP image (judged by its first "
+                       "bytes). Save it as one of those, then run `page plan` again. Nothing was sent.")
+        if EXTENSION_TYPE.get(Path(src).suffix.lower()) != kind:
+            warnings.append(f"{rel} → {label} → src: {src} is really a {kind.split('/')[1].upper()} image, but its "
+                            "name says otherwise. It is sent as it is; renaming it would avoid confusion.")
+        name = unique_name(bare_name(src), taken)
+        taken.add(name.lower())
+        parts.append({"name": name, "path": str(path), "type": kind, "data": data})
+        return {"file": name}
+
+    page: dict = {}
+    put(page, "slug", text(cfg.get("slug")))
+    put(page, "store_key", text(cfg.get("store_key")))
+    url = text(cfg.get("url"))
+    if url and is_placeholder_url(url):
+        warnings.append(f"The page's url in {rel} ({url}) is a placeholder, not a real link, so it was left out. "
+                        "The Client Dashboard links a Feature to this page by that url: put the page's real link "
+                        "there when it has one, and send the page again.")
+        left_out.append("url (a placeholder)")
+    else:
+        put(page, "url", url)
+    put(page, "name", text(cfg.get("name")) or text(cfg.get("title")))
+    put(page, "round", text(cfg.get("round")))
+    put(page, "description", text(cfg.get("description")) or text(cfg.get("standfirst")))
+    put(page, "problem", text(cfg.get("problem")))
+    put(page, "solution", text(cfg.get("solution")))
+
+    src_design = as_dict(cfg.get("design"))
+    design: dict = {}
+    for k in ("label", "more_label", "summary", "detail"):
+        put(design, k, text(src_design.get(k)))
+    screens = []
+    for i, s in enumerate(as_list(src_design.get("screens"))):
+        out = screen(s, f"/design/screens/{i}", f"design.screens[{i}]")
+        put(out, "cap", text(as_dict(s).get("cap")))
+        if truthy(as_dict(s).get("hero")):
+            out["hero"] = True
+        screens.append(out)
+    put(design, "screens", screens)
+    page["design"] = design
+
+    if cfg.get("decisions"):
+        decisions = []
+        for i, d in enumerate(as_list(cfg.get("decisions"))):
+            d = d if isinstance(d, dict) else {"title": d}
+            dec: dict = {}
+            put(dec, "id", text(d.get("id")))
+            date = d.get("date")
+            if isinstance(date, dt.datetime):          # YAML reads "2026-09-11 10:00" as a datetime: date part
+                date = date.date()
+            put(dec, "date", date.isoformat() if isinstance(date, dt.date) else text(date))
+            for k in ("who", "how", "title", "detail"):
+                put(dec, k, text(d.get(k)))
+            sources[f"/decisions/{i}"] = f"decisions[{i}] '{text(d.get('id')) or text(d.get('title'))}'"
+            decisions.append(dec)
+    else:
+        decisions, lines = settled_decisions(cfg.get("settled") or [])
+        for i, n in enumerate(lines):
+            sources[f"/decisions/{i}"] = f"settled[{n}] (sent as a decision)"
+    put(page, "decisions", decisions)
+
+    questions = []
+    for i, q in enumerate(as_list(cfg.get("questions"))):
+        q = as_dict(q)
+        label = f"questions[{i}] '{text(q.get('id')) or '?'}'"
+        sources[f"/questions/{i}"] = label
+        qo: dict = {}
+        put(qo, "id", text(q.get("id")))
+        for k in ("section", "title", "meta", "body", "body2", "snag"):
+            put(qo, k, text(q.get(k)))
+        quote = q.get("quote")
+        if quote:
+            quote = quote if isinstance(quote, dict) else {"text": quote}
+            qq: dict = {}
+            put(qq, "text", text(quote.get("text")))
+            put(qq, "cite", text(quote.get("cite")))
+            qo["quote"] = qq
+        for k in ("note", "note_placeholder"):
+            put(qo, k, text(q.get(k)))
+        options = []
+        for o in as_list(q.get("options")):
+            o = o if isinstance(o, dict) else {"t": o}
+            opt: dict = {}
+            put(opt, "v", text(o.get("v")))
+            put(opt, "t", text(o.get("t")))
+            put(opt, "d", text(o.get("d")))
+            if truthy(o.get("rec")):
+                opt["rec"] = True
+            options.append(opt)
+        qo["options"] = options
+        qscreens = []
+        for j, s in enumerate(as_list(q.get("screens"))):
+            out = screen(s, f"/questions/{i}/screens/{j}", f"{label} → screens[{j}]")
+            put(out, "cap", text(as_dict(s).get("cap")))
+            qscreens.append(out)
+        put(qo, "screens", qscreens)
+        questions.append(qo)
+    page["questions"] = questions
+
+    sent_by = git(root, "config", "user.name")
+    if not sent_by:
+        raise Stop("git has no user name (git config user.name). The Portal logs who sent each Publish: set it with "
+                   "`git config user.name \"Your Name\"`, then run again. Nothing was sent.")
+    envelope: dict = {"contract": PAGE_CONTRACT, "sent_at": sent_at or now_utc(), "sent_by": sent_by,
+                      "ba_tools_version": ba_tools_version(prof)}
+    put(envelope, "source_commit", git(root, "rev-parse", "HEAD"))
+    return {**envelope, **page}, parts, sources, left_out, warnings
+
+
+def page_where(rel: str, sources: dict):
+    """problem_lines for a page: a payload path becomes the YAML file, the row and the field."""
+    top = {"sent_by": "git config user.name", "ba_tools_version": f"{PROFILE} → ba_tools_version",
+           "source_commit": "git rev-parse HEAD", "sent_at": "the send time", "contract": "the contract version"}
+
+    def lines(details: list[dict], _sources=None) -> list[str]:
+        out = []
+        for det in details:
+            path, msg = str(det.get("path") or ""), str(det.get("message") or "").strip()
+            if path and msg.startswith(path):
+                msg = msg[len(path):].lstrip(": ").strip()
+            if len(msg) > 300:
+                msg = msg[:150].rstrip() + " … " + msg[-100:].lstrip()
+            bits = path.strip("/").split("/") if path.strip("/") else []
+            if bits and bits[0] in top:
+                out.append(f"{top[bits[0]]}: {msg} ({path})")
+                continue
+            row, rest = "", bits
+            for n in range(len(bits), 0, -1):
+                if "/" + "/".join(bits[:n]) in sources:
+                    row, rest = sources["/" + "/".join(bits[:n])], bits[n:]
+                    break
+            loc = " → ".join(x for x in (rel, row, ".".join(rest)) if x)
+            out.append(f"{loc}: {msg}" + (f" ({path})" if path else ""))
+        return out
+    return lines
+
+
+def page_local_check(page: dict, body: bytes, parts: list[dict], rel: str, sources: dict) -> None:
+    found = checks.check_publish(page, "clarification", [p["name"] for p in parts])
+    if found:
+        lines = page_where(rel, sources)(found["details"])
+        raise Stop(f"The page does not match the contract, so nothing was sent. Fix these in {rel}, then run "
+                   "`page plan` again:\n" + "\n".join(f"- {ln}" for ln in lines))
+    # The multipart framing adds a little per part: leave room for it (1 KB per part plus 64 KB).
+    total = len(body) + sum(len(p["data"]) for p in parts) + multipart_margin(len(parts) + 1)
+    if total > PAGE_MAX_BYTES:
+        raise Stop(f"The page and its {len(parts)} screenshots come to {total / 1024 / 1024:.1f} MB; the Portal "
+                   "takes at most 90 MB in one send. Make the screenshots smaller or fewer, then run `page plan` "
+                   "again. Nothing was sent.")
+
+
+def post_page(url: str, key: str, body: bytes, parts: list[dict], dry_run: bool, rel: str, sources: dict,
+              round_label: str) -> dict:
+    """POST the page as multipart: part `publish` = the JSON, then one part per screenshot named by its file."""
+    files = [(PUBLISH_PART, (None, body, "application/json"))]
+    files += [(p["name"], (p["name"], p["data"], p["type"])) for p in parts]
+
+    def first_line(code: str) -> str | None:
+        if code == "round_has_answers":
+            return f"Round {round_words(round_label)} already has answers — give it a new round key"
+        return None
+
+    steps = {**PAGE_NEXT_STEP,
+             "round_has_answers": f"Change store_key in {rel} to a new round key (and the round label), then run "
+                                  "`page plan` again."}
+    reply = exchange(url, PAGE_ENDPOINT, dry_run, sources, "page",
+                     lambda client, target: client.post(target, files=files, headers={
+                         "Authorization": f"Bearer {key}", "Accept": "application/json"}),
+                     next_step=steps, where_fn=page_where(rel, sources), first_line=first_line)
+    if reply["round"].get("key") != json.loads(body.decode("utf-8")).get("store_key"):
+        raise Stop("The Portal's reply was not understood (HTTP 200): it names a different round key from the one "
+                   "sent. Nothing more was sent.")
+    return reply
+
+
+def round_words(label: str) -> str:
+    """The Round label without a leading "Round", so messages do not say "Round Round V4"."""
+    label = text(label)
+    return label[6:].strip() if label.lower().startswith("round ") else label
+
+
+def page_view(reply: dict) -> str:
+    """The Client view of the page, from the Portal's dry-run reply only. Tags removed for display."""
+    view, rnd, counts = reply["client_view"], reply["round"], reply["counts"]
+    lines = ["What the Client will read — the Portal's own dry run. Nothing is stored yet.", "",
+             f"Page: {plain(view['name'])}",
+             f"Round label: {plain(view['round'])}",
+             "A new Round." if rnd.get("new") else
+             f"This replaces the Round with the same key ({rnd.get('key')}); no answers were sent on it yet."]
+    for field, label in (("description", "Description"), ("problem", "Problem"), ("solution", "Solution")):
+        if view.get(field):
+            lines += ["", f"{label}:", indent(plain(view[field]), "    ")]
+    design = view.get("design") or {}
+    lines += ["", f"{plain(design.get('label')) or 'What it looks like'}:", indent(plain(design.get("summary")), "    ")]
+    if design.get("screens"):
+        lines.append(f"    Screens ({len(design['screens'])}):")
+        lines += [f"    - {plain(s.get('cap')) or '(no caption)'}" for s in design["screens"]]
+    questions = view.get("questions") or []
+    lines += ["", f"Questions ({len(questions)}):"]
+    if not questions:
+        lines.append("- none")
+    for n, q in enumerate(questions, 1):
+        section = f"[{plain(q['section'])}] " if q.get("section") else ""
+        lines.append(f"{n}. {section}{plain(q['title'])}")
+        for o in q.get("options") or []:
+            lines.append(f"    - {plain(o['t'])}" + (" (recommended)" if o.get("rec") else ""))
+            if o.get("d"):
+                lines.append(indent(plain(o["d"]), "        "))
+        if q.get("screens"):
+            lines.append(f"    Screens: {len(q['screens'])}")
+    decisions = view.get("decisions") or []
+    lines += ["", f"Answered questions ({len(decisions)}):"]
+    if not decisions:
+        lines.append("- none (the section is hidden)")
+    for d in decisions:
+        when = ", ".join(plain(d[k]) for k in ("date", "who", "how") if d.get(k))
+        lines.append(f"- {plain(d['title'])}" + (f" ({when})" if when else ""))
+        if d.get("detail"):
+            lines.append(indent(plain(d["detail"]), "    "))
+    lines += ["", f"Counts: {counts['questions']} Questions, {counts['screenshots']} screenshots."]
+    return "\n".join(lines)
+
+
+def cmd_page_plan(root: Path, slug_arg: str) -> dict:
+    url, key, prof = settings(root)
+    clean_old_payloads()
+    yaml_path = find_page_yaml(root, slug_arg)
+    rel = yaml_path.relative_to(root).as_posix()
+
+    def first_checks(cfg) -> dict:
+        if not isinstance(cfg, dict):
+            raise Stop(f"{rel} is not a page YAML (it holds no fields). Nothing was sent.")
+        if text(cfg.get("slug")) != slug_arg:
+            raise Stop(f"{rel} has slug '{text(cfg.get('slug'))}', but you asked for '{slug_arg}'. Run `page plan` "
+                       "with the YAML's slug, or fix its `slug:` line. Nothing was sent.")
+        if not text(cfg.get("round")):
+            raise Stop(f"{rel} has no `round:` line — the Round label the Client reads (for example \"Round V1 · "
+                       "sent 27 Oct 2026 by <your name>\"). Add one, then run `page plan` again. Nothing was sent.")
+        return cfg
+
+    # The slug and round checks run on a plain read first, so a wrong slug never rewrites the file. A YAML that
+    # does not read yet (an unquoted colon) is checked after _fixyaml.py has quoted it.
+    try:
+        first_checks(yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {})
+    except (yaml.YAMLError, UnicodeDecodeError):
+        pass
+    fixed = fix_yaml(yaml_path)
+    try:
+        cfg = first_checks(yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {})
+        page, parts, sources, left_out, warnings = build_page(root, yaml_path, cfg, prof)
+        body = encode(page)
+        page_local_check(page, body, parts, rel, sources)
+        reply = post_page(url, key, body, parts, True, rel, sources, page["round"])
+    except Stop as e:
+        if fixed:
+            raise Stop(f"{e}\n(Before this stop, _fixyaml.py quoted {fixed} line(s) in {rel}: the file changed; "
+                       "keep the change.)") from None
+        raise
+    saved = {"kind": "page", "slug": page["slug"], "name": page["name"], "round": page["round"], "yaml": rel,
+             "portal": url, "publish": body.decode("utf-8"),
+             "parts": [{"name": p["name"], "path": p["path"], "type": p["type"],
+                        "sha256": hashlib.sha256(p["data"]).hexdigest()} for p in parts]}
+    path = write_payload(json.dumps(saved, ensure_ascii=False).encode("utf-8"))
+    if fixed:
+        warnings.insert(0, f"_fixyaml.py quoted {fixed} line(s) in {rel} (values holding a colon). The file "
+                           "changed: commit it with the page.")
+    return {"ok": True, "portal": url, "payload": str(path), "page": page["slug"], "yaml": rel,
+            "round": reply["round"], "sent_at": page["sent_at"], "counts": reply["counts"],
+            "left_out": left_out, "warnings": warnings, "fixed_lines": fixed, "client_view": page_view(reply)}
+
+
+def read_page_payload(path: Path, root: Path) -> tuple[dict, bytes, list[dict]]:
+    """The payload `page plan` wrote, with every screenshot re-read (only from inside the repo) and matched to its
+    SHA-256."""
+    if not path.exists():
+        raise Stop(f"{path} is not there. Run `page plan <slug>` again. Nothing was sent.")
+    try:
+        saved = json.loads(path.read_bytes().decode("utf-8"))
+        if not (isinstance(saved, dict) and saved.get("kind") == "page" and isinstance(saved.get("publish"), str)
+                and isinstance(saved.get("parts"), list)):
+            raise ValueError
+        body = saved["publish"].encode("utf-8")
+        if not isinstance(json.loads(body.decode("utf-8")), dict):
+            raise ValueError
+    except ValueError:
+        raise Stop(f"{path} is not a payload `page plan` wrote. Run `page plan <slug>` again. "
+                   "Nothing was sent.") from None
+    parts = []
+    for p in saved["parts"]:
+        p = as_dict(p)
+        src = Path(str(p.get("path") or ""))
+        if not p.get("path") or not inside(src, root):
+            raise Stop(f"{path} names a screenshot outside the project repo ({src}). Run `page plan "
+                       f"{saved.get('slug')}` again. Nothing was sent.")
+        data = src.read_bytes() if src.is_file() else None
+        if data is None or not p.get("sha256") or hashlib.sha256(data).hexdigest() != p.get("sha256"):
+            raise Stop(f"The screenshot {src} changed (or is gone) since `page plan`. Run `page plan "
+                       f"{saved.get('slug')}` again, so the Client view the BA approves is what is sent. "
+                       "Nothing was sent.")
+        parts.append({"name": str(p.get("name")), "path": str(src), "type": str(p.get("type")), "data": data})
+    return saved, body, parts
+
+
+def cmd_page_send(root: Path, path: Path) -> dict:
+    check_kind(path, "page", "send")
+    keep = False
+    try:
+        url, key, _ = settings(root)
+        saved, body, parts = read_page_payload(path, root)
+        if text(saved.get("portal")).rstrip("/") != url:
+            raise Stop(f"`page plan` ran its dry run against {saved.get('portal') or 'another Portal'}, but "
+                       f"tools.portal.url is now {url}. Run `page plan {saved.get('slug')}` again. Nothing was sent.")
+        rel = text(saved.get("yaml")) or "the page YAML"
+        page_local_check(json.loads(body.decode("utf-8")), body, parts, rel, {})
+        try:
+            reply = post_page(url, key, body, parts, False, rel, {}, text(saved.get("round")))
+        except MaybeSent:
+            keep = True
+            raise
+    finally:
+        if not keep:
+            path.unlink(missing_ok=True)
+    c, rnd = reply["counts"], reply["round"]
+    how = "a new Round" if rnd.get("new") else "it replaced the Round with the same key"
+    report = (f"Sent the page \"{saved.get('name')}\" ({saved.get('slug')}) to {url}: "
+              f"Round {round_words(rnd['label'])} — {how}. {c['questions']} Questions, {c['screenshots']} "
+              f"screenshots. The Portal confirmed it at {reply['received_at']} (UTC), "
+              f"publish id {reply['publish_id']}.")
+    return {"ok": True, "sent": "page", "page": saved.get("slug"), "portal": url, "round": rnd, "counts": c,
+            "publish_id": reply["publish_id"], "received_at": reply["received_at"], "report": report}
 
 
 def main(argv: list[str]) -> int:
@@ -658,10 +1287,16 @@ def main(argv: list[str]) -> int:
     words = [a for i, a in enumerate(argv) if not a.startswith("--") and (i == 0 or argv[i - 1] not in
                                                                            ("--root", "--payload"))]
     try:
-        if words[:1] == ["page"]:
-            raise Stop("`portal-publish page <slug>` is not built yet (it comes with the Clarification pages, "
-                       "Story 4.3). Only `dashboard` works today.")
-        if words[:2] == ["dashboard", "plan"]:
+        if words[:1] == ["page"] and words[1:2] not in (["send"], ["discard"]):
+            rest = words[2:] if words[1:2] == ["plan"] else words[1:]
+            if len(rest) != 1:
+                raise Stop("Name one page: `page plan <slug>` (the `slug:` line of its YAML).")
+            result = cmd_page_plan(root, rest[0])
+        elif words[:2] == ["page", "send"]:
+            result = cmd_page_send(root, payload_arg(argv))
+        elif words[:2] == ["page", "discard"]:
+            result = cmd_discard(payload_arg(argv), "page")
+        elif words[:2] == ["dashboard", "plan"]:
             result = cmd_plan(root, "--refresh" in argv)
         elif words[:2] == ["dashboard", "send"]:
             result = cmd_send(root, payload_arg(argv))

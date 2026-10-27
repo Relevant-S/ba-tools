@@ -76,6 +76,17 @@ dated and attributed. If an answer only lives on the page, the spec rots and the
   `--new <file>` the first time, when the feature has no row yet. Then `build` and publish the
   dashboard to its link (`tools.dashboard.url`). **The dashboard is the register of clarification
   pages** — this is how a BA finds a page after it is created.
+- **And run portal-publish** when the profile has `tools.portal`, in this order:
+  1. Publish the Artifact (above).
+  2. Put its real link in the YAML's `url:` line. The Portal links the page to its Dashboard Feature by
+     that link; a placeholder is left out with a warning.
+  3. Run `portal-publish page <slug>` (the YAML's `slug:`). It sends the page and its screens to the
+     Relevant Clients Portal, where the Client answers it. It shows the BA what the Client will read and
+     sends only after a yes; if the BA says no, nothing is sent.
+  4. When the link is new, run `portal-publish dashboard` too, so the Client's Dashboard links to the page.
+
+  Each round needs its own `store_key` and `round:` line: a Round the Client has already answered
+  cannot be replaced.
 - **Always publish with `capabilities: {"db": {}}`, on every publish of a question page.** The
   **Send answers to Claude** button stays hidden unless the page may use its own small database. It
   saves the answers to collection `answers`, doc `latest`. A page first published without this never
@@ -90,11 +101,17 @@ dated and attributed. If an answer only lives on the page, the spec rots and the
 
 ## When the answers come back
 
-1. If someone pressed **Send answers to Claude**, read them with `ArtifactData get` (the page's link,
-   collection `answers`, doc `latest`). Otherwise the client pastes them, usually in Slack or email,
-   and the fetch skills pick them up as intake.
-2. Put each answer into the spec's **Decisions** (date, who, the answer, the source). The sent record
-   also has `changes`: requests to change an earlier decision — treat each like a new answer.
+1. Get the answers. Take the one path that fits how the page went out:
+   - **The page went out through the Relevant Clients Portal** (the profile has `tools.portal`): run
+     `fetch-portal`. It writes the Client's sent Answers to `docs/BA/intake/`, one file per page, and
+     offers `/intake-and-triage`. Do not also read the artifact page's answers for this page.
+   - **The page is an artifact page:** if someone pressed **Send answers to Claude**, read them with
+     `ArtifactData get` (the page's link, collection `answers`, doc `latest`). Otherwise the client pastes
+     them, usually in Slack or email, and the fetch skills pick them up as intake.
+2. Put each answer into the spec's **Decisions** once (date, who, the answer, the source), whichever path
+   it came by. Before adding one, check it is not there already. The artifact page's sent record also has
+   `changes`: requests to change an earlier decision — treat each like a new answer. A Portal Answer that
+   "Replaces the answer sent …" updates the earlier Decision instead of adding a second one.
 3. Rebuild the page: answered questions move to `decisions` (with date and who), new questions take
    their place, add a `round` event, **and
    re-pull the screens** — a screenshot from two rounds ago is the one thing nobody thinks to check.

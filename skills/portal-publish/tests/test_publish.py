@@ -437,12 +437,6 @@ def test_build_failure_stops(capsys, project, portal, monkeypatch):
     assert portal.requests == []
 
 
-def test_page_is_not_built_yet(capsys, project, portal):
-    rc, result, _ = run(capsys, project, "page", "merchants")
-    assert rc == 1 and "not built yet" in result["error"]
-    assert portal.requests == []
-
-
 # ---- Review fixes ------------------------------------------------------------------------------------
 
 def test_quoted_false_hides_features_and_items(project):

@@ -1,0 +1,61 @@
+# An old page for tests/test_page.py: `settled:` HTML lines instead of `decisions:`, and every field the
+# Portal never gets (spec, events, Figma ids, spec_ref …). Its screens are written by the test.
+slug: old-page
+product: sample-app
+spec: docs/BA/specs/sample-app/backlog/old-page.md
+doc_title: Old page
+eyebrow: Sample App &middot; Design review &middot; V2
+title: Two questions on sign-up
+url: https://claude.ai/artifact/0f3e2d1c-aaaa-4bbb-8ccc-old-page-example
+round: Round V2 · sent 20 Oct 2026 by Sample BA · replaces V1
+store_key: old-page-v2
+stage: spec
+copy_header: Old page — answers
+copy_noun: answers
+standfirst: <strong>Two questions</strong> are left &mdash; both small.
+settled:
+- <strong>Already decided on the call:</strong>
+- <strong>Phone numbers are checked by SMS.</strong> Agreed on the call &mdash; no email fallback.
+- <strong>Only adults can sign up</strong>
+- A plain line with &ldquo;quotes&rdquo; and <em>no</em> strong part.
+events:
+- date: 2026-10-20
+  kind: round
+  who: Sample BA
+  title: Sent round V2
+design:
+  summary: <p>Sign-up asks for a phone number first.</p>
+  figma_file: AbCdEf123456
+  figma_page: _Concept · Sign-up
+  screens:
+  - node: '12:34'
+    frame: v2 · Sign-up
+    src: screens/sign-up.png
+    cap: The sign-up screen.
+    hero: true
+questions:
+- id: q1-country
+  spec_ref: O-A
+  section: A — Who can sign up
+  title: Which countries can sign up?
+  body: <p>We need the list before the form is built.</p>
+  options:
+  - v: uk
+    t: The UK only
+    d: Smallest first release.
+    rec: true
+  - v: eu
+    t: The UK and the EU
+  screens:
+  - src: screens/country.png
+    figma: https://www.figma.com/design/AbCdEf123456?node-id=12-35
+    cap: The country list.
+- id: q2-age
+  spec_ref: O-B
+  title: How is age checked?
+  body: <p>Today nobody checks.</p>
+  options:
+  - v: self
+    t: The person says so
+  - v: id
+    t: An ID check

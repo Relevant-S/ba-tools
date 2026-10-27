@@ -178,8 +178,9 @@ Tell the BA in a short message:
 > - `/fetch-fireflies` — pull recent meeting transcripts via the Fireflies API
 > - `/fetch-gmail` — pull email threads via the Gmail API
 > - `/fetch-slack` — pull threaded Slack messages from configured channels
+> - `/fetch-portal` — pull the Client's Answers from the Relevant Clients Portal (only on projects whose profile has `tools.portal`)
 >
-> All three write to `docs/BA/intake/` and feed this triage flow.
+> All of them write to `docs/BA/intake/` and feed this triage flow.
 >
 > **Different flow** — if you want to retrofit existing JIRA tickets with proper Business Requirements (rather than triage new client signals), use `/fetch-jira-backlog`. That writes template-shaped spec stubs to `docs/BA/specs/{project}/{release_slug}/` for the `ba-spec` skill to complete. It bypasses triage entirely — JIRA tickets aren't intake.
 

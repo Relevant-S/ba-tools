@@ -1,13 +1,14 @@
 ---
 name: portal-publish
-description: Send the project's Dashboard to the Relevant Clients Portal, on purpose and checked — build it from docs/BA/dashboard.yaml, check it against the Portal's data contract, show the BA exactly what the Client will read (the Portal's own dry run), and send only after the BA says yes. Use when the BA says "publish to the portal", "send the dashboard to the client", "portal-publish dashboard", or after ba-dashboard publishes on a project whose profile has tools.portal. `portal-publish page <slug>` (Clarification pages) is not built yet.
+description: Send the project's Dashboard, or one Clarification page with its screenshots, to the Relevant Clients Portal, on purpose and checked — build it from docs/BA/dashboard.yaml or docs/BA/clarifications/<slug>-decisions.yaml, check it against the Portal's data contract, show the BA exactly what the Client will read (the Portal's own dry run), and send only after the BA says yes. Use when the BA says "publish to the portal", "send the dashboard to the client", "send this page to the client", "portal-publish dashboard", "portal-publish page <slug>", or after ba-dashboard or clarification-page publishes on a project whose profile has tools.portal.
 ---
 
 # portal-publish
 
-**What it does.** The Client cannot open the project repo. This skill puts the Dashboard in front of the Client
-in the Relevant Clients Portal — only when the BA decides, and with nothing internal in it. The Portal checks
-every send again and logs it at **Admin → Projects → the Project → Publishing**.
+**What it does.** The Client cannot open the project repo. This skill puts the Dashboard, or one Clarification
+page, in front of the Client in the Relevant Clients Portal — only when the BA decides, and with nothing
+internal in it. The Portal checks every send again and logs it at **Admin → Projects → the Project →
+Publishing**. The Dashboard steps come first below; the page steps are in "A Clarification page".
 
 **Two commands with the BA's yes in between.** The shell cannot wait for typed input, so:
 
@@ -88,14 +89,66 @@ Show `error` as it is; it already says what to do. Nothing was sent in these cas
 | The real send went out but no reply came back (timeout, dropped connection) | "… it may have arrived …": check Admin → Projects → the Project → Publishing before sending again. The payload file is kept, so `send` can be run again with it if the send is not there. This is the one case where something may have been sent. |
 | A reply the skill does not understand (for example an older Portal) | "The Portal's reply was not understood (HTTP <n>)" |
 
-## Not built yet
+## A Clarification page — `page <slug>`
 
-`portal-publish page <slug>` (a Clarification page) answers "not built yet". It comes with the Clarification
-pages in the Portal.
+Same settings, same Step 0, same two steps with the BA's yes in between.
+
+```
+uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py page plan <slug>
+uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py page send --payload <file>
+uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py page discard --payload <file>
+```
+
+`<slug>` is the `slug:` line of the page YAML (`page <slug>` alone does the same as `page plan <slug>`).
+
+1. **`page plan <slug>`.** It:
+   - finds `docs/BA/clarifications/<slug>-decisions.yaml`, else `<slug>.yaml`, and stops if the YAML's `slug:`
+     is not `<slug>`;
+   - runs clarification-page's `scripts/_fixyaml.py` on it first. That script quotes values holding a colon, in
+     the BA's file. When it changed lines, the first warning says so: the BA commits the file with the page;
+   - stops if the page has no `round:` line (the Round label the Client reads);
+   - builds the page from the fields the contract names, and nothing else. Old `settled:` lines become
+     decisions with no date and no person. `spec`, `events`, `figma_file`, `node`, `frame`, `spec_ref` and every
+     other internal field stay in the repo and are listed in `left_out`. A placeholder `url` (like
+     `https://claude.ai/artifact/<the page id>`) is left out with a warning; the page still sends;
+   - collects every screenshot the page names (`src`, relative to the YAML's folder). Each goes as its bare
+     file name; a second file with the same name goes as `name-2.png`, then `-3` …;
+   - checks it all: the contract (at most 50 Questions, 30 screenshots), each screenshot there, PNG, JPEG or
+     WebP, at most 10 MB, and at most 90 MB in all. A failure names the YAML file, the row and the field;
+   - sends a **dry run** (multipart: the page JSON, then one part per screenshot). The Portal stores and logs
+     nothing. The payload file in temp holds the page JSON and each screenshot's path and checksum — never the
+     screenshots themselves.
+2. **Show the BA, word for word:** every line of `warnings`; `client_view` — the page name, the Round label,
+   whether it is a new Round or replaces one, each Question with its options and the recommended one, the
+   settled decisions and the counts. It comes from the Portal's own dry run: never rebuild or reorder it.
+   Then `left_out` as one line: "Left in the repo: <the fields, comma-separated>".
+3. **Ask one question:** "Send this page to the Client?" Wait for the answer.
+4. **Yes** → `page send --payload <the payload path from plan>`. It re-reads every screenshot; if one changed
+   since `plan`, it stops ("run `page plan` again"). Then it sends the same page for real and deletes the file.
+   **No** (or anything but a clear yes) → `page discard --payload <path>`. Nothing is sent.
+5. **Report** `report` from `send`: the page, the Round label, new Round or replaced, the counts of Questions
+   and screenshots, the Portal's `publish_id` and its confirmation time (`received_at`, UTC). The BA sees the
+   row at Admin → Projects → the Project → Publishing.
+
+If the BA edits the YAML after `plan`, discard and run `plan` again — `send` sends what `plan` built.
+
+**When a page send stops**, show `error` as it is. Besides the cases in the table above:
+
+| Case | What the BA sees |
+|---|---|
+| No YAML for the slug | "No page YAML for '<slug>'. Looked for … and …" |
+| The YAML's `slug:` is different | "… has slug 'a', but you asked for 'b' …" |
+| No `round:` line | "… has no `round:` line …" |
+| A screenshot is missing, not PNG / JPEG / WebP, or over 10 MB | `docs/BA/clarifications/<file> → design.screens[1] → src: …` |
+| Over 90 MB in all | "… the Portal takes at most 90 MB in one send …" |
+| The Round already has answers (`round_has_answers`) | "Round <label> already has answers — give it a new round key", then: change `store_key` (and the round label) and run `page plan` again |
+| `screenshot_mismatch` | a named screenshot did not arrive, or an unnamed one did; run `page plan` again |
+| `contract_invalid`, `project_archived`, `payload_too_large`, `invalid_key` | the Portal's message, each field it named, then the next step |
+| A screenshot changed between `plan` and `send` | "The screenshot … changed (or is gone) since `page plan` …" |
 
 ## Files
 
-- `publish.py` — the commands above.
+- `publish.py` — the commands above (`dashboard …` and `page …`).
 - `checks.py` and `contract/` — the data contract both sides check against. Do not edit them here; a contract
   change is its own ba-tools change, copied to the Portal.
 - `tests/` — `uv run pytest` in this folder.

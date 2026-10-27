@@ -57,7 +57,7 @@ These names appear in YAML frontmatter and state files — they're kept verbatim
      Selectors: 3 | 1-4 | 1,3,5 | all | rest
    ```
    Examples: `1-4 ok, 3,7 dismiss` (approve 1, 2, 4 — the 3 was overridden — and dismiss 3, 7); `all ok`; `rest note`. Last input wins. On approval, the action runs immediately. On `stop`, state saves; resume on next invocation.
-6. If no unprocessed intake files exist AND no resumable reports: tell the BA they can drop a file at `docs/BA/intake/<source>.md` or invoke a fetcher skill (`/fetch-fireflies`, `/fetch-gmail`, `/fetch-slack`).
+6. If no unprocessed intake files exist AND no resumable reports: tell the BA they can drop a file at `docs/BA/intake/<source>.md` or invoke a fetcher skill (`/fetch-fireflies`, `/fetch-gmail`, `/fetch-slack`, and `/fetch-portal` on projects whose profile has `tools.portal`).
 
 **Proposed action types** (drafted in step 03, carried out in step 01 §0.5):
 
