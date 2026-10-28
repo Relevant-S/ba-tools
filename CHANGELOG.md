@@ -48,6 +48,15 @@
   `skills/portal-publish/pyproject.toml`: `httpx` and `pyyaml` (run with `uv run --project <skills>/portal-publish`).
   `tools.portal.url` must be `https://` except for localhost, 127.0.0.1, `*.localhost` and `*.test`.
 
+- **Dashboard search.** A search box on the Map and Board (or press `/`) finds areas, features and items
+  in every product by part of their name; picking one opens it on the map. The first option, "Show all
+  matches", filters the Map and Board to those names instead (an area or feature whose name matches
+  keeps everything under it); a "Name" chip shows and clears it. First built on Acme Lending (28 Oct).
+- **Open tickets on an area.** An area's "In Jira" section lists up to 5 of its open tickets, the ones
+  being built first. `jira-areas.mjs` now keeps each open ticket's key, name and last update — run
+  `map/build.py --refresh` once to get them.
+- **The page title comes from `dashboard.yaml`'s `title`**, so a rename no longer resets on each build.
+
 ## 0.7.0 — 2026-10-25
 
 - **The dashboard page is now Map + Board.** `ba-dashboard` builds one page with two tabs and publishes it

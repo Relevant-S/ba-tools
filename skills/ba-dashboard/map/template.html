@@ -219,6 +219,24 @@ table.sum button { background: none; border: 0; padding: 0; cursor: pointer; col
 .lanecount { align-self: flex-start; background: var(--card); border: 1px solid var(--rule); border-radius: 999px; padding: 2px 10px; font-size: 0.75rem; color: var(--ink-2); cursor: pointer; }
 .lanecount:hover { border-color: var(--ink-3); }
 .board .bc.lane:has(.lanecount), .board .bc.lane:empty { min-height: 0; }
+/* Search: part of a name → a list of areas, features and items; picking one opens it on the map. */
+.search { position: relative; }
+.search input { width: 230px; border: 1px solid var(--rule); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 0.8rem; background: var(--paper); color: var(--ink); }
+.search input::placeholder { color: var(--ink-3); }
+.search input:focus { outline: 2px solid var(--accent); outline-offset: 1px; background: var(--card); }
+.search ul { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; width: min(440px, calc(100vw - 32px)); max-height: 60vh; overflow: auto; margin: 0; padding: 4px; list-style: none; background: var(--card); border: 1px solid var(--rule); border-radius: 10px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.14); }
+.search li { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; line-height: 1.3; }
+.search li .ico { margin-top: 2px; }
+.search li[aria-selected="true"] { background: var(--accent-bg); }
+.search li .t { flex: 1; min-width: 0; }
+.search li small { display: block; font-size: 0.74rem; color: var(--ink-3); }
+.search li .k { flex: none; font-size: 0.74rem; color: var(--ink-2); }
+.search li.res .t > span { text-decoration: line-through; color: var(--ink-3); }
+.search li.none { cursor: default; color: var(--ink-2); }
+.search mark { background: none; color: inherit; font-weight: 700; }
+.search li.all { border-bottom: 1px solid var(--rule-soft); border-radius: 6px 6px 0 0; margin-bottom: 2px; font-weight: 600; color: var(--accent); }
+.search li.all small { font-weight: 400; }
+.chip[hidden] { display: none; }
 
 @media (max-width: 760px) {
   .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 58vh auto; height: auto; }
@@ -226,6 +244,8 @@ table.sum button { background: none; border: 0; padding: 0; cursor: pointer; col
   .controls, #chips { flex-basis: 100%; }
   .board { grid-template-columns: 120px repeat(var(--n), 190px); }
   .board .rl { padding: 8px; }
+  .search { flex-basis: 100%; }
+  .search input { width: 100%; }
   aside { border-left: 0; border-top: 1px solid var(--rule); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -236,6 +256,10 @@ table.sum button { background: none; border: 0; padding: 0; cursor: pointer; col
     <h1 class="brand">BA mind map<small id="updated">Example built from the BA dashboard</small></h1>
     <nav class="crumbs" id="crumbs" aria-label="Where you are"></nav>
     <div class="controls">
+      <div class="search">
+        <input id="q" type="search" placeholder="Search by name  ( / )" autocomplete="off" spellcheck="false" aria-label="Search areas, features and items by name" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="q-list">
+        <ul id="q-list" role="listbox" aria-label="Search results" hidden></ul>
+      </div>
       <span class="seg" id="view" role="radiogroup" aria-label="View"></span>
       <span class="seg" id="prod" role="radiogroup" aria-label="Product"></span>
       <span id="chips" class="controls" role="group" aria-label="Show item types"></span>
@@ -303,15 +327,27 @@ function inactiveOf() { return DATA.epics.filter(e => inProd(e) && !isActive(e))
 const picks = new Set();
 const filtering = () => picks.size > 0;
 const showsKind = k => !filtering() || picks.has(k);
-function epicVisible(e) { return inProd(e) && isActive(e) && (!filtering() || e.features.some(f => kidsOf(f).length)); }
+/* Name filter ("Show all matches" in the search): keep what has the text in its name. An area or feature
+   whose name matches keeps everything under it; otherwise only the matching items, and the bubbles that hold them. */
+let nameQ = "";
+const hasQ = t => String(t || "").toLowerCase().includes(nameQ);
+const AREA_OF = new Map(DATA.epics.flatMap(e => e.features.map(f => [f, e])));
+const nameHitFeat = f => hasQ(f.label) || (!AREA_OF.get(f)?.loose && hasQ(AREA_OF.get(f)?.label));
+function epicVisible(e) {
+  return inProd(e) && (isActive(e) || !!nameQ) && (!filtering() || e.features.some(f => kidsOf(f).length))
+    && (!nameQ || (!e.loose && !e.noarea && hasQ(e.label)) || featsOf(e).length > 0);
+}
 function epicsShown() {
   const act = DATA.epics.filter(epicVisible), ina = inactiveOf();
-  if (!ina.length || filtering()) return act;
+  if (!ina.length || filtering() || nameQ) return act;
   return [...act, ...(showInactive ? ina : []), { id: "inactive", group: true, n: ina.length, label: showInactive ? "Hide quiet areas" : "Quiet areas", features: [], prod }];
 }
 const month = d => d ? new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" }) : "never";
-function featsOf(e) { return e.features.filter(f => inProd(f) && !oldDone(f) && (kidsOf(f).length || ((f.feature || f.tickets.length) && !filtering()))); }
-function kidsOf(f) { return f.children.filter(c => showsKind(c.kind) && inProd(c)); }
+function featsOf(e) {
+  return e.features.filter(f => inProd(f) && !oldDone(f) && (kidsOf(f).length || ((f.feature || f.tickets.length) && !filtering()))
+    && (!nameQ || nameHitFeat(f) || kidsOf(f).length > 0));
+}
+function kidsOf(f) { return f.children.filter(c => showsKind(c.kind) && inProd(c) && (!nameQ || hasQ(c.title) || nameHitFeat(f))); }
 /* Progress ring: four stages, the same on every project. Concept 0-20%, Spec & design 20-50%, Build 50-90%, Released 100%. */
 /* Stage mix. A parent's ring is split into sectors, one per stage, sized by how many children are in it.
    A bubble with no children has one colour: its own stage. No work started anywhere = empty ring. */
@@ -700,12 +736,13 @@ function legendHtml() {
     ${ringSvg(0, true)}<span>"Quiet areas" holds every area with no work now. Click it to show them, each with the month its last ticket was finished.</span>
     <svg viewBox="-12 -12 24 24" aria-hidden="true" class="clink"><circle r="9"/><g transform="translate(-6,-6) scale(.5)"><path d="${CLAR_ICON}"/></g></svg><span>Document button on a feature: opens its clarification page.</span>
     <span></span><span>"Hide done > 2 weeks" (on by default) hides features finished more than two weeks ago.</span>
+    <span></span><span>Search (top left, or press /): pick a result to open it, or "Show all matches" to keep only names with that text, on the Map and the Board. An area or feature whose name matches keeps everything under it. Click the "Name" chip to clear it.</span>
     ${KINDS.map(t => icon(t.icon, "open") + `<span>${t.name}</span>`).join("")}
     <span></span><span>An item's colour is its status: <span class="pill s-hot">Hot</span> <span class="pill s-old">Over 30 days</span> <span class="pill s-open">Open</span>. Each kind shows up to 3 items; with more, the 2 most urgent show and a dashed bubble says "+ N more".</span>
   </div>`;
 }
 function rootHtml() {
-  const list = DATA.epics.filter(epicVisible), ina = filtering() ? [] : inactiveOf();
+  const list = DATA.epics.filter(epicVisible), ina = filtering() || nameQ ? [] : inactiveOf();
   const all = list.flatMap(e => e.features.flatMap(kidsOf));
   const rows = list.map(e => {
     const kids = e.features.flatMap(kidsOf);
@@ -724,7 +761,10 @@ function jiraHtml(e) {
   if (e.loose) return "";
   if (!j) return "";
   const base = JIRA_BASE, inProg = j.open.filter(o => o.category === "indeterminate").length;
+  // Open tickets: being built or tested first, then the most recently updated. Older Jira files have no keys.
+  const open = j.open.filter(o => o.key).sort((a, b) => (b.category === "indeterminate") - (a.category === "indeterminate") || (b.updated || "").localeCompare(a.updated || "")).slice(0, 5);
   return `<h3>In Jira</h3><p>${j.description ? esc(j.description) + " " : ""}${j.open.length} open tickets (${inProg} being built or tested), ${j.done} done. Last ticket finished ${j.lastDone || "never"}. <a href="${esc(j.search)}" target="_blank" rel="noopener">All its tickets in Jira ↗</a></p>
+    ${open.length ? `<h3>Open tickets${j.open.length > open.length ? ` (${open.length} of ${j.open.length})` : ""}</h3><ul class="items">${open.map(o => { const st = o.category === "indeterminate" ? "dev" : "ready"; return `<li><a class="row" href="${esc(base + o.key)}" target="_blank" rel="noopener">${icon(KINDS[2].icon, st)}<span>${esc(o.summary)} <span class="age">${o.key}</span></span><span class="pill s-${st}">${esc(o.status)}</span></a></li>`; }).join("")}</ul>` : ""}
     ${j.shipped.length ? `<h3>Last finished tickets</h3><ul class="items">${j.shipped.map(x => `<li><a class="row" href="${esc(base + x.key)}" target="_blank" rel="noopener">${icon(KINDS[2].icon, "done")}<span>${esc(x.summary)} <span class="age">${x.key}</span></span><span class="age">${x.date || ""}</span></a></li>`).join("")}</ul>` : ""}`;
 }
 function epicHtml(e) {
@@ -881,14 +921,24 @@ const chips = document.getElementById("chips");
 function applyFilter() {
   for (const t of KINDS) document.getElementById("chip-" + t.k).setAttribute("aria-pressed", picks.has(t.k));
   chips.classList.toggle("filtering", filtering());
-  resetBtn.disabled = !filtering() && hideOldDone;
+  syncNameChip();
+  resetBtn.disabled = !filtering() && hideOldDone && !nameQ;
   doneBtn.setAttribute("aria-pressed", hideOldDone);
   // Leave a bubble that the filter just emptied.
   if (epic && !epicVisible(epic)) epic = null;
   if (feat && (!epic || !featsOf(epic).includes(feat))) feat = null;
-  if (filtering()) showInactive = false;
-  picked = null; refresh(true);
+  if (filtering() || nameQ) showInactive = false;
+  picked = null; bsel = bpick = null; refresh(true);
 }
+const nameChip = document.createElement("button");
+nameChip.className = "chip qchip"; nameChip.id = "chip-name"; nameChip.hidden = true; nameChip.setAttribute("aria-pressed", "true");
+nameChip.onclick = () => { nameQ = ""; applyFilter(); };
+function syncNameChip() {
+  nameChip.hidden = !nameQ;
+  nameChip.title = nameChip.ariaLabel = `Showing names with “${nameQ}”. Click to show everything.`;
+  nameChip.innerHTML = `<span>Name: “${esc(nameQ)}”</span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path class="glyph" d="M18 6l-12 12 M6 6l12 12"/></svg>`;
+}
+chips.appendChild(nameChip);
 for (const t of KINDS) {
   const b = document.createElement("button");
   b.className = "chip"; b.setAttribute("aria-pressed", "false"); b.id = "chip-" + t.k;
@@ -900,7 +950,7 @@ const resetBtn = document.createElement("button");
 resetBtn.className = "chip reset"; resetBtn.id = "reset-filters"; resetBtn.disabled = true;
 resetBtn.setAttribute("aria-label", "Reset filters"); resetBtn.title = "Reset filters";
 resetBtn.innerHTML = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path class="glyph muted" d="M8 4h12v2.172a2 2 0 0 1 -.586 1.414l-3.914 3.914m-.5 3.5v4l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227 M3 3l18 18"/></svg>`;
-resetBtn.onclick = () => { picks.clear(); hideOldDone = true; applyFilter(); };
+resetBtn.onclick = () => { picks.clear(); hideOldDone = true; nameQ = ""; applyFilter(); };
 const doneBtn = document.createElement("button");
 doneBtn.className = "chip"; doneBtn.id = "chip-old-done"; doneBtn.setAttribute("aria-pressed", "true");
 doneBtn.innerHTML = icon("M5 12l5 5l10 -10", "done") + "Hide done &gt; 2 weeks";
@@ -932,7 +982,14 @@ function boardRows() {
 }
 function cardsIn(row) {
   return DATA.board.cards.filter(c => c.row === row.id && inProd(c)
-    && !(row.id === "none" && hideOldDone && c.stage === "done" && (c.doneDate || "") < doneCut));
+    && !(row.id === "none" && hideOldDone && c.stage === "done" && (c.doneDate || "") < doneCut)
+    && (!nameQ || cardHit(c)));
+}
+/* Name filter on the Board: the card's own name or area, or its feature holds a matching item. */
+function cardHit(c) {
+  if (hasQ(c.title) || hasQ(c.area)) return true;
+  const [, f] = c.fid ? featById(c.fid) : [null, null];
+  return !!f && (nameHitFeat(f) || kidsOf(f).length > 0);
 }
 function laneItems() {
   const out = [];
@@ -1105,20 +1162,89 @@ function openFromHash() {
     if (!e) return false;
     f = e.features.find(x => x.id === id);
   }
-  const of = item && item.prod !== "Both" ? item.prod : (f.prod !== "Both" ? f.prod : e.prod);
+  openTarget(e, f, item);
+  return true;
+}
+/* Point the map at an area, a feature or an item: its product, no type filter, nothing hiding it. */
+function openTarget(e, f, item) {
+  const of = item && item.prod !== "Both" ? item.prod : f && f.prod !== "Both" ? f.prod : e.prod;
   const want = PRODUCTS.includes(of) ? of : PRODUCTS[0];
   if (want !== prod) {
     prod = want;
     seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-checked", x.textContent === prod));
   }
-  if (oldDone(f)) { hideOldDone = false; doneBtn.setAttribute("aria-pressed", "false"); resetBtn.disabled = false; }
+  if (f && oldDone(f)) { hideOldDone = false; doneBtn.setAttribute("aria-pressed", "false"); resetBtn.disabled = false; }
   picks.clear(); chips.classList.remove("filtering");
   for (const t of KINDS) document.getElementById("chip-" + t.k).setAttribute("aria-pressed", "false");
+  if (nameQ) { nameQ = ""; syncNameChip(); resetBtn.disabled = hideOldDone; }
   if (!isActive(e)) showInactive = true;
   if (item) expanded.add(f.id + ":" + item.kind);  // not hidden behind "+ N more"
-  epic = e; feat = f; picked = item;
-  return true;
+  epic = e; feat = f || null; picked = item || null;
 }
+
+/* ---------- Search: part of a name, in either product ---------- */
+const qIn = document.getElementById("q"), qList = document.getElementById("q-list");
+let qHits = [], qAt = 0;
+function searchAll(s) {
+  const hits = [], has = t => String(t || "").toLowerCase().includes(s);
+  const prodOf = (...xs) => (xs.find(x => x && x.prod && x.prod !== "Both") || {}).prod || "Both";
+  for (const e of DATA.epics) {
+    if (!e.loose && !e.noarea && has(e.label)) hits.push({ e, title: e.label, kind: "Area", ico: EPIC_ICON, st: "open", prod: e.prod });
+    for (const f of e.features) {
+      if (!e.loose && has(f.label)) hits.push({ e, f, title: f.label, kind: "Feature", where: e.label, ico: FEATURE_ICON, st: featStatus(f), prod: prodOf(f, e) });
+      for (const c of f.children) if (has(c.title)) {
+        const done = isResolved(c);
+        hits.push({ e, f, item: c, title: c.title, kind: kindOf(c.kind).name, where: e.loose ? e.label : f.label, ico: done ? "M5 12l5 5l10 -10" : kindOf(c.kind).icon, st: done ? "done" : c.status, prod: prodOf(c, f, e), done });
+      }
+    }
+  }
+  // Names that start with the text first; answered items last.
+  const rank = h => (h.title.toLowerCase().startsWith(s) ? 0 : 1) + (h.done ? 2 : 0);
+  const shown = hits.sort((a, b) => rank(a) - rank(b)).slice(0, 40);
+  // First option: filter the whole Map and Board to this text, with the match count per product.
+  if (!hits.length) return shown;
+  const per = PRODUCTS.map(p => [p, hits.filter(h => h.prod === p || h.prod === "Both").length]).filter(([, n]) => n);
+  return [{ all: true, s, title: `Show all matches for “${s}”`, ico: "M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0 M21 21l-6 -6", st: "open",
+    kind: "Filter the Map and Board", where: per.map(([p, n]) => `${n} in ${p}`).join(", ") }, ...shown];
+}
+function hl(t, s) {
+  const i = t.toLowerCase().indexOf(s);
+  return i < 0 ? esc(t) : esc(t.slice(0, i)) + "<mark>" + esc(t.slice(i, i + s.length)) + "</mark>" + esc(t.slice(i + s.length));
+}
+function closeSearch() { qList.hidden = true; qIn.setAttribute("aria-expanded", "false"); qIn.removeAttribute("aria-activedescendant"); }
+function markHit() {
+  qList.querySelectorAll("li[role=option]").forEach((li, i) => li.setAttribute("aria-selected", i === qAt));
+  const on = document.getElementById("q-" + qAt);
+  if (on) { qIn.setAttribute("aria-activedescendant", on.id); on.scrollIntoView({ block: "nearest" }); }
+}
+function showHits() {
+  const s = qIn.value.trim().toLowerCase();
+  if (s.length < 2) { qHits = []; closeSearch(); return; }
+  qHits = searchAll(s); qAt = 0;
+  qList.innerHTML = qHits.length ? qHits.map((h, i) => `<li role="option" id="q-${i}" data-i="${i}"${h.all ? ' class="all"' : h.done ? ' class="res"' : ""}>${icon(h.ico, h.st)}<span class="t"><span>${h.all ? esc(h.title) : hl(h.title, s)}</span><small>${h.kind}${h.where ? " · " + esc(h.where) : ""}${h.done ? " · resolved" : ""}</small></span>${PRODUCTS.length > 1 && !h.all ? `<span class="k">${esc(h.prod)}</span>` : ""}</li>`).join("")
+    : `<li class="none">Nothing has “${esc(qIn.value.trim())}” in its name.</li>`;
+  qList.hidden = false; qIn.setAttribute("aria-expanded", "true"); markHit();
+}
+function chooseHit(h) {
+  if (!h) return;
+  qIn.value = ""; closeSearch(); qIn.blur();
+  if (h.all) { nameQ = h.s; epic = feat = null; applyFilter(); return; }  // stays on the tab you are on
+  openTarget(h.e, h.f, h.item); setTab("map"); refresh(true);
+}
+qIn.addEventListener("input", showHits);
+qIn.addEventListener("focus", showHits);
+qIn.addEventListener("blur", () => setTimeout(closeSearch, 120));
+qIn.addEventListener("keydown", ev => {
+  if (ev.key === "Escape") { ev.stopPropagation(); if (qIn.value) { qIn.value = ""; closeSearch(); } else qIn.blur(); return; }
+  if (!qHits.length) return;
+  if (ev.key === "ArrowDown" || ev.key === "ArrowUp") { ev.preventDefault(); qAt = (qAt + (ev.key === "ArrowDown" ? 1 : -1) + qHits.length) % qHits.length; markHit(); }
+  else if (ev.key === "Enter") { ev.preventDefault(); chooseHit(qHits[qAt]); }
+});
+qList.addEventListener("mousedown", ev => { const li = ev.target.closest("li[data-i]"); if (li) { ev.preventDefault(); chooseHit(qHits[+li.dataset.i]); } });
+// "/" jumps to the search box, unless you are already typing somewhere.
+document.addEventListener("keydown", ev => {
+  if (ev.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "")) { ev.preventDefault(); qIn.focus(); }
+});
 window.addEventListener("hashchange", () => {
   if (location.hash === "#board") { if (view !== "board") { setTab("board"); refresh(false); } }
   else if (openFromHash()) { setTab("map"); refresh(true); }

@@ -27,6 +27,7 @@ import subprocess
 import sys
 from collections import Counter
 from datetime import date
+from html import escape as html_escape
 from pathlib import Path
 
 import yaml
@@ -357,6 +358,8 @@ data = {"updated": str(today), "title": d.get("title", "BA Dashboard"), "product
         "mapUrl": MAP_URL, "epics": epics, "board": board}
 tpl = (HERE / "template.html").read_text(encoding="utf-8")
 html = tpl.replace("/*DATA*/null", json.dumps(data, ensure_ascii=False).replace("</", "<\\/"))
+# The page title (browser tab and gallery card) is the dashboard's `title`, so a rename lives in one place.
+html = html.replace("<title>BA Dashboard</title>", f"<title>{html_escape(data['title'])}</title>", 1)
 (mm / "mind-map.html").write_text(html, encoding="utf-8")
 print(json.dumps({"ok": True, "page": str(mm / "mind-map.html"), "areas": len(epics),
                   "active": sum(e["active"] for e in epics), "bubbles": len(areas) - 1,

@@ -18,13 +18,13 @@ for (const project of (process.argv[3] || '').split(',').filter(Boolean)) {
     const [done, recent, openIssues, last, shipped] = await Promise.all([
       count(`${q} AND statusCategory = Done`),
       count(`${q} AND updated >= -30d`),
-      all(`${q} AND statusCategory != Done`, ['status']),
+      all(`${q} AND statusCategory != Done ORDER BY updated DESC`, ['status', 'summary', 'updated']),
       post('/rest/api/3/search/jql', { jql: `${q} ORDER BY updated DESC`, fields: ['updated'], maxResults: 1 }),
       post('/rest/api/3/search/jql', { jql: `${q} AND statusCategory = Done ORDER BY resolved DESC`, fields: ['summary', 'resolutiondate'], maxResults: 5 }),
     ]);
     rows.push({
       project, id: c.id, name: c.name, description: c.description || '', done, recent,
-      open: openIssues.map(i => ({ status: i.fields.status.name, category: i.fields.status.statusCategory.key })),
+      open: openIssues.map(i => ({ key: i.key, summary: i.fields.summary, status: i.fields.status.name, category: i.fields.status.statusCategory.key, updated: i.fields.updated?.slice(0, 10) ?? null })),
       lastUpdated: last.issues[0]?.fields.updated.slice(0, 10) ?? null,
       lastDone: shipped.issues[0]?.fields.resolutiondate?.slice(0, 10) ?? null,
       shipped: shipped.issues.map(x => ({ key: x.key, summary: x.fields.summary, date: x.fields.resolutiondate?.slice(0, 10) ?? null })),
