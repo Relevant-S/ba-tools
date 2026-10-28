@@ -53,6 +53,29 @@
           "type": "array",
           "maxItems": 200,
           "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+        },
+        "pages_removed": {
+          "description": "Since 1.3.0. Only for a dashboard/2 send that carries clarification_pages (then always, maybe empty): the pages of this Portal project that this send hides from the Client because they are not in the list. On a dry run, the pages it would hide. Pages already hidden by an earlier send are not listed. For the BA only (admin).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["slug", "title"],
+            "properties": {
+              "slug": {
+                "description": "The page's slug.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "title": {
+                "description": "The page name of its latest Round.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              }
+            }
+          }
         }
       },
       "if": { "properties": { "dry_run": { "const": true } }, "required": ["dry_run"] },

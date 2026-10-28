@@ -338,6 +338,20 @@ def check_ticket_in_list(doc: dict) -> list[dict]:
     return out
 
 
+def check_page_slugs(doc: dict) -> list[dict]:
+    """unique_page_slug: a slug at most once in clarification_pages (since 1.3.0; the field is optional)."""
+    out: list[dict] = []
+    seen: dict = {}
+    for i, value in enumerate(doc.get("clarification_pages", [])):
+        here = f"/clarification_pages/{i}"
+        if value in seen:
+            out.append(detail(here, "unique_page_slug",
+                              f'Page slug "{value}" is listed twice: {seen[value]} and {here}'))
+        else:
+            seen[value] = here
+    return out
+
+
 def check_unique_special(doc: dict) -> list[dict]:
     """unique_special: each special area (no_area, not_linked) at most once."""
     out: list[dict] = []
@@ -409,6 +423,7 @@ def dashboard_2_checks(doc: dict) -> list[dict]:
             + check_unique(doc, "releases", "name", "unique_release_name", "Release name")
             + check_unique_special(doc)
             + check_ticket_in_list(doc)
+            + check_page_slugs(doc)
             + check_known(doc, "features", "area", areas, "known_area", "an area")
             + check_known(doc, "topics", "area", areas, "known_area", "an area")
             + check_known(doc, "cards", "area", areas, "known_area", "an area")

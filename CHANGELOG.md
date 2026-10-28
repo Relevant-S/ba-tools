@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- **`portal-publish` contract 1.3.0** (tag `portal-contract-1.3.0`, Story 4.9). `dashboard/2` gains an optional
+  **`clarification_pages`**: the slugs of every Clarification page now in the repo that belongs to this Portal
+  project (at most 1,000, each following the page `slug` rule, `portal`). The Portal hides the project's other
+  pages from the Client at once and deletes their data once their Answers are fetched; a missing field touches no
+  page, so an older ba-tools changes nothing. New named check `unique_page_slug` (in `checks.py` and
+  `checks.md`). The Dashboard form of `publish-reply/1` gains an optional **`pages_removed`** (`{slug, title}`,
+  for the BA): the pages a send hides, filled on dry runs too. `dashboard/1` is unchanged. New fixtures:
+  `dashboard-2-with-pages`, two Dashboard replies with `pages_removed`, the invalid cases
+  `v2-duplicate-page-slug`, `v2-bad-page-slug` and `v2-too-many-pages`, and the broken replies
+  `reply-pages-removed-without-title` and `reply-page-with-pages-removed`. The skill does not send the list yet:
+  that comes with Story 4.10.
+
 - **`portal-publish` contract 1.2.0** (tag `portal-contract-1.2.0`). Adds **`dashboard/2`**
   (`dashboard-2.schema.json` and its readable twin `dashboard-2.md`): the whole BA dashboard of one product,
   shaped like the BA page's own data — `jira_base`, areas with their Jira facts and up to 20 open tickets,

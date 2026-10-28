@@ -12,7 +12,8 @@ project's key. So there is no product field anywhere: a `products` or `prod` fie
 unknown field.
 
 One Dashboard Publish is one JSON object: the envelope at the top level, plus `jira_base`, `areas`, `features`,
-`topics`, `items`, `releases`, `cards` and `client_contacts`. A field not listed here is refused
+`topics`, `items`, `releases`, `cards`, `client_contacts` and, since 1.3.0, the optional
+`clarification_pages`. A field not listed here is refused
 (`contract_invalid`, naming it). Never sent: BA to-dos, notes, "Resolved" ticks, the "why this stage" text and
 the BA page's title.
 
@@ -70,6 +71,9 @@ Ticket keys and "In Jira" link to this site, whether or not the Client has Jira 
 
 `open_tickets` come in the BA page's order: being built or tested first (Jira category `indeterminate`), then
 newest updated. `stage` is `dev` for `indeterminate`, else `ready`, as on the BA page.
+
+`open` counts every ticket that is not done, so it includes the tickets counted in `in_progress` (being
+built or tested).
 
 ## `features` — at most 1,000
 
@@ -166,6 +170,21 @@ replaces the whole list.
 | `name` | text ≤ 100 | yes |
 | `email` | email ≤ 254 | no |
 | `slack` | text ≤ 100 (Slack name or member id) | no |
+
+## `clarification_pages` — optional, at most 1,000, `portal` (since 1.3.0)
+
+The slugs of every Clarification page now in the repo (`docs/BA/clarifications/`) that belongs to this Portal
+project. Each slug follows the `clarification/1` `slug` rule (runs of `a-z` and `0-9` joined by single hyphens,
+1 to 80 characters), and each is listed once (check `unique_page_slug`).
+
+- **Present** (may be empty): the Portal hides from the Client every page of this project that is not in the
+  list, at once, and shows again any listed page it had hidden. A hidden page's data is deleted once none of
+  its sent Answers is still waiting to be fetched. The reply's `pages_removed` names the pages this send hides
+  (on a dry run, the pages it would hide).
+- **Missing**: no page is touched. An older ba-tools that does not send the field changes nothing.
+
+Which pages belong to which product's project is the sender's job: a page goes with the product of the Feature
+whose `clar.url` points to it ("Both" means every product); a page no Feature links goes to the first product.
 
 ## Text rules
 

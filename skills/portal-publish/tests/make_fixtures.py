@@ -7,6 +7,8 @@ dashboard/2 (contract 1.2.0): a small file, and a real-size one that is the uppe
 send — 48 areas (5 open tickets each), 18 Features, 10 topics, 70 Items, 60 releases, 436 cards (29 Feature,
 290 epic, 117 other) holding 2,042 tickets, a 4,598-character summary and a 130-character release name. All text
 is made up: no client text and no email address. Its invalid cases (named `v2-…`) break the small file.
+Contract 1.3.0 adds a small file with the optional `clarification_pages` list, three `v2-…` cases that break
+it, and Dashboard replies that carry `pages_removed`.
 
 Pages: the clarification-page skill's example-probate-decisions.yaml converted to clarification/1, and a
 synthetic page of Merchants V7 size (6 Questions, 18 options, 4 screens). A page's invalid case is the
@@ -382,6 +384,16 @@ def small2() -> dict:
     return dashboard2(4, 4, 2, 8, 3, [2, 1, 3, 1, 2, 0], (2, 2, 2))
 
 
+PAGE_SLUGS = ["probate-decisions", "payouts", "sign-up-with-phone-number"]
+
+
+def with_pages() -> dict:
+    """The small dashboard/2 with the 1.3.0 page list: the slugs of the project's Clarification pages."""
+    d = small2()
+    d["clarification_pages"] = list(PAGE_SLUGS)
+    return d
+
+
 def v2_invalid_cases() -> dict[str, tuple[dict, dict]]:
     cases: dict[str, tuple[dict, dict]] = {}
 
@@ -476,6 +488,12 @@ def v2_invalid_cases() -> dict[str, tuple[dict, dict]]:
     case("v2-bad-card-kind", d, "contract_invalid", "schema", "/cards/0/kind")
     d = small2(); d["contract"] = "dashboard/3"
     case("v2-version-not-accepted", d, "contract_version_not_accepted", "contract_version", "/contract")
+    d = with_pages(); d["clarification_pages"].append(PAGE_SLUGS[0])
+    case("v2-duplicate-page-slug", d, "contract_invalid", "unique_page_slug", "/clarification_pages/3")
+    d = with_pages(); d["clarification_pages"][1] = "Payouts"
+    case("v2-bad-page-slug", d, "contract_invalid", "schema", "/clarification_pages/1")
+    d = with_pages(); d["clarification_pages"] = [f"page-{i}" for i in range(1001)]
+    case("v2-too-many-pages", d, "contract_invalid", "schema", "/clarification_pages")
     return cases
 
 
@@ -788,6 +806,11 @@ def reply_invalid_cases() -> dict[str, tuple[str, dict, str]]:
          {**dry, "client_contact_names": []}, "/client_contact_names")
     case("reply-page-with-dashboard-counts", "publish-reply/1", {**sent, "counts": dash["counts"]}, "/counts/features")
     case("reply-dashboard-with-round", "publish-reply/1", {**dash, "round": sent["round"]}, "/round")
+    removed = r["publish-reply-1-dashboard-2-pages-removed.json"]
+    case("reply-pages-removed-without-title", "publish-reply/1",
+         {**removed, "pages_removed": [{"slug": "payouts"}]}, "/pages_removed/0/title")
+    case("reply-page-with-pages-removed", "publish-reply/1",
+         {**sent, "pages_removed": removed["pages_removed"]}, "/pages_removed")
     view = copy.deepcopy(dry["client_view"]); view["design"]["screens"][0]["file"] = "payouts-overview.png"
     case("reply-page-screen-file-name", "publish-reply/1", {**dry, "client_view": view},
          "/client_view/design/screens/0/file")
@@ -888,6 +911,7 @@ def main() -> None:
         dump(FIXTURES / "invalid" / name / "expected.json", expected_result(name, doc, stated))
     dump(FIXTURES / "valid" / "dashboard-2-small.json", small2())
     dump(FIXTURES / "valid" / "dashboard-2-real-size.json", real_size2())
+    dump(FIXTURES / "valid" / "dashboard-2-with-pages.json", with_pages())
     for name, (doc, stated) in v2_invalid_cases().items():
         dump(FIXTURES / "invalid" / name / "input.json", doc)
         dump(FIXTURES / "invalid" / name / "expected.json", expected_result(name, doc, stated))
@@ -1000,8 +1024,14 @@ def replies() -> dict[str, dict]:
         "topics": len(doc2["topics"]), "cards": len(doc2["cards"]),
         "tickets": sum(len(c["tickets"]) for c in doc2["cards"]),
     }, "client_view": client_view2(doc2), "client_contact_names": [c["name"] for c in doc2["client_contacts"]]}
+    removed = [{"slug": "old-onboarding-questions", "title": "Onboarding questions"},
+               {"slug": "employer-search", "title": "Employer search: who can be found"}]
+    dry_pages = {**dry2, "pages_removed": removed}
+    sent_pages = {**base, "counts": dry2["counts"], "pages_removed": removed}
     return {
         "publish-reply-1-sent.json": base,
+        "publish-reply-1-dashboard-2-pages-removed-dry-run.json": dry_pages,
+        "publish-reply-1-dashboard-2-pages-removed.json": sent_pages,
         "publish-reply-1-dry-run.json": dry,
         "publish-reply-1-dashboard-2-dry-run.json": dry2,
         "status-1.json": status,

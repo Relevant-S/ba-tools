@@ -8,7 +8,7 @@ in `portal/contract/`, with a `SOURCE` file naming the ba-tools tag and each fil
 |---|---|
 | `dashboard-1.schema.json` | The Dashboard Publish, JSON Schema draft 2020-12 |
 | `dashboard-1.md` | The same, readable |
-| `dashboard-2.schema.json` | The whole BA dashboard of one product (since 1.2.0), JSON Schema draft 2020-12 |
+| `dashboard-2.schema.json` | The whole BA dashboard of one product (since 1.2.0), and the list of its Clarification pages (since 1.3.0), JSON Schema draft 2020-12 |
 | `dashboard-2.md` | The same, readable |
 | `clarification-1.schema.json` | The Clarification page Publish (one Round), JSON Schema draft 2020-12 |
 | `clarification-1.md` | The same, readable |

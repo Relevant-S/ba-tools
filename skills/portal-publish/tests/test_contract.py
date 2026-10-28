@@ -102,6 +102,8 @@ DASHBOARD_CASES = {
     "v2-unknown-topic-area", "v2-duplicate-release-name", "v2-duplicate-special", "v2-duplicate-ticket-in-feature",
     "v2-duplicate-open-ticket", "v2-feature-card-without-feature", "v2-epic-card-with-feature",
     "v2-other-card-with-epic", "v2-answered-over-total", "v2-jira-base-javascript", "v2-jira-base-http",
+    # clarification_pages (contract 1.3.0)
+    "v2-duplicate-page-slug", "v2-bad-page-slug", "v2-too-many-pages",
 }
 PAGE_CASES = {
     "page-too-many-questions", "page-too-many-screenshots", "question-no-options",
@@ -121,6 +123,8 @@ REPLY_CASES = {
     "reply-page-with-contact-names": "publish-reply/1",
     "reply-page-with-dashboard-counts": "publish-reply/1",
     "reply-dashboard-with-round": "publish-reply/1",
+    "reply-pages-removed-without-title": "publish-reply/1",
+    "reply-page-with-pages-removed": "publish-reply/1",
     "reply-page-screen-file-name": "publish-reply/1",
     "reply-page-media-not-a-uuid": "publish-reply/1",
     "reply-page-media-only-hyphens": "publish-reply/1",
@@ -601,7 +605,7 @@ def test_limits_match_the_spec():
 
 def test_index_names_existing_schemas():
     idx = checks.index()
-    assert idx["contract_folder"] == "1.2.0"
+    assert idx["contract_folder"] == "1.3.0"
     assert idx["accepted"] == ["dashboard/1", "dashboard/2", "clarification/1"]
     assert set(idx["schemas"]) == {"dashboard/1", "dashboard/2", "clarification/1", "publish-reply/1", "status/1",
                                    "answers/1", "ack-request/1", "ack/1"}
@@ -686,7 +690,7 @@ def test_every_dashboard2_check_has_a_fixture():
         "schema", "contract_version", "unique_area_id", "unique_feature_id", "unique_topic_id", "unique_item_key",
         "unique_card_id", "unique_release_name", "unique_special", "unique_ticket_in_list", "known_area",
         "known_parent", "known_card_feature", "known_release", "card_kind_fields", "answered_in_range",
-        "no_html_entities",
+        "no_html_entities", "unique_page_slug",
     }
 
 
@@ -740,7 +744,7 @@ def test_dashboard2_visibility_levels_are_the_agreed_ones():
          "#/items[]/key", "#/items[]/parent", "#/cards[]/id", "#/cards[]/area", "#/cards[]/feature"])
     assert sorted(p for p, v in vis.items() if v == "portal") == sorted(
         ["#/features[]/clar_url", "#/client_contacts[]/name", "#/client_contacts[]/email",
-         "#/client_contacts[]/slack"])
+         "#/client_contacts[]/slack", "#/clarification_pages"])
     # Decision 1 and 3: ticket keys, assignees, and Item who, since and kind are shown; so is jira_base.
     for p in ("#/jira_base", "#/items[]/who", "#/items[]/since", "#/items[]/kind", "#/cards[]/tickets[]/key",
               "#/cards[]/tickets[]/assignee", "#/areas[]/jira/open_tickets[]/key"):
@@ -856,3 +860,53 @@ def test_reply_holds_either_view():
     schema = read(checks.CONTRACT_DIR / "publish-reply-1.schema.json")
     for form in ("client_dashboard_1", "client_dashboard_2", "client_ticket"):
         assert schema["$defs"][form]["additionalProperties"] is False, form
+
+
+# ---- clarification_pages (contract 1.3.0) -------------------------------------------------------------
+
+def test_page_list_is_optional():
+    """Without the list nothing changes for older senders; an empty list is allowed (every page goes)."""
+    doc = small2()
+    assert "clarification_pages" not in doc and checks.check_publish(doc) is None
+    doc["clarification_pages"] = []
+    assert checks.check_publish(doc) is None
+    assert "clarification_pages" not in dashboard2_schema()["required"]
+
+
+def test_page_list_uses_the_page_slug_rule():
+    slug_rule = checks.load_json("clarification-1.schema.json")["properties"]["slug"]
+    item = dashboard2_schema()["properties"]["clarification_pages"]["items"]
+    assert (item["pattern"], item["minLength"], item["maxLength"]) == (
+        slug_rule["pattern"], slug_rule["minLength"], slug_rule["maxLength"])
+    assert dashboard2_schema()["properties"]["clarification_pages"]["maxItems"] == 1000
+    for bad in ("Payouts", "two words", "trailing\n", "", "a--b", "x" * 81):
+        doc = small2()
+        doc["clarification_pages"] = [bad]
+        assert checks.check_publish(doc) is not None, bad
+
+
+def test_page_slug_twice_names_both():
+    doc = small2()
+    doc["clarification_pages"] = ["payouts", "probate-decisions", "payouts"]
+    details = checks.check_publish(doc)["details"]
+    assert [(d["check"], d["path"]) for d in details] == [("unique_page_slug", "/clarification_pages/2")]
+    assert "/clarification_pages/0" in details[0]["message"]
+
+
+def test_page_list_is_refused_in_dashboard1():
+    doc = read(FIXTURES / "valid" / "dashboard-1-small.json")
+    doc["clarification_pages"] = ["payouts"]
+    result = checks.check_publish(doc)
+    assert ("schema", "/clarification_pages") in {(d["check"], d["path"]) for d in result["details"]}
+
+
+def test_pages_removed_is_on_dashboard_replies_only():
+    dry = read(FIXTURES / "valid" / "publish-reply-1-dashboard-2-pages-removed-dry-run.json")
+    sent = read(FIXTURES / "valid" / "publish-reply-1-dashboard-2-pages-removed.json")
+    assert dry["dry_run"] is True and dry["pages_removed"]
+    assert sent["dry_run"] is False and sent["pages_removed"]
+    for reply in (dry, sent):
+        assert checks.check_reply(reply, "publish-reply/1") == []
+        assert checks.check_reply({**reply, "pages_removed": []}, "publish-reply/1") == []
+    page = read(FIXTURES / "valid" / "publish-reply-1-page-sent.json")
+    assert checks.check_reply({**page, "pages_removed": []}, "publish-reply/1") != []

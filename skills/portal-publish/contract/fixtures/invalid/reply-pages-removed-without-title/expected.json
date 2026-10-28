@@ -1,0 +1,9 @@
+{
+  "contract": "publish-reply/1",
+  "details": [
+    {
+      "check": "schema",
+      "path": "/pages_removed/0/title"
+    }
+  ]
+}

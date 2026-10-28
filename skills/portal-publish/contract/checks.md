@@ -36,7 +36,7 @@ A failed check gives one error code and a list of details:
    - `dashboard/1`: `unique_feature_id`, `unique_item_key`, `no_html_entities`.
    - `dashboard/2`, in this order: `unique_area_id`, `unique_feature_id`, `unique_topic_id`,
      `unique_item_key`, `unique_card_id`, `unique_release_name`, `unique_special`, `unique_ticket_in_list`,
-     `known_area` (Features, then topics, then cards), `known_parent`, `known_card_feature`, `known_release`,
+     `unique_page_slug` (since 1.3.0), `known_area` (Features, then topics, then cards), `known_parent`, `known_card_feature`, `known_release`,
      `card_kind_fields`, `answered_in_range`, `no_html_entities`.
    - `clarification`: `unique_question_id`, `unique_option_v`, `one_rec_max`, `bare_file_names`,
      `one_hero_max`, `max_screenshots`, `unique_decision_id`, `no_html_entities`.
@@ -101,6 +101,14 @@ characters), so two Items with one title under two parents do not clash. `dashbo
 - **One detail per repeat:** walking the lists in that order (areas, then Features, topics, cards), `path` is
   the later ticket's `key`; the message names both places, for example
   `Ticket "ABC-12" is in one list twice: /cards/2/tickets/0/key and /cards/2/tickets/2/key`.
+
+### `unique_page_slug` (dashboard/2, since 1.3.0)
+
+- **Rule:** a slug is in `clarification_pages` at most once. The field is optional; when it is missing, the
+  check finds nothing.
+- **Raises:** `contract_invalid`.
+- **One detail per repeat:** `path` is the later entry, for example
+  `Page slug "probate-decisions" is listed twice: /clarification_pages/0 and /clarification_pages/2`.
 
 ### `known_area`, `known_parent`, `known_card_feature`, `known_release` (dashboard/2)
 
@@ -244,6 +252,9 @@ characters), so two Items with one title under two parents do not clash. `dashbo
   `key`, media addresses) — Python's `$` also matches before a final line break, and with a fixed length that
   cannot change the result — and on `slug` and the Jira ticket `key` of `dashboard/2`, which end in
   `(?![\s\S])` ("nothing follows") instead of `$`.
+- A `dashboard/2` send may carry `clarification_pages` (since 1.3.0): the slugs of every Clarification page of
+  this Portal project that is still in the repo. The Portal hides the project's other pages and lists them in
+  the reply's `pages_removed` (`{ slug, title }`), on a dry run too. Without the field no page is touched.
 - The reply to a `dashboard/2` send counts `areas`, `topics`, `cards` and `tickets` too. `tickets` counts the
   tickets on Board cards only (all `cards[].tickets` together), not the Feature, topic or area ticket lists.
 - Python: `Draft202012Validator(schema, format_checker=FormatChecker())` from `jsonschema[format-nongpl]`.
