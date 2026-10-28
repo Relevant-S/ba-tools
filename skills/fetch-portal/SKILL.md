@@ -38,7 +38,7 @@ The same settings as `portal-publish`:
 | Setting | Where | When it is missing |
 |---|---|---|
 | The Portal address | `tools.portal.url` in `docs/BA/specs/.ba-profile.yml` | stop: run `ba-setup project` |
-| The Publish key | `PORTAL_PUBLISH_KEY=<key>` in `.env` at the repo root | stop: run `ba-setup project` |
+| The Publish key | `PORTAL_PUBLISH_KEY=<key>` in `.env` at the repo root. With `tools.portal.products` (a key per product), the first product's variable there, until Answers are fetched per product (Story 4.10) | stop: run `ba-setup project` |
 | `.env` kept out of git | `.gitignore` lists `.env`, and `.env` is not committed | stop: add it to `.gitignore` (and `git rm --cached .env` if it was committed) |
 
 `tools.portal.url` must start with `https://`. Plain `http://` is allowed only for localhost, 127.0.0.1,

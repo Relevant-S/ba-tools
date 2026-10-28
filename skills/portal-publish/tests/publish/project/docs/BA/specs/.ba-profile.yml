@@ -1,14 +1,17 @@
-# Test project profile for tests/test_publish.py
+# Test project profile for tests/test_publish.py — two products, each sent to its own Portal project.
 profile_version: 2
 ba_tools_version: 0.8.0
 project: Sample
 products:
   - {key: app, name: App, jira_project: APP}
   - {key: admin, name: Admin, jira_project: ADM}
+jira:
+  site: example.atlassian.net
 tools:
   client_emails: {include: ['@client.example.com'], exclude: []}
   portal:
     url: 'http://portal.test/'
+    products: {App: PORTAL_PUBLISH_KEY_APP, Admin: PORTAL_PUBLISH_KEY_ADMIN}
   client_contacts:
     - {name: Maria Lopez, email: maria.lopez@example.com, slack: maria.lopez}
     - {name: Tom Baker, email: tom.baker@example.com}

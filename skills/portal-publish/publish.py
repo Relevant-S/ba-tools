@@ -4,11 +4,15 @@ Every command prints one JSON line.
     uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py <command> [--root <project>]
 
 Commands (run from the project root, or pass --root):
-  dashboard plan [--refresh]          build the dashboard, make the payload, check it against the contract, send it
-                                      to the Portal as a dry run and print what the Client will read (client_list).
-                                      Writes the payload to a temp file outside the repo and prints its path.
-  dashboard send --payload <file>     after the BA says yes: send that same payload for real, report, delete the file
-  dashboard discard --payload <file>  after the BA says no: delete the payload file, send nothing
+  dashboard plan [--refresh] [--product <name>]
+                                      build the dashboard and make one dashboard/2 payload per product (or only the
+                                      product named). Check every payload against the contract first; then, per
+                                      product, ask the Portal which project its key opens (GET /status), send the
+                                      payload as a dry run and print what the Client will read (client_list).
+                                      Writes each payload to a temp file outside the repo and prints its path.
+  dashboard send --payload <file>     after the BA says yes to that product: send that same payload for real,
+                                      report, delete the file
+  dashboard discard --payload <file>  after the BA says no to that product: delete the payload file, send nothing
   page plan <slug>                    find docs/BA/clarifications/<slug>-decisions.yaml (else <slug>.yaml), run
                                       clarification-page's _fixyaml.py on it, build the clarification/1 page (only
                                       the contract's fields; old `settled:` lines become decisions), collect its
@@ -20,9 +24,11 @@ Commands (run from the project root, or pass --root):
                                       same page for real, report, delete the file
   page discard --payload <file>       after the BA says no: delete the payload file, send nothing
 
-Settings: tools.portal.url in docs/BA/specs/.ba-profile.yml; PORTAL_PUBLISH_KEY in .env at the repo root, which git
-must ignore. The key is never printed. The "Waiting on you" list and the page's Client view come only from the
-Portal's dry-run reply.
+Settings: tools.portal.url in docs/BA/specs/.ba-profile.yml; the Publish key in .env at the repo root, which git
+must ignore. A repo with one product uses PORTAL_PUBLISH_KEY. A repo with two or more products sends each product to
+its own Portal project: tools.portal.products in the profile names, per product, the .env variable that holds that
+project's key. Pages use the first product's key there. Keys are never printed. The "Waiting on you" list and the
+page's Client view come only from the Portal's dry-run reply.
 """
 from __future__ import annotations
 
@@ -57,9 +63,14 @@ SLACK = "docs/BA/dashboard-slack.yaml"
 MAP_PAGE = "docs/BA/mind-map/mind-map.html"
 JIRA_FILES = ("tickets.json", "areas.json", "releases.json")
 ENDPOINT = "/api/v1/publish/dashboard"
-CONTRACT = "dashboard/1"
+STATUS_ENDPOINT = "/api/v1/status"
+CONTRACT = "dashboard/2"
 REPLY = "publish-reply/1"
-MAX_BYTES = 2 * 1024 * 1024      # the Portal refuses a Dashboard over 2 MB (DASHBOARD_MAX_BYTES, payload_too_large)
+STATUS = "status/1"
+MAX_BYTES = 5 * 1024 * 1024      # the Portal refuses a Dashboard over 5 MB (DASHBOARD_MAX_BYTES, payload_too_large)
+DEFAULT_KEY = "PORTAL_PUBLISH_KEY"
+KEY_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+OPEN_TICKETS_SHOWN = 5           # an area's open tickets, as the BA page shows them
 STALE_SECONDS = 24 * 3600
 TIMEOUT = 30.0
 BUILD_TIMEOUT = 600                # seconds for each build step
@@ -69,10 +80,14 @@ SETUP_HINT = "Run `ba-setup project`"
 STAGE_NAME = {"concept": "Concept", "spec": "Spec & design", "ready": "Ready for dev", "dev": "In dev",
               "qa": "In QA", "done": "Done"}
 
+def invalid_key_step(key_name: str) -> str:
+    return (f"The key in .env ({key_name}) is not this Project's key. Ask an Admin for the key "
+            "(Admin → Projects → the Project → Publishing → Regenerate key), put it in .env, and run again.")
+
+
 # What to do next, per Portal error code. The Portal's own message is shown first.
 NEXT_STEP = {
-    "invalid_key": "The key in .env (PORTAL_PUBLISH_KEY) is not this Project's key. Ask an Admin for the key "
-                   "(Admin → Projects → the Project → Publishing → Regenerate key), put it in .env, and run again.",
+    "invalid_key": invalid_key_step(DEFAULT_KEY),
     "project_archived": "This Project is archived in the Portal, so it takes no sends. Ask an Admin to restore it.",
     "contract_invalid": "Fix each field listed, then run `dashboard plan` again.",
     "contract_version_not_accepted": "This Portal does not accept the contract this ba-tools version sends. "
@@ -81,6 +96,11 @@ NEXT_STEP = {
     "bad_request": "The Portal could not read the send. Run `dashboard plan` again; if it repeats, report it.",
     "server_error": "Something went wrong in the Portal. Nothing was stored. Try again later.",
 }
+
+
+def key_steps(key_name: str, steps: dict | None = None) -> dict:
+    """The next steps, with the invalid_key step naming the .env variable the key came from."""
+    return {**(NEXT_STEP if steps is None else steps), "invalid_key": invalid_key_step(key_name)}
 
 
 class Stop(Exception):
@@ -153,8 +173,9 @@ def check_url(url: str) -> None:
                "Nothing was sent.")
 
 
-def settings(root: Path) -> tuple[str, str, dict]:
-    """The Portal address, the key and the profile. Stops before anything is built or sent."""
+def settings(root: Path) -> tuple[str, dict, dict]:
+    """The Portal address, the profile and the values in .env. Stops before anything is built or sent.
+    The keys themselves are read by read_keys."""
     prof_path = root / PROFILE
     if not prof_path.exists():
         raise Stop(f"No project profile at {PROFILE}. {SETUP_HINT} first.")
@@ -167,15 +188,88 @@ def settings(root: Path) -> tuple[str, str, dict]:
     env = root / ".env"
     if not env.exists():
         raise Stop(f"There is no .env file at the repo root, so there is no Publish key. {SETUP_HINT}: it puts "
-                   "PORTAL_PUBLISH_KEY in .env.")
+                   "the Publish key in .env.")
     if not env_is_ignored(root):
         raise Stop(".env is not ignored by git (it is tracked, or .gitignore does not list it). The Publish key "
                    "must never be committed: add .env to .gitignore (and `git rm --cached .env` if it was "
                    "committed), then run again. Nothing was sent.")
-    key = read_env_file(env).get("PORTAL_PUBLISH_KEY", "").strip()
-    if not key:
-        raise Stop(f".env has no PORTAL_PUBLISH_KEY. {SETUP_HINT}: it tells you where to get the key.")
-    return url, key, prof
+    return url, prof, read_env_file(env)
+
+
+def key_map(prof: dict) -> dict[str, str]:
+    """tools.portal.products: product name → the name of the .env variable that holds that Portal project's key.
+    Empty when the profile has none."""
+    portal = (prof.get("tools") or {}).get("portal") or {}
+    found = portal.get("products") if isinstance(portal, dict) else None
+    if found in (None, "", {}):
+        return {}
+    if not isinstance(found, dict) or not all(
+            isinstance(k, str) and k.strip() and isinstance(v, str) and KEY_NAME.fullmatch(v.strip())
+            for k, v in found.items()):
+        raise Stop(f"tools.portal.products in {PROFILE} must name, for each product, the .env variable that holds "
+                   "its Portal project's key, for example {AcmeLending: PORTAL_PUBLISH_KEY_ACME}. "
+                   f"{SETUP_HINT} to fix it. Nothing was sent.")
+    names = {k.strip(): v.strip() for k, v in found.items()}
+    seen: dict[str, str] = {}
+    for product, name in names.items():           # one key per product: two products never share a project
+        if name in seen:
+            raise Stop(f"tools.portal.products in {PROFILE} gives {seen[name]} and {product} the same .env "
+                       f"variable ({name}), so both would go to the same Portal project. Each product needs its "
+                       f"own Portal project and its own key. {SETUP_HINT} to fix it. Nothing was sent.")
+        seen[name] = product
+    return names
+
+
+def key_names(prof: dict, products: list[str], only: str | None = None) -> dict[str, str]:
+    """Which .env variable holds each product's key (only the product `only`, when given). A repo with one
+    product: its tools.portal.products entry, else PORTAL_PUBLISH_KEY. Two or more: each needs its own entry, or
+    the run stops before anything is sent."""
+    found = key_map(prof)
+    if len(products) == 1 and products[0] not in found:
+        return {products[0]: DEFAULT_KEY}
+    missing = [p for p in ([only] if only else products) if p not in found]
+    if missing:
+        example = ", ".join(f"{p}: PORTAL_PUBLISH_KEY_{re.sub(r'[^A-Z0-9]+', '_', p.upper()).strip('_')}"
+                            for p in missing)
+        raise Stop(f"This repo has {len(products)} products ({', '.join(products)}). Each goes to its own Portal "
+                   "project, with that project's own key. tools.portal.products in "
+                   f"{PROFILE} names no key for: {', '.join(missing)}. Add one entry per product, naming the .env "
+                   f"variable that holds its key, for example {{{example}}}. {SETUP_HINT} to set it up. "
+                   "Nothing was sent.")
+    return {p: found[p] for p in ([only] if only else products)}
+
+
+def read_keys(env: dict, names: dict[str, str]) -> dict[str, str]:
+    """Each product's key from .env. A missing one stops the run, naming the variable."""
+    keys = {}
+    for product, name in names.items():
+        key = env.get(name, "").strip()
+        if not key:
+            whose = "" if name == DEFAULT_KEY else f" (the Publish key for {product})"
+            raise Stop(f".env has no {name}{whose}. {SETUP_HINT}: it tells you where to get the key. "
+                       "Nothing was sent.")
+        keys[product] = key
+    return keys
+
+
+def page_key(prof: dict, env: dict) -> tuple[str, str]:
+    """The key for a page send, and its .env variable. With tools.portal.products, the first product's key (until
+    pages are sent per product); else PORTAL_PUBLISH_KEY."""
+    found = key_map(prof)
+    name = next(iter(found.values())) if found else DEFAULT_KEY
+    return read_keys(env, {"page": name})["page"], name
+
+
+def profile_products(prof: dict) -> list[str]:
+    """The product names, read the way ba-dashboard's map/build.py reads them: tools.dashboard.map.products, else
+    the profile's products that have a jira_project. Used to check the keys before the build."""
+    dash = (prof.get("tools") or {}).get("dashboard") or {}
+    mapped = (dash.get("map") or {}).get("products") if isinstance(dash, dict) and isinstance(
+        dash.get("map") or {}, dict) else None
+    if isinstance(mapped, dict) and mapped:
+        return list(dict.fromkeys(text(v) for v in mapped.values() if text(v)))
+    return list(dict.fromkeys(text(p.get("name")) for p in prof.get("products") or []
+                              if isinstance(p, dict) and p.get("jira_project") and text(p.get("name"))))
 
 
 # ---------------------------------------------------------------- build
@@ -242,13 +336,19 @@ def slug(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")[:40]
 
 
-def item_key(kind: str, title: str) -> str:
-    """The map's Item key (ba-dashboard map/build.py item_key): sha1("<kind>|<title>"), first 12 characters."""
-    return hashlib.sha1(f"{kind}|{title.strip()}".encode("utf-8")).hexdigest()[:12]
+def item_key(kind: str, parent: str, title: str) -> str:
+    """The dashboard/2 Item key: sha1("<kind>|<parent>|<title>"), first 12 characters. The parent is in it, so two
+    Items with one title under two parents do not clash."""
+    return hashlib.sha1(f"{kind}|{parent}|{title.strip()}".encode("utf-8")).hexdigest()[:12]
 
 
 def text(v) -> str:
     return "" if v is None else str(v).strip()
+
+
+def jira_text(v) -> str:
+    """Text copied from Jira, with HTML entities (&amp;) turned back into characters. The Portal escapes it."""
+    return html.unescape(text(v))
 
 
 def put(obj: dict, field: str, value) -> None:
@@ -312,119 +412,260 @@ def contacts(root: Path, prof: dict) -> tuple[list[dict], str, str | None]:
                         "Ask the BA whether to go on without them.")
 
 
-RELEASE_NAME_MAX = 100   # dashboard/1: release_rows[].name and features[].releases[]
+def in_product(row: dict, product: str) -> bool:
+    """A row of the map belongs to a product's send when its prod is that product or "Both"."""
+    return text(row.get("prod")) in (product, "Both")
 
 
-def release_name(name: str) -> str:
-    """A Jira release name as sent: one over RELEASE_NAME_MAX is cut to that length, ending in "…". Rows and each
-    Feature's releases go through this one function, so they still match."""
-    return name if len(name) <= RELEASE_NAME_MAX else name[:RELEASE_NAME_MAX - 1] + "…"
+def map_products(data: dict) -> list[str]:
+    """The products of the built map, in its order (DATA.products)."""
+    found = [text(p) for p in data.get("products") or [] if text(p)]
+    if not found:
+        raise Stop(f"{MAP_PAGE} names no products. Run `dashboard plan` again. Nothing was sent.")
+    return list(dict.fromkeys(found))
 
 
-def map_facts(data: dict) -> tuple[dict, list[str], list[dict], dict]:
-    """From the built map: each Feature bubble's stage, done date and area; the areas and release rows in order;
-    each Feature's releases. Two products are merged by name, first one first. Long release names are cut
-    (`release_name`)."""
-    bubbles, areas = {}, []
-    for epic in data.get("epics") or []:
-        if epic.get("loose"):
-            continue                              # "Not linked yet" — loose items, not an area
-        for b in epic.get("features") or []:
-            if "feature" in b:                    # a feature row (topics and loose items have none)
-                bubbles[b["id"]] = {"stage": b.get("stageKey"), "done_date": text(b.get("doneDate"))[:10],
-                                    "map_area": epic.get("label")}
-        if not epic.get("noarea") and epic.get("label") not in areas:
-            areas.append(epic["label"])
-    rows, seen = [], set()
-    board = data.get("board") or {}
-    for product_rows in (board.get("releases") or {}).values():
-        for r in product_rows:
-            name = release_name(r["name"])
-            if name not in seen:
-                seen.add(name)
-                rows.append({"name": name, "released": bool(r.get("released"))})
-    order = {r["name"]: i for i, r in enumerate(rows)}
-    releases: dict[str, list[str]] = {}
-    for card in board.get("cards") or []:
-        if card.get("kind") == "feature" and card.get("row") and card["row"] != "none":
-            got = releases.setdefault(card["fid"], [])
-            if release_name(card["row"]) not in got:
-                got.append(release_name(card["row"]))
-    for fid in releases:
-        releases[fid].sort(key=lambda n: order.get(n, len(order)))
-    return bubbles, areas, rows, releases
+def jira_base(data: dict, prof: dict) -> str:
+    """The Jira site, as the BA page's JIRA_BASE: the scheme and host of the first area's Jira search link.
+    Without one, the profile's jira.site. Without both, the run stops."""
+    for e in data.get("epics") or []:
+        j = e.get("jira") if isinstance(e, dict) else None
+        search = text(j.get("search")) if isinstance(j, dict) else ""
+        if search:
+            u = urllib.parse.urlsplit(search)
+            if u.scheme and u.netloc:
+                return f"{u.scheme}://{u.netloc}"
+    site = prof.get("jira")
+    site = text(site.get("site")) if isinstance(site, dict) else ""
+    site = re.sub(r"^[a-z][a-z0-9+.-]*://", "", site, flags=re.I).split("/")[0].strip()
+    if site:
+        return f"https://{site}"
+    raise Stop("There is no Jira site address to link tickets to: the map has no Jira areas "
+               f"(docs/BA/mind-map/areas.json), and {PROFILE} has no jira.site. Add jira.site to the profile "
+               "(for example yourcompany.atlassian.net), or run `dashboard plan --refresh` to read Jira. "
+               "Nothing was sent.")
 
 
-def build_payload(root: Path, prof: dict, sent_at: str | None = None):
-    """The dashboard/1 payload (data-contract §10), where each sent value came from, counts of what was left out,
-    and warnings."""
+def ticket(t: dict) -> dict:
+    """A ticket as dashboard/2 sends it. The map's `who` is the assignee."""
+    out = {"key": text(t.get("key")), "summary": jira_text(t.get("summary")), "status": jira_text(t.get("status")),
+           "stage": text(t.get("stage"))}
+    put(out, "assignee", jira_text(t.get("who") or t.get("assignee")))
+    return out
+
+
+def open_tickets(opens: list) -> list[dict]:
+    """An area's open tickets as the BA page shows them: being built or tested first (Jira category
+    `indeterminate`), then newest updated; the first 5. Rows with no key (an older areas.json) are not sent."""
+    keyed = [o for o in opens if isinstance(o, dict) and text(o.get("key"))]
+    keyed.sort(key=lambda o: text(o.get("updated")), reverse=True)        # stable: ties keep Jira's order
+    keyed.sort(key=lambda o: o.get("category") != "indeterminate")
+    return [{"key": text(o["key"]), "summary": jira_text(o.get("summary")), "status": jira_text(o.get("status")),
+             "stage": "dev" if o.get("category") == "indeterminate" else "ready"}
+            for o in keyed[:OPEN_TICKETS_SHOWN]]
+
+
+def area_jira(j: dict) -> dict:
+    """An area's Jira facts. The search link is not sent (jira_base is)."""
+    opens = [o for o in j.get("open") or [] if isinstance(o, dict)]
+    out: dict = {}
+    put(out, "description", jira_text(j.get("description")))
+    out["done"] = int(j.get("done") or 0)
+    out["in_progress"] = sum(1 for o in opens if o.get("category") == "indeterminate")
+    out["open"] = len(opens)
+    put(out, "last_done", text(j.get("lastDone"))[:10])
+    put(out, "shipped", [{"key": text(s.get("key")), "summary": jira_text(s.get("summary")),
+                          "date": text(s.get("date"))[:10]}
+                         for s in j.get("shipped") or [] if isinstance(s, dict) and text(s.get("date"))])
+    put(out, "open_tickets", open_tickets(opens))
+    return out
+
+
+def area_of_epic(e: dict) -> dict:
+    """One area (an entry of DATA.epics — a Jira component, "No area" or "Not linked yet")."""
+    area = {"id": text(e.get("id")), "name": jira_text(e.get("label")), "quiet": not e.get("active", True)}
+    if e.get("noarea"):
+        area["special"] = "no_area"
+    elif e.get("loose"):
+        area["special"] = "not_linked"
+    if isinstance(e.get("jira"), dict):
+        area["jira"] = area_jira(e["jira"])
+    return area
+
+
+def build_payload(root: Path, prof: dict, product: str | None = None, data: dict | None = None,
+                  sent_at: str | None = None):
+    """One product's dashboard/2 payload (contract dashboard-2.md), built from the BA page's own data; where each
+    sent value came from; counts of what was left out; warnings. Rows whose prod is the product or "Both" go in."""
     d = yaml.safe_load((root / DASHBOARD).read_text(encoding="utf-8")) or {}
-    bubbles, areas, rows, releases = map_facts(read_map(root))
+    data = read_map(root) if data is None else data
+    products = map_products(data)
+    if product is None:
+        if len(products) > 1:
+            raise Stop(f"This repo has {len(products)} products ({', '.join(products)}): name one. Nothing was sent.")
+        product = products[0]
+    epics = [e for e in data.get("epics") or [] if isinstance(e, dict)]
+    board = data.get("board") or {}
     warnings: list[str] = []
-    cut = [r["name"] for r in rows if r["name"].endswith("…") and len(r["name"]) == RELEASE_NAME_MAX]
-    if cut:
-        warnings.append(f"{len(cut)} Jira release name(s) are longer than {RELEASE_NAME_MAX} characters, so the "
-                        "Client sees them cut, ending in \"…\": " + "; ".join(f"'{n}'" for n in cut)
-                        + ". Shorten them in Jira to show them whole.")
     sources: dict[str, tuple[str, str, dict]] = {}   # "/features/0" -> (file, row label, {field: source field})
-    left_out = {"features": 0, "items": 0}
+    left_out = {"features": 0, "items": 0, "cards": 0}
+
+    bubbles, area_of = {}, {}          # bubble id -> the map's bubble, and the id of the area it sits in
+    for e in epics:
+        for b in e.get("features") or []:
+            bubbles[b["id"]] = b
+            area_of[b["id"]] = text(e.get("id"))
 
     features, hidden = [], set()
     for f in d.get("features") or []:
         fid = text(f.get("id")) or slug(text(f.get("area")))
+        if not in_product(f, product):
+            continue
         if hidden_flag(f):
             hidden.add(fid)
             left_out["features"] += 1
             continue
         b = bubbles.get(fid)
-        if b is None:
+        if b is None or "feature" not in b:
             raise Stop(f"{MAP_PAGE} has no bubble for the feature '{text(f.get('area'))}' (id {fid}). "
                        "Run `dashboard plan` again. Nothing was sent.")
         summary_from = "client_s" if text(f.get("client_s")) else "s"
-        feat: dict = {"id": fid}
+        feat: dict = {"id": fid, "area": area_of[fid]}
         put(feat, "title", text(f.get("area")))
         put(feat, "short", text(f.get("short")))
         put(feat, "summary", text(f.get(summary_from)))
         opens = f.get("open") or []
         opens = opens if isinstance(opens, list) else [opens]
         put(feat, "open", [text(o) for o in opens if text(o)])
+        settled = (b.get("feature") or {}).get("settled")
+        if isinstance(settled, int) and settled + len(feat.get("open", [])):
+            feat["answered"] = {"done": settled, "total": settled + len(feat.get("open", []))}
+        put(feat, "stage", text(b.get("stageKey")))
+        put(feat, "done_date", text(b.get("doneDate"))[:10])
         clar = f.get("clar")
         put(feat, "clar_url", text(clar.get("url") if isinstance(clar, dict) else clar))
-        put(feat, "stage", text(b["stage"]))
-        if b["map_area"]:
-            feat["map_area"] = b["map_area"]
-        put(feat, "releases", releases.get(fid, []))
-        put(feat, "done_date", b["done_date"])
-        if feat.get("map_area") == "No area" and "No area" not in areas:
-            areas.append("No area")
+        feat["tickets"] = [ticket(t) for t in b.get("tickets") or [] if isinstance(t, dict)]
+        map_field = f"(from the map build, {MAP_PAGE})"
         sources[f"/features/{len(features)}"] = (DASHBOARD, f"features '{text(f.get('area')) or fid}'", {
             "id": "id", "title": "area", "short": "short", "summary": summary_from, "open": "open",
-            "clar_url": "clar.url", "stage": f"stage (from the map build, {MAP_PAGE})",
-            "map_area": f"area (from the map build, {MAP_PAGE})",
-            "releases": f"releases (from the map build, {MAP_PAGE})",
-            "done_date": f"done date (from the map build, {MAP_PAGE})"})
+            "clar_url": "clar.url", "stage": f"stage {map_field}", "area": f"area {map_field}",
+            "answered": f"answered questions {map_field}", "done_date": f"done date {map_field}",
+            "tickets": f"Jira tickets {map_field}"})
         features.append(feat)
+    sent_features = {f["id"]: f for f in features}
+
+    topics = []
+    for e in epics:
+        for b in e.get("features") or []:
+            if "feature" in b or not in_product(b, product):
+                continue
+            topic = {"id": text(b.get("id")), "area": text(e.get("id"))}
+            put(topic, "title", text(b.get("label")))
+            put(topic, "stage", text(b.get("stageKey")))
+            topic["tickets"] = [ticket(t) for t in b.get("tickets") or [] if isinstance(t, dict)]
+            sources[f"/topics/{len(topics)}"] = (
+                (MAP_PAGE, "the \"Not linked yet\" bubble", {}) if e.get("loose") else
+                (DASHBOARD, f"topics '{topic.get('title') or topic['id']}'", {"title": "title", "id": "id"}))
+            topics.append(topic)
+    sent_topics = {t["id"]: t for t in topics}
+    parents = set(sent_features) | set(sent_topics)
+    loose = next((b["id"] for e in epics if e.get("loose") for b in e.get("features") or []), "unlinked")
 
     items = []
     for listname, kind in (("awaiting", "waiting"), ("agenda", "agenda")):
         for it in d.get(listname) or []:
-            if it.get("done") or hidden_flag(it) or text(it.get("feature")) in hidden:
+            if not in_product(it, product):
+                continue
+            named = text(it.get("feature"))
+            parent = named if named and named in bubbles and named != loose else loose
+            if it.get("done") or hidden_flag(it) or named in hidden or parent not in parents:
                 left_out["items"] += 1
                 continue
             text_from = "client_s" if text(it.get("client_s")) else "s"
             title = text(it.get("t"))
-            item: dict = {"key": item_key(kind, title), "kind": kind}
-            put(item, "feature", text(it.get("feature")))
+            item: dict = {"key": item_key(kind, parent, title), "kind": kind, "parent": parent}
             put(item, "who", text(it.get("who")))
             put(item, "since", text(it.get("since")))
             put(item, "title", title)
             put(item, "text", text(it.get(text_from)))
             put(item, "how_to_send", text(it.get("l")))
             sources[f"/items/{len(items)}"] = (DASHBOARD, f"{listname} '{title or '?'}'", {
-                "key": "t (the item key is made from its title)", "kind": listname, "feature": "feature",
-                "who": "who", "since": "since", "title": "t", "text": text_from, "how_to_send": "l"})
+                "key": "t (the item key is made from its kind, parent and title)", "kind": listname,
+                "parent": "feature", "who": "who", "since": "since", "title": "t", "text": text_from,
+                "how_to_send": "l"})
             items.append(item)
-    left_out["items"] += len(d.get("todos") or [])
+    left_out["items"] += sum(1 for t in d.get("todos") or [] if in_product(t, product))
+
+    releases = []
+    for r in (board.get("releases") or {}).get(product) or []:
+        rel: dict = {"name": jira_text(r.get("name"))}
+        put(rel, "date", text(r.get("date"))[:10])
+        rel.update(released=bool(r.get("released")), overdue=bool(r.get("overdue")))
+        sources[f"/releases/{len(releases)}"] = ("Jira", f"the release '{rel['name']}'", {"name": "its name"})
+        releases.append(rel)
+    release_names = {r["name"] for r in releases}
+
+    no_area = next((text(e.get("id")) for e in epics if e.get("noarea")), "noarea")
+    by_name = {jira_text(e.get("label")): text(e.get("id")) for e in epics
+               if text(e.get("prod")) == product and not e.get("noarea") and not e.get("loose")}
+    extra_areas: dict[str, dict] = {}   # a card's area that is not in the map's areas (Jira has no such component)
+    cards, foreign = [], []
+    for c in board.get("cards") or []:
+        if not isinstance(c, dict) or not in_product(c, product):
+            continue
+        kind = text(c.get("kind"))
+        fid = text(c.get("fid"))
+        if kind == "feature" and fid in sent_topics:
+            # The map gives a topic a "feature" card too. dashboard/2 ties a feature card to a Feature, so a
+            # topic's card goes as an "other" card, under the topic's name and in the topic's area.
+            kind, area = "other", sent_topics[fid]["area"]
+        elif kind == "feature":
+            if fid not in sent_features:            # client: false (or not in this product): its card stays out
+                left_out["cards"] += 1
+                continue
+            area = sent_features[fid]["area"]
+        else:
+            name = jira_text(c.get("area")) or "No area"
+            area = no_area if name == "No area" else by_name.get(name)
+            if area is None:
+                area = f"board:{name}"
+                extra_areas.setdefault(area, {"id": area, "name": name, "quiet": False})
+        row = text(c.get("row"))
+        release = None if row in ("", "none") else jira_text(row)
+        title = jira_text(c.get("title")) or ("Other tickets" if kind == "other" else "")
+        if release is not None and release not in release_names:
+            # The BA page shows only this product's releases as rows, so it never shows this card here.
+            left_out["cards"] += 1
+            foreign.append(f"'{title}' ({release})")
+            continue
+        card: dict = {"id": text(c.get("id")), "kind": kind, "area": area, "release": release}
+        put(card, "title", title)
+        card.update(stage=text(c.get("stage")), blocked=bool(c.get("blocked")))
+        put(card, "done_date", text(c.get("doneDate"))[:10])
+        if kind == "feature":
+            card["feature"] = fid
+        elif kind == "epic":
+            put(card, "epic", text(c.get("epic")))
+        card["tickets"] = [ticket(t) for t in c.get("tickets") or [] if isinstance(t, dict)]
+        sources[f"/cards/{len(cards)}"] = (MAP_PAGE, f"the Board card '{title}' ({release or 'Not planned yet'})", {})
+        cards.append(card)
+    if foreign:
+        warnings.append(f"{product}: {len(foreign)} Board card(s) sit in a release of another product, so the BA "
+                        f"page does not show them on {product}'s Board, and they are not sent: "
+                        + "; ".join(foreign) + ". To send them, put their tickets in one of this product's "
+                        "releases in Jira.")
+
+    # The product's areas, plus any area of another product that a sent Feature, topic or card sits in.
+    wanted = {x["area"] for x in features + topics + cards}
+    areas = []
+    for e in epics:
+        if in_product(e, product) or text(e.get("id")) in wanted:
+            sources[f"/areas/{len(areas)}"] = (MAP_PAGE, f"the area '{jira_text(e.get('label'))}'", {
+                "name": "its name (from Jira)", "jira": "its Jira facts"})
+            areas.append(area_of_epic(e))
+    for extra in extra_areas.values():
+        sources[f"/areas/{len(areas)}"] = (MAP_PAGE, f"the Board column '{extra['name']}'", {})
+        areas.append(extra)
 
     people, came_from, warn = contacts(root, prof)
     if warn:
@@ -442,7 +683,8 @@ def build_payload(root: Path, prof: dict, sent_at: str | None = None):
     payload: dict = {"contract": CONTRACT, "sent_at": sent_at or now_utc(), "sent_by": sent_by,
                      "ba_tools_version": ba_tools_version(prof)}
     put(payload, "source_commit", git(root, "rev-parse", "HEAD"))
-    payload.update(features=features, items=items, areas=areas, release_rows=rows, client_contacts=people)
+    payload.update(jira_base=jira_base(data, prof), areas=areas, features=features, topics=topics, items=items,
+                   releases=releases, cards=cards, client_contacts=people)
     return payload, sources, left_out, warnings
 
 
@@ -457,7 +699,9 @@ def where(path: str, sources: dict) -> str:
         return f"{file} → {row}" + (f" → {field}" if field else "")
     top = {
         "features": f"{DASHBOARD} → features", "items": f"{DASHBOARD} → awaiting and agenda",
-        "areas": f"the map build ({MAP_PAGE}) → areas", "release_rows": f"the map build ({MAP_PAGE}) → releases",
+        "topics": f"the map build ({MAP_PAGE}) → topics", "areas": f"the map build ({MAP_PAGE}) → areas",
+        "releases": f"the map build ({MAP_PAGE}) → releases", "cards": f"the map build ({MAP_PAGE}) → Board cards",
+        "jira_base": f"the Jira site (the first Jira area in {MAP_PAGE}, else jira.site in {PROFILE})",
         "client_contacts": f"{PROFILE} → tools.client_contacts", "sent_by": "git config user.name",
         "ba_tools_version": f"{PROFILE} → ba_tools_version", "source_commit": "git rev-parse HEAD",
         "sent_at": "the send time", "contract": "the contract version",
@@ -477,14 +721,15 @@ def problem_lines(details: list[dict], sources: dict) -> list[str]:
     return lines
 
 
-def local_check(payload: dict, body: bytes, sources: dict) -> None:
+def local_check(payload: dict, body: bytes, sources: dict, product: str = "") -> None:
+    what = f"The {product} Dashboard" if product else "The Dashboard"
     found = checks.check_publish(payload)
     if found:
         lines = problem_lines(found["details"], sources)
-        raise Stop("The Dashboard does not match the contract, so nothing was sent. Fix these, then run "
+        raise Stop(f"{what} does not match the contract, so nothing was sent. Fix these, then run "
                    "`dashboard plan` again:\n" + "\n".join(f"- {ln}" for ln in lines))
     if len(body) > MAX_BYTES:
-        raise Stop(f"The Dashboard is {len(body) / 1e6:.1f} MB; the Portal takes at most 2 MB. Nothing was sent.")
+        raise Stop(f"{what} is {len(body) / 1e6:.1f} MB; the Portal takes at most 5 MB. Nothing was sent.")
 
 
 def encode(payload: dict) -> bytes:
@@ -497,12 +742,51 @@ def http_client() -> httpx.Client:
     return httpx.Client(timeout=TIMEOUT)
 
 
-def post(url: str, key: str, body: bytes, dry_run: bool, sources: dict) -> dict:
+def post(url: str, key: str, body: bytes, dry_run: bool, sources: dict, key_name: str = DEFAULT_KEY) -> dict:
     """POST the payload. Returns the checked 200 reply; anything else stops the run."""
     return exchange(url, ENDPOINT, dry_run, sources, "dashboard",
                     lambda client, target: client.post(target, content=body, headers={
                         "Authorization": f"Bearer {key}", "Content-Type": "application/json",
-                        "Accept": "application/json"}))
+                        "Accept": "application/json"}), next_step=key_steps(key_name))
+
+
+def project_name(url: str, key: str, key_name: str, contract: str | None = CONTRACT) -> str:
+    """GET /status with one product's key: the name of the Portal project that key opens. Sends no Dashboard.
+    Stops when the Portal does not answer, refuses the key, or does not accept `contract` (dashboard/2; None skips
+    that check, for a page)."""
+    try:
+        with http_client() as client:
+            r = client.get(url + STATUS_ENDPOINT, headers={"Authorization": f"Bearer {key}",
+                                                            "Accept": "application/json"})
+    except httpx.InvalidURL:
+        raise Stop(f"tools.portal.url ({url}) is not a web address. {SETUP_HINT} to fix it. "
+                   "Nothing was sent.") from None
+    except httpx.RequestError:
+        raise Stop(f"The Portal is not reachable at {url}. Check that it is running and that tools.portal.url is "
+                   "right. Nothing was sent.") from None
+    try:
+        doc = r.json()
+    except ValueError:
+        doc = None
+    if r.status_code == 200:
+        if not isinstance(doc, dict) or checks.check_reply(doc, STATUS):
+            raise Stop(f"The Portal's reply was not understood (HTTP {r.status_code}). It may be an older Portal. "
+                       "Nothing was sent.")
+        if contract and contract not in doc["accepted_contracts"]:
+            raise Stop(f"The Portal at {url} does not accept {contract} yet (it accepts "
+                       f"{', '.join(doc['accepted_contracts'])}). Ask an Admin to update the Portal. "
+                       "Nothing was sent.")
+        return doc["project_name"]
+    err = doc.get("error") if isinstance(doc, dict) else None
+    if not isinstance(err, dict) or not err.get("code"):
+        raise Stop(f"The Portal's reply was not understood (HTTP {r.status_code}). Nothing was sent.")
+    code = str(err["code"])
+    lines = [f"The Portal refused the key in {key_name} ({code}): {text(err.get('message')) or 'no message'}"]
+    steps = key_steps(key_name)
+    if code in steps:
+        lines.append(steps[code])
+    lines.append("Nothing was sent.")
+    raise Stop("\n".join(lines))
 
 
 def exchange(url: str, endpoint: str, dry_run: bool, sources: dict, kind: str, send, *,
@@ -566,15 +850,33 @@ def indent(s: str, pad: str) -> str:
     return "\n".join(pad + ln for ln in s.splitlines())
 
 
-def client_list(reply: dict) -> str:
+def client_list(reply: dict, product: str = "", project: str = "") -> str:
+    """The dry-run list for one product, from the Portal's own reply (a dashboard/2 Client view). Ticket lists are
+    counted, never printed."""
     view = reply["client_view"]
-    titles = {f["id"]: f["title"] for f in view["features"]}
-    out_lines = ["What the Client will read — the Portal's own dry run. Nothing is stored yet.", ""]
-    out_lines.append(f"Features ({len(view['features'])}):")
+    if not isinstance(view, dict) or "cards" not in view:
+        raise Stop("The Portal's dry-run reply is not a dashboard/2 view. It may be an older Portal. "
+                   "Nothing was sent.")
+    area_names = {a["id"]: a["name"] for a in view["areas"]}
+    titles = {x["id"]: x["title"] for x in view["features"] + view["topics"]}
+    out_lines = [f"{product} → Portal project \"{project}\"", ""] if product else []
+    out_lines += ["What the Client will read — the Portal's own dry run. Nothing is stored yet.", ""]
+    active = [a for a in view["areas"] if not a["quiet"]]
+    quiet = [a for a in view["areas"] if a["quiet"]]
+    out_lines.append(f"Areas ({len(view['areas'])}: {len(active)} active, {len(quiet)} quiet):")
+    for a in active:
+        j = a.get("jira")
+        out_lines.append(f"- {a['name']}" + (f" — {j['open']} open tickets in Jira ({j['in_progress']} being built "
+                                             f"or tested), {j['done']} done" if j else ""))
+    if quiet:
+        out_lines.append("- Quiet: " + ", ".join(a["name"] for a in quiet))
+    out_lines += ["", f"Features ({len(view['features'])}):"]
     for f in view["features"]:
         head = f"- {f['title']}" + (f" ({f['short']})" if f.get("short") else "")
-        head += f" — {STAGE_NAME.get(f['stage'], f['stage'])} · area: {f['map_area']}"
-        head += f" · releases: {', '.join(f['releases'])}" if f.get("releases") else " · Not planned yet"
+        head += f" — {STAGE_NAME.get(f['stage'], f['stage'])} · area: {area_names.get(f['area'], f['area'])}"
+        if f.get("answered"):
+            head += f" · {f['answered']['done']} of {f['answered']['total']} questions answered"
+        head += f" · Jira tickets: {len(f['tickets'])}" if f.get("tickets") else ""
         out_lines.append(head)
         out_lines.append(indent(plain(f["summary"]), "    "))
         for q in f.get("open") or []:
@@ -584,6 +886,18 @@ def client_list(reply: dict) -> str:
                                                         if page else "Questions coming"))
         if f.get("hiddenByDoneFilter"):
             out_lines.append("    (Done over 2 weeks ago: hidden while \"Hide done > 2 weeks\" is on, the default)")
+    out_lines += ["", f"Topics ({len(view['topics'])}):"]
+    if not view["topics"]:
+        out_lines.append("- none")
+    for t in view["topics"]:
+        out_lines.append(f"- {t['title']} — {STAGE_NAME.get(t['stage'], t['stage'])} · area: "
+                         f"{area_names.get(t['area'], t['area'])}"
+                         + (f" · Jira tickets: {len(t['tickets'])}" if t.get("tickets") else ""))
+    kinds = {k: sum(1 for c in view["cards"] if c["kind"] == k) for k in ("feature", "epic", "other")}
+    tickets = sum(len(c["tickets"]) for c in view["cards"])
+    out_lines += ["", f"Board: {len(view['cards']):,} cards ({kinds['feature']} feature / {kinds['epic']} epic / "
+                      f"{kinds['other']} other), {tickets:,} tickets, in {len(view['releases'])} releases "
+                      "and \"Not planned yet\"."]
     groups = (("Waiting on you", "waitingOnYou"), ("Next-call agenda", "onAgenda"))
     for label, flag in groups:
         shown = [i for i in view["items"] if i.get(flag)]
@@ -591,14 +905,15 @@ def client_list(reply: dict) -> str:
         if not shown:
             out_lines.append("- none")
         for i in shown:
-            out_lines.append(f"- {i['title']} — under {titles.get(i['feature'], i['feature'])}")
+            out_lines.append(f"- {i['title']} — under {titles.get(i['parent'], i['parent'])}")
             if i.get("text"):
                 out_lines.append(indent(plain(i["text"]), "    "))
             if i.get("how_to_send"):
                 out_lines.append(f"    How to send: {i['how_to_send']}")
     other = [i for i in view["items"] if not i.get("waitingOnYou") and not i.get("onAgenda")]
     if other:
-        out_lines += ["", f"Also shown ({len(other)}):"] + [f"- {i['title']}" for i in other]
+        out_lines += ["", f"Also shown — waiting on someone else ({len(other)}):"]
+        out_lines += [f"- {i['title']}" + (f" — {i['who']}" if i.get("who") else "") for i in other]
     names = reply.get("client_contact_names") or []
     out_lines += ["", f"Client contacts ({len(names)}): " + (", ".join(names) if names else "none")]
     return "\n".join(out_lines)
@@ -613,8 +928,22 @@ def write_payload(body: bytes) -> Path:
     return Path(name)
 
 
-def cmd_plan(root: Path, refresh: bool) -> dict:
-    url, key, prof = settings(root)
+def save_dashboard(product: str, project: str, url: str, key_name: str, body: bytes) -> Path:
+    """The payload file `dashboard send` reads: the exact bytes to send (`publish`), plus which product, Portal
+    project and .env variable they belong to. The sent payload itself holds no product."""
+    return write_payload(json.dumps({"kind": "dashboard", "product": product, "project_name": project,
+                                     "portal": url, "key_name": key_name, "publish": body.decode("utf-8")},
+                                    ensure_ascii=False).encode("utf-8"))
+
+
+def cmd_plan(root: Path, refresh: bool, only: str | None = None) -> dict:
+    url, prof, env = settings(root)
+    planned = profile_products(prof)
+    if only and planned and only not in planned:
+        raise Stop(f"There is no product called '{only}'. This repo's products: {', '.join(planned)}. "
+                   "Nothing was sent.")
+    if planned:                                   # stop on a missing key before the build, as before
+        read_keys(env, key_names(prof, planned, only))
     clean_old_payloads()
     run_build(root, refresh)
     warnings = []
@@ -622,15 +951,41 @@ def cmd_plan(root: Path, refresh: bool) -> dict:
         w = stale_warning(root)
         if w:
             warnings.append(w)
-    payload, sources, left_out, more = build_payload(root, prof)
-    warnings += more
-    body = encode(payload)
-    local_check(payload, body, sources)
-    reply = post(url, key, body, dry_run=True, sources=sources)
-    path = write_payload(body)
-    return {"ok": True, "portal": url, "payload": str(path), "sent_at": payload["sent_at"],
-            "counts": reply["counts"], "left_out": left_out, "warnings": warnings,
-            "client_list": client_list(reply)}
+    data = read_map(root)
+    products = map_products(data)
+    if only and only not in products:
+        raise Stop(f"There is no product called '{only}'. This repo's products: {', '.join(products)}. "
+                   "Nothing was sent.")
+    names = key_names(prof, products, only)
+    products = [only] if only else products
+    keys = read_keys(env, names)
+    sent_at = now_utc()
+    built = []
+    for product in products:                      # every product's local check passes before anything is sent
+        payload, sources, left_out, more = build_payload(root, prof, product, data, sent_at)
+        body = encode(payload)
+        local_check(payload, body, sources, product if len(products) > 1 or only else "")
+        warnings += [w for w in more if w not in warnings]
+        built.append((product, body, sources, left_out))
+    results = []
+    owner: dict[str, str] = {}                    # Portal project → the product whose key opened it
+    for product, body, sources, left_out in built:
+        project = project_name(url, keys[product], names[product])
+        if project in owner:
+            raise Stop(f"The keys for {owner[project]} ({names[owner[project]]}) and {product} ({names[product]}) "
+                       f"both open the same Portal project, \"{project}\". Each product needs its own Portal "
+                       f"project. Ask an Admin for the right key for one of them, put it in .env, and run "
+                       "`dashboard plan` again. Nothing was sent.")
+        owner[project] = product
+        reply = post(url, keys[product], body, dry_run=True, sources=sources, key_name=names[product])
+        results.append((product, project, body, reply, left_out))
+    out_products = []
+    for product, project, body, reply, left_out in results:
+        path = save_dashboard(product, project, url, names[product], body)
+        out_products.append({"product": product, "project_name": project, "payload": str(path),
+                             "counts": reply["counts"], "left_out": left_out,
+                             "client_list": client_list(reply, product, project)})
+    return {"ok": True, "portal": url, "sent_at": sent_at, "warnings": warnings, "products": out_products}
 
 
 def payload_arg(argv: list[str]) -> Path:
@@ -657,17 +1012,18 @@ def clean_old_payloads(now: float | None = None) -> None:
             pass
 
 
-def payload_kind(path: Path) -> str | None:
-    """"page" for a file `page plan` wrote, "dashboard" for one `dashboard plan` wrote, else None."""
+def read_saved(path: Path) -> dict | None:
     try:
         doc = json.loads(path.read_bytes().decode("utf-8"))
     except (OSError, ValueError):
         return None
-    if isinstance(doc, dict) and doc.get("kind") == "page":
-        return "page"
-    if isinstance(doc, dict) and doc.get("contract") == CONTRACT:
-        return "dashboard"
-    return None
+    return doc if isinstance(doc, dict) else None
+
+
+def payload_kind(path: Path) -> str | None:
+    """"page" for a file `page plan` wrote, "dashboard" for one `dashboard plan` wrote, else None."""
+    doc = read_saved(path) or {}
+    return doc.get("kind") if doc.get("kind") in ("page", "dashboard") else None
 
 
 def check_kind(path: Path, want: str, action: str) -> None:
@@ -678,21 +1034,43 @@ def check_kind(path: Path, want: str, action: str) -> None:
                    "deleted.")
 
 
+def read_dashboard_payload(path: Path) -> tuple[dict, bytes]:
+    """The file `dashboard plan` wrote: what it says about the send, and the exact bytes to send."""
+    if not path.exists():
+        raise Stop(f"{path} is not there. Run `dashboard plan` again. Nothing was sent.")
+    saved = read_saved(path)
+    if not (saved and saved.get("kind") == "dashboard" and isinstance(saved.get("publish"), str)
+            and text(saved.get("product")) and KEY_NAME.fullmatch(text(saved.get("key_name")))):
+        raise Stop(f"{path} is not a payload `dashboard plan` wrote. Run `dashboard plan` again. "
+                   "Nothing was sent.")
+    return saved, saved["publish"].encode("utf-8")
+
+
 def cmd_send(root: Path, path: Path) -> dict:
     check_kind(path, "dashboard", "send")
     keep = False
     try:
-        url, key, _ = settings(root)
-        if not path.exists():
-            raise Stop(f"{path} is not there. Run `dashboard plan` again. Nothing was sent.")
-        body = path.read_bytes()
+        url, prof, env = settings(root)
+        saved, body = read_dashboard_payload(path)
+        product, project, key_name = text(saved["product"]), text(saved.get("project_name")), saved["key_name"]
+        if text(saved.get("portal")).rstrip("/") != url:
+            raise Stop(f"`dashboard plan` ran its dry run against {saved.get('portal') or 'another Portal'}, but "
+                       f"tools.portal.url is now {url}. Run `dashboard plan` again. Nothing was sent.")
+        key = read_keys(env, {product: key_name})[product]
         try:
             payload = json.loads(body.decode("utf-8"))
         except ValueError:
             raise Stop(f"{path} is not a payload `dashboard plan` wrote. Run `dashboard plan` again.") from None
-        local_check(payload, body, {})
+        local_check(payload, body, {}, product)
+        now_opens = project_name(url, key, key_name)
+        if now_opens != project:
+            keep = True                           # kept: `dashboard discard` removes it, or it goes after a day
+            raise Stop(f"The key in {key_name} now opens Portal project \"{now_opens}\", but `dashboard plan` "
+                       f"showed the {product} Dashboard going to \"{project or 'an unnamed project'}\". Check "
+                       f"that {key_name} in .env holds the key for the right project, then run `dashboard plan` "
+                       f"again and look at the new dry run before sending. Nothing was sent.")
         try:
-            reply = post(url, key, body, dry_run=False, sources={})
+            reply = post(url, key, body, dry_run=False, sources={}, key_name=key_name)
         except MaybeSent:
             keep = True
             raise
@@ -700,19 +1078,23 @@ def cmd_send(root: Path, path: Path) -> dict:
         if not keep:
             path.unlink(missing_ok=True)
     c = reply["counts"]
-    report = (f"Sent the Dashboard to {url}: {c['features']} Features, {c['items']} Items, "
-              f"{c['client_contacts']} Client contacts. The Portal confirmed it at {reply['received_at']} (UTC), "
-              f"publish id {reply['publish_id']}.")
-    return {"ok": True, "sent": "Dashboard", "portal": url, "counts": c, "publish_id": reply["publish_id"],
-            "received_at": reply["received_at"], "report": report}
+    got = {k: c.get(k, len(payload[k])) for k in ("areas", "topics", "cards")}
+    tickets = c.get("tickets", sum(len(x["tickets"]) for x in payload["cards"]))
+    report = (f"Sent the {product} Dashboard to Portal project \"{project}\" at {url}: {got['areas']} areas, "
+              f"{c['features']} Features, {got['topics']} topics, {c['items']} Items, {got['cards']:,} Board cards "
+              f"with {tickets:,} tickets, {c['client_contacts']} Client contacts. The Portal confirmed it at "
+              f"{reply['received_at']} (UTC), publish id {reply['publish_id']}.")
+    return {"ok": True, "sent": "Dashboard", "product": product, "project_name": project, "portal": url,
+            "counts": c, "publish_id": reply["publish_id"], "received_at": reply["received_at"], "report": report}
 
 
 def cmd_discard(path: Path, kind: str = "dashboard") -> dict:
     check_kind(path, kind, "discard")
     existed = path.exists()
+    product = text((read_saved(path) or {}).get("product")) if kind == "dashboard" and existed else ""
     path.unlink(missing_ok=True)
     return {"ok": True, "sent": None, "deleted": str(path) if existed else None,
-            "report": "Nothing was sent. The payload file was deleted."}
+            "report": ("Nothing was sent" + (f" for {product}" if product else "") + ". The payload file was deleted.")}
 
 
 # ---------------------------------------------------------------- page <slug> (a Clarification page)
@@ -1118,17 +1500,17 @@ def page_local_check(page: dict, body: bytes, parts: list[dict], rel: str, sourc
 
 
 def post_page(url: str, key: str, body: bytes, parts: list[dict], dry_run: bool, rel: str, sources: dict,
-              round_label: str) -> dict:
+              round_label: str, key_name: str = DEFAULT_KEY) -> dict:
     """POST the page as multipart: part `publish` = the JSON, then one part per screenshot named by its file."""
     files = [(PUBLISH_PART, (None, body, "application/json"))]
     files += [(p["name"], (p["name"], p["data"], p["type"])) for p in parts]
 
     def first_line(code: str) -> str | None:
         if code == "round_has_answers":
-            return f"Round {round_words(round_label)} already has answers — give it a new round key"
+            return f"Round {round_words(round_label)} was already used (it has answers, or it was replaced and deleted) — give it a new round key"
         return None
 
-    steps = {**PAGE_NEXT_STEP,
+    steps = {**key_steps(key_name, PAGE_NEXT_STEP),
              "round_has_answers": f"Change store_key in {rel} to a new round key (and the round label), then run "
                                   "`page plan` again."}
     reply = exchange(url, PAGE_ENDPOINT, dry_run, sources, "page",
@@ -1190,9 +1572,11 @@ def page_view(reply: dict) -> str:
 
 
 def cmd_page_plan(root: Path, slug_arg: str) -> dict:
-    url, key, prof = settings(root)
+    url, prof, env = settings(root)
+    key, key_name = page_key(prof, env)
     clean_old_payloads()
     yaml_path = find_page_yaml(root, slug_arg)
+    products = list(key_map(prof))
     rel = yaml_path.relative_to(root).as_posix()
 
     def first_checks(cfg) -> dict:
@@ -1218,7 +1602,10 @@ def cmd_page_plan(root: Path, slug_arg: str) -> dict:
         page, parts, sources, left_out, warnings = build_page(root, yaml_path, cfg, prof)
         body = encode(page)
         page_local_check(page, body, parts, rel, sources)
-        reply = post_page(url, key, body, parts, True, rel, sources, page["round"])
+        # Two or more products: the page goes with the first product's key (until pages are sent per product),
+        # so the BA must see which Portal project that is before saying yes.
+        target = project_name(url, key, key_name, contract=None) if len(products) > 1 else ""
+        reply = post_page(url, key, body, parts, True, rel, sources, page["round"], key_name)
     except Stop as e:
         if fixed:
             raise Stop(f"{e}\n(Before this stop, _fixyaml.py quoted {fixed} line(s) in {rel}: the file changed; "
@@ -1232,9 +1619,18 @@ def cmd_page_plan(root: Path, slug_arg: str) -> dict:
     if fixed:
         warnings.insert(0, f"_fixyaml.py quoted {fixed} line(s) in {rel} (values holding a colon). The file "
                            "changed: commit it with the page.")
-    return {"ok": True, "portal": url, "payload": str(path), "page": page["slug"], "yaml": rel,
-            "round": reply["round"], "sent_at": page["sent_at"], "counts": reply["counts"],
-            "left_out": left_out, "warnings": warnings, "fixed_lines": fixed, "client_view": page_view(reply)}
+    view = page_view(reply)
+    result = {"ok": True, "portal": url, "payload": str(path), "page": page["slug"], "yaml": rel,
+              "round": reply["round"], "sent_at": page["sent_at"], "counts": reply["counts"],
+              "left_out": left_out, "warnings": warnings, "fixed_lines": fixed}
+    if target:
+        view = f"Goes to Portal project \"{target}\" (the key in {key_name}).\n\n{view}"
+        warnings.append(f"This repo has {len(products)} products ({', '.join(products)}). Until pages are sent "
+                        f"per product, every page goes to the first product's Portal project, \"{target}\". "
+                        "Check that this is the right project before saying yes.")
+        result["project_name"] = target
+    result["client_view"] = view
+    return result
 
 
 def read_page_payload(path: Path, root: Path) -> tuple[dict, bytes, list[dict]]:
@@ -1273,7 +1669,8 @@ def cmd_page_send(root: Path, path: Path) -> dict:
     check_kind(path, "page", "send")
     keep = False
     try:
-        url, key, _ = settings(root)
+        url, prof, env = settings(root)
+        key, key_name = page_key(prof, env)
         saved, body, parts = read_page_payload(path, root)
         if text(saved.get("portal")).rstrip("/") != url:
             raise Stop(f"`page plan` ran its dry run against {saved.get('portal') or 'another Portal'}, but "
@@ -1281,7 +1678,7 @@ def cmd_page_send(root: Path, path: Path) -> dict:
         rel = text(saved.get("yaml")) or "the page YAML"
         page_local_check(json.loads(body.decode("utf-8")), body, parts, rel, {})
         try:
-            reply = post_page(url, key, body, parts, False, rel, {}, text(saved.get("round")))
+            reply = post_page(url, key, body, parts, False, rel, {}, text(saved.get("round")), key_name)
         except MaybeSent:
             keep = True
             raise
@@ -1301,7 +1698,7 @@ def cmd_page_send(root: Path, path: Path) -> dict:
 def main(argv: list[str]) -> int:
     root = Path(arg(argv, "--root", ".")).resolve()
     words = [a for i, a in enumerate(argv) if not a.startswith("--") and (i == 0 or argv[i - 1] not in
-                                                                           ("--root", "--payload"))]
+                                                                           ("--root", "--payload", "--product"))]
     try:
         if words[:1] == ["page"] and words[1:2] not in (["send"], ["discard"]):
             rest = words[2:] if words[1:2] == ["plan"] else words[1:]
@@ -1313,7 +1710,10 @@ def main(argv: list[str]) -> int:
         elif words[:2] == ["page", "discard"]:
             result = cmd_discard(payload_arg(argv), "page")
         elif words[:2] == ["dashboard", "plan"]:
-            result = cmd_plan(root, "--refresh" in argv)
+            if "--product" in argv and not text(arg(argv, "--product")):
+                raise Stop("--product needs a product name, as the dashboard writes it (for example "
+                           "--product \"Bond Portal\"). Nothing was sent.")
+            result = cmd_plan(root, "--refresh" in argv, text(arg(argv, "--product")) or None)
         elif words[:2] == ["dashboard", "send"]:
             result = cmd_send(root, payload_arg(argv))
         elif words[:2] == ["dashboard", "discard"]:

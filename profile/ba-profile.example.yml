@@ -63,6 +63,7 @@ tools:
     - { name: '<full name>', email: '<email, optional>', slack: '<Slack name or member id, optional>' }
   portal:                                     # the Relevant Clients Portal — portal-publish sends the dashboard here
     url: '<the Portal address, e.g. http://localhost:3000>'   # the Publish key goes in .env (PORTAL_PUBLISH_KEY), never here
+    # products: { '<product name>': PORTAL_PUBLISH_KEY_<NAME> }   # two or more products only: each is its own Portal project; the .env variable that holds its key
   slack:
     channels: ['<channel name without #>']
   figma:

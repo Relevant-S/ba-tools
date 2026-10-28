@@ -11,9 +11,10 @@ Run from the project root, or pass --root. What it does, in order:
      mid-write: its .tmp files are deleted, never acked, and its Answers come again after the hold.
   4. On 200, rename each to docs/BA/intake/YYYY-MM-DD-HHMM-portal-<slug>.md (-2, -3 … if taken).
 
-Settings: tools.portal.url in docs/BA/specs/.ba-profile.yml; PORTAL_PUBLISH_KEY in .env at the repo root, which git
-must ignore. The key is never printed. Every reply is checked against the portal-publish contract (answers/1, ack/1);
-a reply that fails stops the run: nothing written, no ack.
+Settings: tools.portal.url in docs/BA/specs/.ba-profile.yml; the Publish key in .env at the repo root, which git
+must ignore: PORTAL_PUBLISH_KEY, or, when the profile has tools.portal.products (one Portal project per product), the
+first product's variable there. The key is never printed. Every reply is checked against the portal-publish
+contract (answers/1, ack/1); a reply that fails stops the run: nothing written, no ack.
 """
 from __future__ import annotations
 
@@ -42,6 +43,9 @@ ACK_TRIES = 3
 ACK_WAITS = (2.0, 5.0)            # seconds before the 2nd and the 3rd ack try
 SETUP_HINT = "Run `ba-setup project`"
 KEY_PLACE = "Admin → Projects → the Project → Publishing"
+DEFAULT_KEY = "PORTAL_PUBLISH_KEY"
+KEY_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+key_name = DEFAULT_KEY            # the .env variable the key came from; settings() sets it, messages name it
 TMP_NAME = re.compile(r"^portal-([0-9a-fA-F-]{36})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md\.tmp$")
 DONE_NAME = re.compile(r"^portal-([0-9a-fA-F-]{36})\.complete$")
 HOLD = "about 10 minutes"
@@ -151,15 +155,31 @@ def settings(root: Path) -> tuple[str, str, dict]:
     env = root / ".env"
     if not env.exists():
         raise Stop(f"There is no .env file at the repo root, so there is no Publish key. {SETUP_HINT}: it puts "
-                   "PORTAL_PUBLISH_KEY in .env.")
+                   "the Publish key in .env.")
     if not env_is_ignored(root):
         raise Stop(".env is not ignored by git (it is tracked, or .gitignore does not list it). The Publish key "
                    "must never be committed: add .env to .gitignore (and `git rm --cached .env` if it was "
                    "committed), then run again. Nothing was written.")
-    key = read_env_file(env).get("PORTAL_PUBLISH_KEY", "").strip()
+    global key_name
+    key_name = first_product_key(portal)
+    key = read_env_file(env).get(key_name, "").strip()
     if not key:
-        raise Stop(f".env has no PORTAL_PUBLISH_KEY. {SETUP_HINT}: it tells you where to get the key.")
+        raise Stop(f".env has no {key_name}. {SETUP_HINT}: it tells you where to get the key.")
     return url, key, prof
+
+
+def first_product_key(portal: dict) -> str:
+    """The .env variable to use. With tools.portal.products (a key per product, portal-publish Story 3.8), the
+    first product's variable, until Answers are fetched per product (Story 4.10); else PORTAL_PUBLISH_KEY."""
+    found = portal.get("products") if isinstance(portal, dict) else None
+    if found in (None, "", {}):
+        return DEFAULT_KEY
+    names = list(found.values()) if isinstance(found, dict) else []
+    if not names or not all(isinstance(v, str) and KEY_NAME.fullmatch(v.strip()) for v in names):
+        raise Stop(f"tools.portal.products in {PROFILE} must name, for each product, the .env variable that holds "
+                   "its Portal project's key, for example {AcmeLending: PORTAL_PUBLISH_KEY_ACME}. "
+                   f"{SETUP_HINT} to fix it. Nothing was written.")
+    return names[0].strip()
 
 
 # ---------------------------------------------------------------- times
@@ -200,7 +220,7 @@ def refused(url: str, r: httpx.Response, doc, step: str) -> Stop:
         return Stop(f"The Portal's reply to the {step} was not understood (HTTP {r.status_code}). It may be an older "
                     f"Portal. {tail}")
     if code == "invalid_key":
-        return Stop("This key is not valid for this Project. The key in .env (PORTAL_PUBLISH_KEY) is not this "
+        return Stop(f"This key is not valid for this Project. The key in .env ({key_name}) is not this "
                     f"Project's Publish key. Ask an Admin for it ({KEY_PLACE} → Regenerate key), put it in .env, "
                     f"and run again. {tail}")
     return Stop(f"The Portal refused the {step} ({code}): {msg or 'no message'}. {tail}")

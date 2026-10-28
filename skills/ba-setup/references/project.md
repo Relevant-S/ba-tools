@@ -47,7 +47,16 @@ Show each list as numbered lines; the BA answers with numbers.
    tell the BA where the key goes, and **never ask them to paste it into the chat**:
    - an Admin gets the Project's Publish key in the Portal at Admin → Projects → the Project → Publishing
      (it is shown in full once — "Regenerate key" makes a new one);
-   - the BA puts it in a file `.env` at the repo root, as `PORTAL_PUBLISH_KEY=<key>`;
+   - **one product** in the profile: the BA puts the key in a file `.env` at the repo root, as
+     `PORTAL_PUBLISH_KEY=<key>`;
+   - **two or more products** (each `products[]` entry with a `jira_project`, or
+     `tools.dashboard.map.products`): each product is its own Portal project, with its own key. Ask, per
+     product, which Portal project it goes to, and have an Admin get that project's key. Write one entry
+     per product in `tools.portal.products`, naming the `.env` variable that will hold its key — the product
+     name exactly as the dashboard writes it (`prod:`), for example
+     `products: {AcmeLending: PORTAL_PUBLISH_KEY_ACME, Bond Portal: PORTAL_PUBLISH_KEY_BOND}`.
+     The BA puts each key in `.env` under that name. Clarification pages and `fetch-portal` use the first
+     product's key for now;
    - `.gitignore` must list `.env`. Check with `git check-ignore -q .env` (exit 0 = ignored); if it is not,
      add `.env` to `.gitignore`. Never commit `.env`.
 

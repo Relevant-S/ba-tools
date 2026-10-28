@@ -108,7 +108,8 @@ alone. For example: a question you cannot word without inventing a client positi
 5. If `docs/BA/dashboard-slack.yaml` exists, sync the client copy in Slack (next section).
 6. When the profile has `tools.portal`, run `portal-publish dashboard` after the Slack sync. It shows the
    BA what the Client will read in the Relevant Clients Portal and sends it only after a yes. If the BA
-   says no, nothing is sent.
+   says no, nothing is sent. A repo with two products sends each product to its own Portal project (its
+   key is named in `tools.portal.products`), with one dry run and one yes or no per product.
 7. Commit `dashboard.yaml`, `dashboard.html`, `dashboard-slack.yaml` and `docs/BA/mind-map/` together
    (ask before pushing).
 

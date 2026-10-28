@@ -79,6 +79,10 @@ class FakePortal:
         self.requests.append(request)
         if self.raise_exc is not None:
             raise self.raise_exc
+        if request.url.path == publish.STATUS_ENDPOINT:          # which Portal project a key opens
+            return httpx.Response(200, json={"contract": "status/1", "project_name": "Sample App",
+                                             "archived": False, "waiting": 0, "last_fetched_at": None,
+                                             "accepted_contracts": ["dashboard/2", "clarification/1"]})
         if self.error is not None:
             return httpx.Response(self.error[0], json=self.error[1])
         dry = request.url.params.get("dry_run") == "1"
@@ -446,8 +450,8 @@ def test_round_has_answers(capsys, project, portal):
                                     "details": []}})
     code, result = run(capsys, project, "page", "plan", "probate-decisions")
     assert code == 1
-    assert result["error"].startswith("Round V4 · sent 11 Sep 2026 by Vadim, your BA · replaces V3 already "
-                                      "has answers — give it a new round key")
+    assert result["error"].startswith("Round V4 · sent 11 Sep 2026 by Vadim, your BA · replaces V3 was already "
+                                      "used (it has answers, or it was replaced and deleted) — give it a new round key")
     assert "store_key" in result["error"] and "Nothing more was sent." in result["error"]
     assert len(portal.requests) == 1 and "payload" not in result
 
@@ -474,7 +478,7 @@ def test_refusal_on_send(capsys, project, portal):
     path = Path(plan["payload"])
     portal.error = (409, {"error": {"code": "round_has_answers", "message": "x", "details": []}})
     code, result = run(capsys, project, "page", "send", "--payload", str(path))
-    assert code == 1 and "already has answers — give it a new round key" in result["error"]
+    assert code == 1 and "was already used (it has answers, or it was replaced and deleted) — give it a new round key" in result["error"]
     assert len(portal.requests) == 2 and not path.exists()
 
 
@@ -530,7 +534,8 @@ def test_page_send_refuses_a_payload_it_did_not_write(capsys, project, portal):
 
 @pytest.mark.parametrize("action", ["send", "discard"])
 def test_page_command_refuses_a_dashboard_payload(capsys, project, portal, action):
-    path = publish.write_payload(b'{"contract": "dashboard/1"}')
+    path = publish.save_dashboard("App", "Sample App", "http://portal.test", "PORTAL_PUBLISH_KEY",
+                                  b'{"contract": "dashboard/2"}')
     try:
         code, result = run(capsys, project, "page", action, "--payload", str(path))
         assert code == 1 and f"is a dashboard payload, not a page one: use `dashboard {action}`" in result["error"]
@@ -701,3 +706,59 @@ def test_timeout_on_the_dry_run_says_nothing_was_sent(capsys, project, portal):
     code, result = run(capsys, project, "page", "plan", "probate-decisions")
     assert code == 1 and "the dry run got no reply" in result["error"] and "Nothing was sent" in result["error"]
     assert "may have arrived" not in result["error"] and "payload" not in result
+
+
+# ---- Story 3.8: a repo with a key per product ------------------------------------------------------------
+
+def test_page_uses_the_first_products_key(capsys, project, portal):
+    """With tools.portal.products, a page goes with the first product's key (until pages are sent per product)."""
+    edit_yaml(project / publish.PROFILE, lambda d: d["tools"]["portal"].update(
+        products={"App": "PORTAL_PUBLISH_KEY_APP", "Admin": "PORTAL_PUBLISH_KEY_ADMIN"}))
+    other = "pk_test_other_product_key_0000000000"
+    (project / ".env").write_text(f"PORTAL_PUBLISH_KEY_APP={KEY}\nPORTAL_PUBLISH_KEY_ADMIN={other}\n",
+                                  encoding="utf-8")
+    code, plan = run(capsys, project, "page", "plan", "probate-decisions")
+    assert code == 0, plan
+    status, dry = portal.requests
+    assert status.method == "GET" and status.url.path == publish.STATUS_ENDPOINT
+    assert status.headers["Authorization"] == dry.headers["Authorization"] == f"Bearer {KEY}"
+    code, sent = run(capsys, project, "page", "send", "--payload", plan["payload"])
+    assert code == 0, sent
+    assert portal.requests[2].headers["Authorization"] == f"Bearer {KEY}"
+
+
+def test_page_dry_run_names_the_portal_project_with_two_products(capsys, project, portal):
+    """Two or more products: the page goes to the first product's project, and the dry run says which one, so the
+    BA sees it before saying yes."""
+    edit_yaml(project / publish.PROFILE, lambda d: d["tools"]["portal"].update(
+        products={"App": "PORTAL_PUBLISH_KEY_APP", "Admin": "PORTAL_PUBLISH_KEY_ADMIN"}))
+    (project / ".env").write_text(f"PORTAL_PUBLISH_KEY_APP={KEY}\nPORTAL_PUBLISH_KEY_ADMIN=pk_test_other_0000\n",
+                                  encoding="utf-8")
+    code, plan = run(capsys, project, "page", "plan", "probate-decisions")
+    try:
+        assert code == 0, plan
+        assert plan["project_name"] == "Sample App"
+        assert plan["client_view"].startswith('Goes to Portal project "Sample App" (the key in '
+                                              'PORTAL_PUBLISH_KEY_APP).')
+        assert any('every page goes to the first product\'s Portal project, "Sample App"' in w
+                   for w in plan["warnings"])
+    finally:
+        if plan.get("payload"):
+            Path(plan["payload"]).unlink(missing_ok=True)
+
+
+def test_page_dry_run_with_one_key_does_not_ask_for_the_project(capsys, project, portal):
+    code, plan = run(capsys, project, "page", "plan", "probate-decisions")
+    try:
+        assert code == 0 and "project_name" not in plan and len(portal.requests) == 1
+        assert not plan["client_view"].startswith("Goes to")
+    finally:
+        Path(plan["payload"]).unlink(missing_ok=True)
+
+
+def test_page_names_the_missing_product_key(capsys, project, portal):
+    edit_yaml(project / publish.PROFILE, lambda d: d["tools"]["portal"].update(
+        products={"App": "PORTAL_PUBLISH_KEY_APP", "Admin": "PORTAL_PUBLISH_KEY_ADMIN"}))
+    code, result = run(capsys, project, "page", "plan", "probate-decisions")
+    assert code == 1 and ".env has no PORTAL_PUBLISH_KEY_APP" in result["error"]
+    assert portal.requests == []

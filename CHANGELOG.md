@@ -14,6 +14,32 @@
   `reply-pages-removed-without-title` and `reply-page-with-pages-removed`. The skill does not send the list yet:
   that comes with Story 4.10.
 
+- **`portal-publish dashboard` sends `dashboard/2`, one Portal project per product** (Story 3.8). The payload is
+  built from the BA page's own data (`const DATA` in `docs/BA/mind-map/mind-map.html`) and holds, per product,
+  the rows of that product and the rows marked "Both": areas (quiet ones flagged, "No area" and "Not linked
+  yet" marked), each area's Jira facts and its first 5 open tickets in the BA page's order, Features (with
+  their area, answered questions, done date and tickets), Map topics, Waiting and agenda Items (an Item on no
+  Feature now goes under its topic, or "Not linked yet"), releases with dates, and every Board card with its
+  tickets. `jira_base` comes from the first area's Jira link, else the profile's `jira.site`. HTML entities in
+  Jira text (`&amp;`) are turned back into characters. The release-name cut at 100 characters is gone: names
+  are sent whole, and a name over Jira's 255 stops the run, naming `releases[i].name`. A map "feature" card of a
+  topic goes as an `other` card; a card in another product's release is left out with a warning (the BA page
+  does not show it on that product's Board). A repo with two or more products needs `tools.portal.products` in
+  the profile — product name → the `.env` variable that holds that Portal project's key; a missing entry or
+  key stops the run before anything is sent, naming it. A repo with one product still uses
+  `PORTAL_PUBLISH_KEY`. `dashboard plan` checks every product's payload first, then per product asks the Portal
+  which project the key opens (`GET /status`), sends a dry run and prints the list, starting with
+  `<product> → Portal project "<name>"` and with one Board line instead of ticket lists; the BA says yes or no
+  per product (`dashboard send` / `discard` per payload file). `--product "<name>"` plans one product.
+  The local body limit is now 5 MB. Page sends and `fetch-portal` use the first product's key until Story 4.10.
+  `ba-setup project` asks for one key per product when the repo has several.
+  Two products never share a Portal project: two products naming the same `.env` variable, or two keys that
+  open the same Portal project, stop `dashboard plan` before anything is sent; `dashboard send` asks the Portal
+  again which project the key opens and stops (keeping the payload file) if it is not the one `plan` showed;
+  with two or more products, `page plan` names the Portal project the page goes to (`Goes to Portal project
+  "<name>"`, first line of `client_view`, plus a warning). Contract docs only: an area's Jira `open` count
+  includes the tickets counted in `in_progress` (no schema rule changed).
+
 - **`portal-publish` contract 1.2.0** (tag `portal-contract-1.2.0`). Adds **`dashboard/2`**
   (`dashboard-2.schema.json` and its readable twin `dashboard-2.md`): the whole BA dashboard of one product,
   shaped like the BA page's own data — `jira_base`, areas with their Jira facts and up to 20 open tickets,

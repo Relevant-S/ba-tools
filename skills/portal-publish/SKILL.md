@@ -12,13 +12,13 @@ Publishing**. The Dashboard steps come first below; the page steps are in "A Cla
 
 **Two commands with the BA's yes in between.** The shell cannot wait for typed input, so:
 
-1. `dashboard plan` builds, checks and sends a **dry run**. The Portal stores and logs nothing on a dry run.
-   It answers with the Client's view, which you show the BA.
-2. The BA says yes or no.
-3. Yes → `dashboard send`. No → `dashboard discard`.
+1. `dashboard plan` builds, checks and sends a **dry run** for each product. The Portal stores and logs
+   nothing on a dry run. It answers with the Client's view, which you show the BA.
+2. The BA says yes or no, once per product.
+3. Yes → `dashboard send` for that product. No → `dashboard discard` for that product.
 
 ```
-uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py dashboard plan [--refresh]
+uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py dashboard plan [--refresh] [--product "<name>"]
 uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py dashboard send --payload <file>
 uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py dashboard discard --payload <file>
 ```
@@ -26,6 +26,11 @@ uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.
 `<skills>` = the folder this skill is installed in, one level up. Run from the project root (or add
 `--root <project>`). Each command prints one JSON line: `ok: true` with the result, or `ok: false` with
 `error` — already worded for the BA.
+
+**One product, one Portal project.** A repo can hold two products (for example "AcmeLending" and "Investor
+Portal" — the product switch on the BA page). Each product goes to its own Portal project, with that
+project's own Publish key. The BA page's product switch is for the BA only: the Client switches projects in
+the Portal's header. A repo with one product works as before, with one key.
 
 ## Step 0 — every run
 
@@ -37,40 +42,67 @@ uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.
 | Setting | Where | When it is missing |
 |---|---|---|
 | The Portal address | `tools.portal.url` in `docs/BA/specs/.ba-profile.yml` | stop: run `ba-setup project` |
-| The Publish key | `PORTAL_PUBLISH_KEY=<key>` in `.env` at the repo root | stop: run `ba-setup project` |
+| The Publish key, one product | `PORTAL_PUBLISH_KEY=<key>` in `.env` at the repo root | stop: run `ba-setup project` |
+| The Publish keys, two or more products | `tools.portal.products` in the profile names, per product, the `.env` variable that holds its key — for example `{AcmeLending: PORTAL_PUBLISH_KEY_ACME, Bond Portal: PORTAL_PUBLISH_KEY_BOND}` — and `.env` holds each one | stop before anything is sent, naming the product or the variable: run `ba-setup project` |
 | `.env` kept out of git | `.gitignore` lists `.env`, and `.env` is not committed | stop: add it to `.gitignore` (and `git rm --cached .env` if it was committed) |
+| The Jira site (ticket links) | the Jira search link of the first area on the BA page, else `jira.site` in the profile | stop: add `jira.site` to the profile |
 | Client contacts | `tools.client_contacts` in the profile (`name`, `email`, `slack`) | falls back to `client_owners` in `docs/BA/dashboard-slack.yaml` (names only); with neither, a warning |
 
-The script checks all of these itself, before it builds or sends anything. **Never print, echo or paste the
-key.** Never open `.env` to show it. The Publish key is one per Project: an Admin sees it once in the
-Portal at Admin → Projects → the Project → Publishing, and "Regenerate key" there replaces it.
+The script checks all of these itself, before it sends anything. **Never print, echo or paste a key.** Never
+open `.env` to show it. A Publish key is one per Portal project: an Admin sees it once in the Portal at
+Admin → Projects → the Project → Publishing, and "Regenerate key" there replaces it.
+
+Two products never share a Portal project. Two products naming the same `.env` variable, or two keys that
+open the same Portal project, stop the run before anything is sent.
+
+Pages (`page <slug>`) and `fetch-portal` use the key of the first product in `tools.portal.products` for now,
+until pages are sent per product (Story 4.10). With two or more products, `page plan` names that project
+first, so the BA sees where the page goes before saying yes.
 
 ## Run
 
 1. **`dashboard plan`** (add `--refresh` only when the BA asks for it, or says yes to the stale-Jira
-   warning). It:
+   warning; add `--product "<name>"` when the BA wants to send one product only). It:
    - runs `ba-dashboard`'s `dashboard.py build`, then `map/build.py`, so stages, areas and releases are current;
-   - makes the payload — only the fields the contract names. A Feature or Item with `client: false` is left
-     out, and so are the Items of a hidden Feature. `client_s` replaces `s`. To-dos and `done` Items stay in
-     the repo. A Jira release name over 100 characters is cut to 100, ending in "…", with a warning;
-   - checks it against the contract (`checks.py`). A failure names the file, the row and the field;
-   - sends it to the Portal as a dry run, and writes the payload to a temp file outside the repo.
-2. **Show the BA, word for word:**
-   - every line of `warnings` (stale Jira files, no Client contacts);
-   - `client_list` — every Feature (title, short label, summary, stage, open questions, its Clarification
-     page), the Items grouped as "Waiting on you" and "Next-call agenda", and the Client contacts' names.
-     It comes from the Portal's own dry-run reply. Never rebuild it, reorder it or work out "Waiting on you"
-     yourself;
-   - `left_out` as one line: "Left in the repo: N Features and N Items (client: false, done, to-dos)".
-3. **Ask one question:** "Send this to the Client?" If `warnings` has the no-contacts warning, the same
-   question also asks whether to go on without contacts. Wait for the answer.
-4. **Yes** → `dashboard send --payload <the payload path from plan>`. It re-checks the file, sends the same
-   bytes for real and deletes the file. `send` and `discard` only take a `portal-publish-*.json` file in the
-   system temp folder — the path `plan` printed.
-   **No** (or anything but a clear yes) → `dashboard discard --payload <path>`. Nothing is sent.
-5. **Report** `report` from `send`: what was sent (the Dashboard; counts of Features, Items and Client
-   contacts), the Portal's `publish_id` and its confirmation time (`received_at`, UTC). The BA can see the
-   new row at Admin → Projects → the Project → Publishing.
+   - makes one `dashboard/2` payload per product from the BA page's own data (`const DATA` in
+     `docs/BA/mind-map/mind-map.html`). Each holds the rows of that product and the rows marked "Both": its
+     areas (with each area's Jira facts and its first 5 open tickets, in the BA page's order), Features, Map
+     topics, Waiting and agenda Items (an Item on no Feature goes under its topic, or under "Not linked yet"),
+     releases, and Board cards with their tickets. No payload holds a product field;
+   - leaves out what the Client must not see: a Feature or Item with `client: false`, the Items and Board
+     cards of a hidden Feature, to-dos, `done` Items, the BA's notes and the page title. `client_s` replaces
+     `s`. Release names are sent whole (Jira allows 255 characters). A Board card that sits in another
+     product's release is not on this product's Board on the BA page either, so it is left out, with a
+     warning;
+   - checks every product's payload against the contract (`checks.py`) **before anything goes to the
+     Portal**. A failure names the product, the file, the row and the field. Nothing is cut to fit;
+   - then, per product: asks the Portal which project the product's key opens (`GET /status`), sends the
+     payload as a dry run, and writes it to a temp file outside the repo. If two products' keys open the same
+     Portal project, it stops; nothing is sent.
+2. **Show the BA, product by product, word for word:**
+   - every line of `warnings`, once (stale Jira files, no Client contacts, a Board card in another product's
+     release);
+   - each entry of `products`: its `client_list` starts with `<product> → Portal project "<project_name>"`,
+     then the areas, the Features (title, short label, summary, stage, open questions, its Clarification
+     page), the topics, one Board line ("Board: N cards (feature / epic / other), N tickets"), the Items
+     grouped as "Waiting on you" and "Next-call agenda", and the Client contacts' names. Ticket lists are not
+     printed. It comes from the Portal's own dry-run reply. Never rebuild it, reorder it or work out "Waiting
+     on you" yourself;
+   - that product's `left_out` as one line: "Left in the repo: N Features, N Items and N Board cards
+     (client: false, done, to-dos)".
+3. **Ask one question per product:** "Send this to the Portal project "<project_name>"?" If `warnings` has
+   the no-contacts warning, the first question also asks whether to go on without contacts. Wait for each
+   answer.
+4. **Yes** → `dashboard send --payload <that product's payload path>`. It re-checks the file, asks the Portal
+   again which project the key opens (and stops, keeping the file, if that is not the project `plan` showed),
+   sends the same bytes for real with that product's key, and deletes the file. `send` and `discard` only take a
+   `portal-publish-*.json` file in the system temp folder — a path `plan` printed.
+   **No** (or anything but a clear yes) → `dashboard discard --payload <that path>`. Nothing is sent for that
+   product. A "no" to one product does not stop the others.
+5. **Report** `report` from each `send`: which product went to which Portal project, the counts (areas,
+   Features, topics, Items, Board cards and tickets, Client contacts), the Portal's `publish_id` and its
+   confirmation time (`received_at`, UTC). The BA can see the new row at Admin → Projects → the Project →
+   Publishing.
 
 If the BA edits `dashboard.yaml` after `plan`, discard and run `plan` again — `send` sends what `plan` built.
 
@@ -81,9 +113,18 @@ Show `error` as it is; it already says what to do. Nothing was sent in these cas
 | Case | What the BA sees |
 |---|---|
 | No `tools.portal`, no `.env`, no key | "… Run `ba-setup project` …" |
+| Two or more products, and `tools.portal.products` names no key for one of them | "This repo has 2 products (…). … tools.portal.products … names no key for: …" |
+| Two products name the same `.env` variable in `tools.portal.products` | "tools.portal.products … gives App and Admin the same .env variable (…), so both would go to the same Portal project …" |
+| Two products' keys open the same Portal project | "The keys for App (…) and Admin (…) both open the same Portal project, "…" …": ask an Admin for the right key for one of them |
+| At `send`, the key opens a different project from the one `plan` showed | "The key in PORTAL_PUBLISH_KEY_… now opens Portal project "…", but `dashboard plan` showed the … Dashboard going to "…" …": check `.env`, run `dashboard plan` again. The payload file is kept; `dashboard discard` removes it |
+| A product's variable is not in `.env` | ".env has no PORTAL_PUBLISH_KEY_BOND (the Publish key for Bond Portal) …" |
+| `--product` names no product of this repo | "There is no product called '…'. This repo's products: …" |
 | `.env` not ignored by git | ".env is not ignored by git …" |
 | The build fails | "dashboard.py build failed: …" or "map/build.py failed: …" |
-| The local check fails | one line per problem: `docs/BA/dashboard.yaml → features 'Sign-up' → area: …` |
+| The local check fails (any product) | "The Bond Portal Dashboard does not match the contract …", then one line per problem, like `docs/BA/dashboard.yaml → features 'Sign-up' → area: …` or `Jira → the release '…' → its name: … (/releases/3/name)` |
+| No Jira site | "There is no Jira site address …": add `jira.site` to the profile |
+| The Portal refuses a key on `GET /status` | "The Portal refused the key in PORTAL_PUBLISH_KEY_… (invalid_key) …", then where to get the right key |
+| The Portal does not accept `dashboard/2` yet | "The Portal at <url> does not accept dashboard/2 yet …" |
 | The Portal refuses | "The Portal refused the send (code): its message", each field it named, then the next step. Codes: `invalid_key` (wrong key), `project_archived`, `contract_invalid`, `contract_version_not_accepted`, `payload_too_large` |
 | The Portal is down or the address is wrong | "The Portal is not reachable at <url>" |
 | The real send went out but no reply came back (timeout, dropped connection) | "… it may have arrived …": check Admin → Projects → the Project → Publishing before sending again. The payload file is kept, so `send` can be run again with it if the send is not there. This is the one case where something may have been sent. |
@@ -115,14 +156,19 @@ uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.
      file name; a second file with the same name goes as `name-2.png`, then `-3` …;
    - checks it all: the contract (at most 50 Questions, 30 screenshots), each screenshot there, PNG, JPEG or
      WebP, at most 10 MB, and at most 90 MB in all. A failure names the YAML file, the row and the field;
+   - with two or more products in `tools.portal.products`: asks the Portal which project the first product's
+     key opens (`GET /status`). `client_view` then starts with `Goes to Portal project "<name>"`, the result
+     has `project_name`, and a warning says every page goes to that project until pages are sent per product;
    - sends a **dry run** (multipart: the page JSON, then one part per screenshot). The Portal stores and logs
      nothing. The payload file in temp holds the page JSON and each screenshot's path and checksum — never the
      screenshots themselves.
-2. **Show the BA, word for word:** every line of `warnings`; `client_view` — the page name, the Round label,
-   whether it is a new Round or replaces one, each Question with its options and the recommended one, the
+2. **Show the BA, word for word:** every line of `warnings`; `client_view` — with two or more products its
+   first line, `Goes to Portal project "<name>"`, which the BA must see before saying yes; then the page name,
+   the Round label, whether it is a new Round or replaces one, each Question with its options and the recommended one, the
    settled decisions and the counts. It comes from the Portal's own dry run: never rebuild or reorder it.
    Then `left_out` as one line: "Left in the repo: <the fields, comma-separated>".
-3. **Ask one question:** "Send this page to the Client?" Wait for the answer.
+3. **Ask one question:** "Send this page to the Client?" (with two or more products: "Send this page to the
+   Portal project "<project_name>"?"). Wait for the answer.
 4. **Yes** → `page send --payload <the payload path from plan>`. It re-reads every screenshot; if one changed
    since `plan`, it stops ("run `page plan` again"). Then it sends the same page for real and deletes the file.
    **No** (or anything but a clear yes) → `page discard --payload <path>`. Nothing is sent.
@@ -141,7 +187,7 @@ If the BA edits the YAML after `plan`, discard and run `plan` again — `send` s
 | No `round:` line | "… has no `round:` line …" |
 | A screenshot is missing, not PNG / JPEG / WebP, or over 10 MB | `docs/BA/clarifications/<file> → design.screens[1] → src: …` |
 | Over 90 MB in all | "… the Portal takes at most 90 MB in one send …" |
-| The Round already has answers (`round_has_answers`) | "Round <label> already has answers — give it a new round key", then: change `store_key` (and the round label) and run `page plan` again |
+| The round key was already used: the Round has answers, or it was replaced and deleted (`round_has_answers`) | "Round <label> was already used (it has answers, or it was replaced and deleted) — give it a new round key", then: change `store_key` (and the round label) and run `page plan` again |
 | `screenshot_mismatch` | a named screenshot did not arrive, or an unnamed one did; run `page plan` again |
 | `contract_invalid`, `project_archived`, `payload_too_large`, `invalid_key` | the Portal's message, each field it named, then the next step |
 | A screenshot changed between `plan` and `send` | "The screenshot … changed (or is gone) since `page plan` …" |

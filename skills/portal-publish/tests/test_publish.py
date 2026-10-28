@@ -1,7 +1,9 @@
-"""Tests for publish.py (portal-publish dashboard). One test (or one group) per row of the Story 3.4 matrix.
+"""Tests for publish.py (portal-publish dashboard). Stories 3.4 and 3.8: one dashboard/2 send per product.
 
 The Portal is faked with httpx.MockTransport, the build step is stubbed, and each test runs in a temp git repo
-copied from tests/publish/project/.
+copied from tests/publish/project/, with the BA page's data (const DATA) written by sample_data(). The sample has
+two products, a "Both" Feature, topics, a loose Item, a 130-character release name, a card with 176 tickets and an
+area with 9 open tickets. No real client text.
 """
 from __future__ import annotations
 
@@ -26,8 +28,13 @@ HERE = Path(__file__).resolve().parent
 PROJECT = HERE / "publish" / "project"
 VALID = checks.CONTRACT_DIR / "fixtures" / "valid"
 ERRORS = json.loads((checks.CONTRACT_DIR / "errors.json").read_text(encoding="utf-8"))
-KEY = "pk_test_9f8e7d6c5b4a39281706f5e4d3c2b1a0"
+KEY_APP = "pk_test_9f8e7d6c5b4a39281706f5e4d3c2b1a0"
+KEY_ADMIN = "pk_test_0a1b2c3d4e5f60718293a4b5c6d7e8f9"
+KEY = "pk_test_1111222233334444555566667777aaaa"     # PORTAL_PUBLISH_KEY, for a repo with one product
+KEYS = (KEY_APP, KEY_ADMIN, KEY)
 URL = "http://portal.test"
+LONG_RELEASE = ("Release 1.9.0 - " + "Application expiry; Investor preferences; Auto logout; " * 3)[:130]
+EASY_PAYDAY = Path(r"C:\Acme Lending\acme-docs")
 
 
 def read(path: Path):
@@ -38,29 +45,169 @@ def git(root: Path, *args: str) -> None:
     subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
 
 
-# ---- helpers (no conftest.py: Story 4.1 may add one) --------------------------------------------------
+# ---- the BA page's data ------------------------------------------------------------------------------
+
+def tk(key: str, summary: str = "", status: str = "To Do", stage: str = "ready", who: str | None = None) -> dict:
+    return {"key": key, "summary": summary or f"Ticket {key}", "status": status, "stage": stage, "who": who}
+
+
+OPEN_TICKETS = [   # the Onboarding area: 9 open tickets, 2 of them being built or tested
+    {"key": "APP-41", "summary": "Open one", "status": "To Do", "category": "new", "updated": "2026-10-19"},
+    {"key": "APP-42", "summary": "Open two", "status": "In Progress", "category": "indeterminate",
+     "updated": "2026-09-01"},
+    {"key": "APP-43", "summary": "Open three", "status": "To Do", "category": "new", "updated": "2026-10-01"},
+    {"key": "APP-44", "summary": "Open four", "status": "In Review", "category": "indeterminate",
+     "updated": "2026-10-10"},
+    {"key": "APP-45", "summary": "Open five", "status": "To Do", "category": "new", "updated": "2026-08-01"},
+    {"key": "APP-46", "summary": "Open six", "status": "To Do", "category": "new", "updated": "2026-10-15"},
+    {"key": "APP-47", "summary": "Open seven", "status": "To Do", "category": "new", "updated": "2026-07-01"},
+    {"key": "APP-48", "summary": "Open eight", "status": "To Do", "category": "new", "updated": "2026-10-18"},
+    {"key": "APP-49", "summary": "Open nine", "status": "To Do", "category": "new", "updated": "2026-06-01"},
+]
+
+
+def jira(name: str, project: str, **facts) -> dict:
+    base = {"project": project, "id": "1", "name": name, "description": "", "done": 0, "recent": 0, "open": [],
+            "lastUpdated": None, "lastDone": None, "shipped": [],
+            "search": f"https://example.atlassian.net/issues/?jql=project%20%3D%20{project}"}
+    return {**base, **facts}
+
+
+def bubble(bid: str, label: str, prod: str, stage: str, feature: dict | None = None, tickets=(), done=None) -> dict:
+    b = {"id": bid, "label": label, "prod": prod, "stageKey": stage, "doneDate": done, "children": [],
+         "tickets": list(tickets)}
+    if feature is not None:
+        b["feature"] = feature
+    return b
+
+
+def card(cid: str, kind: str, prod: str, row: str, area: str, tickets=(), **extra) -> dict:
+    return {"id": cid, "kind": kind, "prod": prod, "row": row, "area": area, "tickets": list(tickets),
+            "stage": extra.pop("stage", "ready"), "blocked": extra.pop("blocked", False),
+            "doneDate": extra.pop("doneDate", None), **extra}
+
+
+def sample_data() -> dict:
+    sign_up = bubble("sign-up", "Sign-up", "App", "spec", {"settled": 2, "open": ["Which employers get it first?", ""]},
+                     [{**tk("APP-1", "Phone sign-up &amp; SMS", "In Progress", "dev"), "category": "indeterminate"}])
+    many = [tk(f"APP-{100 + n}", who="Sample Developer" if n % 2 else None) for n in range(176)]
+    return {
+        "updated": "2026-10-20", "title": "Sample BA Dashboard", "products": ["App", "Admin"], "mapUrl": "",
+        "epics": [
+            {"id": "APP:Onboarding", "prod": "App", "label": "Onboarding", "active": True, "stage": "dev",
+             "jira": jira("Onboarding", "APP", description="Sign-up &amp; first steps.", done=12,
+                          open=copy.deepcopy(OPEN_TICKETS), lastDone="2026-10-12",
+                          shipped=[{"key": "APP-30", "summary": "Phone check &amp; retry", "date": "2026-10-12"},
+                                   {"key": "APP-31", "summary": "Done with no date", "date": None}]),
+             "features": [sign_up,
+                          bubble("refunds", "Refunds", "App", "ready", None, [tk("APP-60")]),
+                          bubble("chat", "Chat assistant", "App", "concept")]},
+            {"id": "ADM:Back office", "prod": "Admin", "label": "Back office", "active": True, "stage": "ready",
+             "jira": jira("Back office", "ADM", done=2, open=[{"summary": "An older row with no key",
+                                                                "status": "To Do", "category": "new"}]),
+             "features": [bubble("back-office", "Back office tools", "Admin", "concept",
+                                 {"settled": None, "open": []})]},
+            {"id": "ADM:Onboarding", "prod": "Admin", "label": "Onboarding", "active": False, "stage": "done",
+             "jira": jira("Onboarding", "ADM", done=3), "features": []},
+            {"id": "APP:Quiet area", "prod": "App", "label": "Quiet area", "active": False, "stage": "concept",
+             "jira": None, "features": []},
+            {"id": "noarea", "prod": "Both", "label": "No area", "jira": None, "noarea": True, "active": True,
+             "stage": "concept",
+             "features": [bubble("identity-check", "Identity check", "App", "done", {"settled": None, "open": []},
+                                 done="2026-10-01T10:00:00.000+0000"),
+                          bubble("audit-log", "Audit log", "Both", "spec", {"settled": 0, "open": []})]},
+            {"id": "unlinked", "prod": "Both", "label": "Not linked yet", "jira": None, "active": True,
+             "loose": True, "stage": "concept",
+             "features": [bubble("unlinked", "Loose items", "Both", "concept")]},
+        ],
+        "board": {
+            "releases": {
+                "App": [{"name": "1.5", "date": "2026-11-01", "released": False, "overdue": False},
+                        {"name": LONG_RELEASE, "date": "2026-09-01", "released": True, "overdue": False}],
+                "Admin": [{"name": "2.0", "date": "2026-10-01", "released": False, "overdue": True},
+                          {"name": "1.5", "date": None, "released": True, "overdue": False}],
+            },
+            "cards": [
+                card("c-sign-long", "feature", "App", LONG_RELEASE, "Onboarding",
+                     [tk("APP-1", "Phone sign-up &amp; SMS", "In Progress", "dev", "Sample Developer")],
+                     fid="sign-up", title="Sign-up", stage="dev"),
+                card("c-sign-15", "feature", "App", "1.5", "Onboarding", many, fid="sign-up", title="Sign-up",
+                     blocked=True),
+                card("c-id", "feature", "App", "none", "No area", fid="identity-check", title="Identity check",
+                     stage="done", doneDate="2026-10-01T10:00:00.000+0000"),
+                card("c-audit", "feature", "Both", "none", "No area", fid="audit-log", title="Audit log",
+                     stage="spec"),
+                card("c-back", "feature", "Admin", "2.0", "Back office", [tk("ADM-1")], fid="back-office",
+                     title="Back office tools"),
+                card("c-refunds", "feature", "App", "none", "Onboarding", [tk("APP-60")], fid="refunds",
+                     title="Refunds"),
+                card("c-epic", "epic", "App", "1.5", "Onboarding",
+                     [tk("APP-10", "Fees &amp; limits", "QA", "qa")], epic="APP-9", title="Payments &amp; refunds",
+                     stage="qa"),
+                card("c-other", "other", "Admin", "2.0", "Back office", [tk("ADM-5")], title="Other tickets"),
+                card("c-ghost", "other", "Admin", "none", "Reports", [tk("ADM-7")], title="Other tickets"),
+            ],
+            "areas": {"App": ["Onboarding", "Quiet area"], "Admin": ["Back office", "Onboarding"]},
+        },
+    }
+
+
+def write_map(root: Path, data: dict) -> None:
+    page = root / publish.MAP_PAGE
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text("<!doctype html>\n<html><body><script>\nconst DATA = " + json.dumps(data, ensure_ascii=False)
+                    + ";\n</script></body></html>\n", encoding="utf-8")
+
+
+def change_map(root: Path, change) -> None:
+    data = publish.read_map(root)
+    change(data)
+    write_map(root, data)
+
+
+# ---- the fake Portal ---------------------------------------------------------------------------------
 
 class FakePortal:
-    """Answers like the Portal: the contract's own reply fixtures, or an error envelope."""
+    """Answers like the Portal: GET /status names the project each key opens; the publish endpoint answers with
+    the contract's own reply fixtures, or an error envelope."""
 
     def __init__(self):
         self.requests: list[httpx.Request] = []
-        self.error: tuple[int, dict] | None = None
+        self.error: tuple[int, dict] | None = None          # the publish endpoint's error
+        self.status_error: tuple[int, dict] | None = None
         self.raw: tuple[int, bytes] | None = None
         self.raise_exc: Exception | None = None
-        self.dry = read(VALID / "publish-reply-1-dry-run.json")
+        self.post_exc: Exception | None = None             # raised on POSTs only (the status call still answers)
+        self.projects = {KEY_APP: "Sample App", KEY_ADMIN: "Sample Admin", KEY: "Sample Project"}
+        self.accepted = ["dashboard/1", "dashboard/2", "clarification/1"]
+        self.dry = read(VALID / "publish-reply-1-dashboard-2-dry-run.json")
         self.sent = read(VALID / "publish-reply-1-sent.json")
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
         if self.raise_exc is not None:
             raise self.raise_exc
+        if self.post_exc is not None and request.method == "POST":
+            raise self.post_exc
         if self.raw is not None:
             return httpx.Response(self.raw[0], content=self.raw[1], headers={"Content-Type": "text/html"})
+        if request.url.path == publish.STATUS_ENDPOINT:
+            if self.status_error is not None:
+                return httpx.Response(self.status_error[0], json=self.status_error[1])
+            key = request.headers["Authorization"].removeprefix("Bearer ")
+            if key not in self.projects:
+                return httpx.Response(401, json={"error": {"code": "invalid_key", "message":
+                                                           ERRORS["invalid_key"]["message"], "details": []}})
+            return httpx.Response(200, json={"contract": "status/1", "project_name": self.projects[key],
+                                             "archived": False, "waiting": 0, "last_fetched_at": None,
+                                             "accepted_contracts": self.accepted})
         if self.error is not None:
             return httpx.Response(self.error[0], json=self.error[1])
         dry = request.url.params.get("dry_run") == "1"
         return httpx.Response(200, json=self.dry if dry else self.sent)
+
+    def posts(self) -> list[httpx.Request]:
+        return [r for r in self.requests if r.method == "POST"]
 
 
 @pytest.fixture
@@ -81,20 +228,32 @@ def builds(monkeypatch):
 def project(tmp_path):
     root = tmp_path / "project"
     shutil.copytree(PROJECT, root)
+    write_map(root, sample_data())
     git(root, "init", "-q")
     git(root, "config", "user.name", "Sample BA")
     git(root, "config", "user.email", "ba@example.com")
     (root / ".gitignore").write_text(".env\n", encoding="utf-8")
-    (root / ".env").write_text(f"# Portal\nPORTAL_PUBLISH_KEY={KEY}\n", encoding="utf-8")
+    (root / ".env").write_text(f"# Portal\nPORTAL_PUBLISH_KEY_APP={KEY_APP}\nPORTAL_PUBLISH_KEY_ADMIN={KEY_ADMIN}\n",
+                               encoding="utf-8")
     git(root, "add", "-A")
     git(root, "commit", "-qm", "init")
     return root
 
 
+def one_product(root: Path) -> None:
+    """Make the sample a repo with one product (App) and PORTAL_PUBLISH_KEY only, as before Story 3.8."""
+    def profile(d):
+        d["products"] = [p for p in d["products"] if p["name"] == "App"]
+        d["tools"]["portal"].pop("products")
+    edit_yaml(root / publish.PROFILE, profile)
+    change_map(root, lambda data: data.update(products=["App"]))
+    (root / ".env").write_text(f"PORTAL_PUBLISH_KEY={KEY}\n", encoding="utf-8")
+
+
 def run(capsys, root: Path, *args: str) -> tuple[int, dict, str]:
     code = publish.main([*args, "--root", str(root)])
     printed = capsys.readouterr().out
-    assert KEY not in printed, "the key must never be printed"
+    assert not any(k in printed for k in KEYS), "a key must never be printed"
     return code, json.loads(printed.strip().splitlines()[-1]), printed
 
 
@@ -104,118 +263,383 @@ def edit_yaml(path: Path, change) -> None:
     path.write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False), encoding="utf-8")
 
 
-def payload_of(root: Path) -> dict:
+def payload_of(root: Path, product: str = "App") -> dict:
     prof = yaml.safe_load((root / publish.PROFILE).read_text(encoding="utf-8"))
-    return publish.build_payload(root, prof)[0]
+    return publish.build_payload(root, prof, product)[0]
 
 
-# ---- Happy path --------------------------------------------------------------------------------------
+def saved(root: Path, product: str = "App", key_name: str = "PORTAL_PUBLISH_KEY_APP", payload=None) -> Path:
+    """A payload file as `dashboard plan` writes it."""
+    body = publish.encode(payload if payload is not None else payload_of(root, product))
+    return publish.save_dashboard(product, f"Sample {product}", URL, key_name, body)
 
-def test_happy_path_plan_then_send(capsys, project, portal, builds):
+
+def by_product(plan: dict) -> dict:
+    return {p["product"]: p for p in plan["products"]}
+
+
+def cleanup(plan: dict) -> None:
+    for p in plan.get("products") or []:
+        Path(p["payload"]).unlink(missing_ok=True)
+
+
+# ---- Happy path: two products, two Portal projects ---------------------------------------------------
+
+def test_plan_shows_each_product_then_sends_each(capsys, project, portal, builds):
     code, plan, _ = run(capsys, project, "dashboard", "plan")
     assert code == 0 and plan["ok"] is True, plan
     assert builds == [False]
-    assert len(portal.requests) == 1
-    dry = portal.requests[0]
-    assert str(dry.url) == f"{URL}/api/v1/publish/dashboard?dry_run=1"
-    assert dry.headers["Authorization"] == f"Bearer {KEY}"
-    assert dry.headers["Content-Type"] == "application/json"
-    payload_file = Path(plan["payload"])
-    assert payload_file.exists() and project not in payload_file.parents
-    assert payload_file.read_bytes() == dry.content
+    got = by_product(plan)
+    assert list(got) == ["App", "Admin"]
+    assert got["App"]["project_name"] == "Sample App" and got["Admin"]["project_name"] == "Sample Admin"
+    status_app, dry_app, status_admin, dry_admin = portal.requests
+    assert status_app.method == "GET" and str(status_app.url) == f"{URL}/api/v1/status"
+    assert status_app.headers["Authorization"] == f"Bearer {KEY_APP}"
+    assert str(dry_app.url) == f"{URL}/api/v1/publish/dashboard?dry_run=1"
+    assert dry_app.headers["Authorization"] == f"Bearer {KEY_APP}"
+    assert status_admin.headers["Authorization"] == dry_admin.headers["Authorization"] == f"Bearer {KEY_ADMIN}"
+    assert json.loads(dry_app.content)["contract"] == "dashboard/2"
+    assert json.loads(dry_app.content) != json.loads(dry_admin.content)
 
-    shown = plan["client_list"]
-    for words in ("Waiting on you (1):", "Next-call agenda (0):", "Sign-up with phone number (Sign-up)",
-                  "Spec & design", "Open question: Which employers first?", "Clarification page: Questions coming",
-                  "Short answer is fine.", "How to send: Reply in Slack.",
+    shown = got["App"]["client_list"]
+    assert shown.startswith('App → Portal project "Sample App"')
+    assert got["Admin"]["client_list"].startswith('Admin → Portal project "Sample Admin"')
+    for words in ("What the Client will read", "Areas (", "Features (", "Topics (", "Board: 6 cards "
+                  "(2 feature / 2 epic / 2 other), 9 tickets", "Waiting on you (", "Next-call agenda (",
                   "Client contacts (3): Maria Lopez, Tom Baker, Priya Shah"):
         assert words in shown, words
+    assert "ABC-6010" not in shown, "ticket lists are not printed"
     assert "<p" not in shown
 
-    code, sent, _ = run(capsys, project, "dashboard", "send", "--payload", str(payload_file))
-    assert code == 0 and sent["ok"] is True, sent
-    assert len(portal.requests) == 2
-    real = portal.requests[1]
-    assert str(real.url) == f"{URL}/api/v1/publish/dashboard"
-    assert real.content == dry.content, "the dry run and the real send carry the same bytes"
-    assert sent["sent"] == "Dashboard"
-    assert sent["counts"] == {"features": 18, "items": 148, "client_contacts": 3}
-    assert sent["publish_id"] == portal.sent["publish_id"]
-    assert sent["received_at"] == portal.sent["received_at"]
-    assert portal.sent["publish_id"] in sent["report"] and "18 Features, 148 Items, 3 Client contacts" in sent["report"]
-    assert not payload_file.exists()
+    for product, key in (("App", KEY_APP), ("Admin", KEY_ADMIN)):
+        payload_file = Path(got[product]["payload"])
+        assert payload_file.exists() and project not in payload_file.parents
+        code, sent, _ = run(capsys, project, "dashboard", "send", "--payload", str(payload_file))
+        assert code == 0 and sent["ok"] is True, sent
+        assert sent["product"] == product and sent["project_name"] == f"Sample {product}"
+        real = portal.requests[-1]
+        assert str(real.url) == f"{URL}/api/v1/publish/dashboard"
+        assert real.headers["Authorization"] == f"Bearer {key}"
+        assert f'Sent the {product} Dashboard to Portal project "Sample {product}"' in sent["report"]
+        assert portal.sent["publish_id"] in sent["report"]
+        assert not payload_file.exists()
+    assert portal.posts()[2].content == dry_app.content, "the dry run and the real send carry the same bytes"
+    assert portal.posts()[3].content == dry_admin.content
 
 
-def test_payload_passes_the_contract_and_holds_only_contract_fields(project):
-    payload = payload_of(project)
-    assert checks.check_publish(payload) is None
-    feature_fields = {"id", "title", "short", "summary", "open", "clar_url", "stage", "map_area", "releases",
-                      "done_date"}
-    item_fields = {"key", "kind", "feature", "who", "since", "title", "text", "how_to_send"}
-    assert set(payload) <= {"contract", "sent_at", "sent_by", "ba_tools_version", "source_commit", "features",
-                            "items", "areas", "release_rows", "client_contacts"}
-    assert all(set(f) <= feature_fields for f in payload["features"])
-    assert all(set(i) <= item_fields for i in payload["items"])
-    assert all(set(c) <= {"name", "email", "slack"} for c in payload["client_contacts"])
+def test_each_payload_passes_the_contract_and_holds_no_product(project):
+    for product in ("App", "Admin"):
+        payload = payload_of(project, product)
+        assert checks.check_publish(payload) is None, product
+        assert set(payload) <= {"contract", "sent_at", "sent_by", "ba_tools_version", "source_commit", "jira_base",
+                                "areas", "features", "topics", "items", "releases", "cards", "client_contacts"}
+        assert '"prod"' not in json.dumps(payload) and "products" not in payload
 
 
-def test_envelope(project):
-    payload = payload_of(project)
-    assert payload["contract"] == "dashboard/1"
-    assert payload["sent_by"] == "Sample BA"
-    assert payload["ba_tools_version"] == "0.8.0"
-    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=project, capture_output=True, text=True).stdout.strip()
-    assert payload["source_commit"] == head
-    assert len(payload["sent_at"]) == 24 and payload["sent_at"].endswith("Z")
+def test_what_each_product_sends(project):
+    app, admin = payload_of(project, "App"), payload_of(project, "Admin")
+    assert [a["id"] for a in app["areas"]] == ["APP:Onboarding", "APP:Quiet area", "noarea", "unlinked"]
+    assert [a["id"] for a in admin["areas"]] == ["ADM:Back office", "ADM:Onboarding", "noarea", "unlinked",
+                                                 "board:Reports"]
+    assert [f["id"] for f in app["features"]] == ["sign-up", "identity-check", "audit-log"]
+    assert [f["id"] for f in admin["features"]] == ["audit-log"]                # back-office is client: false
+    assert [t["id"] for t in app["topics"]] == ["refunds", "chat", "unlinked"]
+    assert [t["id"] for t in admin["topics"]] == ["unlinked"]
+    assert [c["id"] for c in app["cards"]] == ["c-sign-long", "c-sign-15", "c-id", "c-audit", "c-refunds", "c-epic"]
+    assert [c["id"] for c in admin["cards"]] == ["c-audit", "c-other", "c-ghost"]
+    assert sum(len(c["tickets"]) for c in app["cards"]) == 179
+    assert [r["name"] for r in app["releases"]] == ["1.5", LONG_RELEASE]
+    assert admin["releases"][0] == {"name": "2.0", "date": "2026-10-01", "released": False, "overdue": True}
+    assert admin["releases"][1] == {"name": "1.5", "released": True, "overdue": False}       # no date: left out
+    assert app["jira_base"] == admin["jira_base"] == "https://example.atlassian.net"
+    assert app["client_contacts"] == admin["client_contacts"]
 
 
-def test_envelope_without_commit_or_profile_version(tmp_path):
-    project = tmp_path / "no-commit"
-    shutil.copytree(PROJECT, project)
-    git(project, "init", "-q")
-    git(project, "config", "user.name", "Sample BA")
-    edit_yaml(project / publish.PROFILE, lambda d: d.pop("ba_tools_version"))
-    payload = payload_of(project)
-    assert "source_commit" not in payload
-    assert payload["ba_tools_version"]            # from ba-setup's tools_version()
+def test_areas(project):
+    areas = {a["id"]: a for a in payload_of(project, "App")["areas"]}
+    onboarding = areas["APP:Onboarding"]
+    assert onboarding["name"] == "Onboarding" and onboarding["quiet"] is False and "special" not in onboarding
+    jira = onboarding["jira"]
+    assert "search" not in jira
+    assert jira["description"] == "Sign-up & first steps."                         # entity unescaped
+    assert (jira["done"], jira["in_progress"], jira["open"], jira["last_done"]) == (12, 2, 9, "2026-10-12")
+    assert jira["shipped"] == [{"key": "APP-30", "summary": "Phone check & retry", "date": "2026-10-12"}]
+    assert areas["APP:Quiet area"]["quiet"] is True and "jira" not in areas["APP:Quiet area"]
+    assert areas["noarea"]["special"] == "no_area" and areas["unlinked"]["special"] == "not_linked"
+    admin = {a["id"]: a for a in payload_of(project, "Admin")["areas"]}
+    assert "open_tickets" not in admin["ADM:Back office"]["jira"]                 # an older areas.json: no keys
+    assert admin["ADM:Back office"]["jira"]["open"] == 1
+    assert admin["board:Reports"] == {"id": "board:Reports", "name": "Reports", "quiet": False}
 
 
-def test_map_facts_areas_releases_and_dates(project):
-    payload = payload_of(project)
-    assert payload["areas"] == ["Onboarding", "Back office", "Quiet area", "No area"]
-    assert payload["release_rows"] == [{"name": "1.5", "released": False}, {"name": "1.4", "released": True},
-                                       {"name": "2.0", "released": False}]
-    by_id = {f["id"]: f for f in payload["features"]}
-    assert by_id["sign-up"]["releases"] == ["1.5", "1.4"]
-    assert by_id["sign-up"]["map_area"] == "Onboarding" and by_id["sign-up"]["stage"] == "spec"
-    assert by_id["identity-check"]["map_area"] == "No area"
-    assert by_id["identity-check"]["done_date"] == "2026-10-01"
-    assert "releases" not in by_id["identity-check"]
-    key = publish.item_key("agenda", "Decide the limit for identity check")
-    assert key in {i["key"] for i in payload["items"]}
+def test_open_tickets_in_progress_first_then_newest_five(project):
+    jira = payload_of(project, "App")["areas"][0]["jira"]
+    assert [t["key"] for t in jira["open_tickets"]] == ["APP-44", "APP-42", "APP-41", "APP-48", "APP-46"]
+    assert [t["stage"] for t in jira["open_tickets"]] == ["dev", "dev", "ready", "ready", "ready"]
+    assert jira["open_tickets"][0] == {"key": "APP-44", "summary": "Open four", "status": "In Review",
+                                       "stage": "dev"}
 
 
-def test_long_release_names_are_cut_the_same_in_rows_and_features():
-    long = "Release 1.9.0 - " + "Application expiration; Investment Preferences; Auto logout; " * 3
-    data = {"board": {"releases": {"p": [{"name": long, "released": True}, {"name": "2.0"}]},
-                      "cards": [{"kind": "feature", "fid": "f1", "row": long}, {"kind": "feature", "fid": "f1", "row": "2.0"}]}}
-    _, _, rows, releases = publish.map_facts(data)
-    cut = rows[0]["name"]
-    assert len(cut) == publish.RELEASE_NAME_MAX and cut.endswith("…") and long.startswith(cut[:-1])
-    assert rows[1]["name"] == "2.0"
-    assert releases["f1"] == [cut, "2.0"]
-    assert publish.release_name("x" * publish.RELEASE_NAME_MAX) == "x" * publish.RELEASE_NAME_MAX
+def test_features_topics_and_items(project):
+    app = payload_of(project, "App")
+    sign_up = app["features"][0]
+    assert sign_up["area"] == "APP:Onboarding" and sign_up["stage"] == "spec"
+    assert sign_up["answered"] == {"done": 2, "total": 3}
+    assert sign_up["tickets"] == [{"key": "APP-1", "summary": "Phone sign-up & SMS", "status": "In Progress",
+                                   "stage": "dev"}]
+    assert sign_up["summary"] == '<p class="lead">Sign up with your phone number.</p>'   # client_s replaces s
+    identity = app["features"][1]
+    assert identity["area"] == "noarea" and identity["done_date"] == "2026-10-01" and identity["tickets"] == []
+    assert "answered" not in identity and "answered" not in app["features"][2]
+    refunds = app["topics"][0]
+    assert refunds == {"id": "refunds", "area": "APP:Onboarding", "title": "Refunds", "stage": "ready",
+                       "tickets": [{"key": "APP-60", "summary": "Ticket APP-60", "status": "To Do",
+                                    "stage": "ready"}]}
+    parents = {i["title"]: i["parent"] for i in app["items"]}
+    assert parents == {"Confirm the wording for sign-up": "sign-up", "Refund rules": "refunds",
+                       "Which chat tool to keep": "chat", "Loose question": "unlinked",
+                       "How long to keep the log": "audit-log", "Decide the limit for identity check": "identity-check"}
+    first = app["items"][0]
+    assert first["key"] == publish.item_key("waiting", "sign-up", "Confirm the wording for sign-up")
+    assert first["who"] == "Maria Lopez then Dev team" and first["since"] == "2026-10-01"
+    assert first["text"] == "<p>A short answer is fine.</p>" and first["how_to_send"] == "Reply in Slack."
+    assert [i["title"] for i in payload_of(project, "Admin")["items"]] == ["How long to keep the log"]
 
 
-# ---- BA says no --------------------------------------------------------------------------------------
+def test_topic_item_goes_under_its_topic(project):
+    chat = next(i for i in payload_of(project, "App")["items"] if i["title"] == "Which chat tool to keep")
+    assert chat["parent"] == "chat" and chat["kind"] == "waiting"
 
-def test_ba_says_no_discards_the_payload(capsys, project, portal, builds):
+
+def test_cards(project):
+    app = {c["id"]: c for c in payload_of(project, "App")["cards"]}
+    assert app["c-sign-long"]["release"] == LONG_RELEASE and len(LONG_RELEASE) == 130     # sent whole
+    assert app["c-sign-long"]["tickets"][0]["assignee"] == "Sample Developer"           # who → assignee
+    assert app["c-sign-15"]["feature"] == "sign-up" and app["c-sign-15"]["area"] == "APP:Onboarding"
+    assert len(app["c-sign-15"]["tickets"]) == 176 and app["c-sign-15"]["blocked"] is True
+    assert "assignee" not in app["c-sign-15"]["tickets"][0]
+    assert app["c-id"]["release"] is None and app["c-id"]["done_date"] == "2026-10-01"
+    assert app["c-epic"] == {"id": "c-epic", "kind": "epic", "area": "APP:Onboarding", "release": "1.5",
+                             "title": "Payments & refunds", "stage": "qa", "blocked": False, "epic": "APP-9",
+                             "tickets": [{"key": "APP-10", "summary": "Fees & limits", "status": "QA",
+                                          "stage": "qa"}]}
+    # The map gives a topic a feature card; dashboard/2 sends it as an "other" card in the topic's area.
+    assert app["c-refunds"]["kind"] == "other" and "feature" not in app["c-refunds"]
+    assert app["c-refunds"]["title"] == "Refunds" and app["c-refunds"]["area"] == "APP:Onboarding"
+    admin = {c["id"]: c for c in payload_of(project, "Admin")["cards"]}
+    assert admin["c-other"]["area"] == "ADM:Back office" and admin["c-ghost"]["area"] == "board:Reports"
+
+
+def test_both_goes_to_both_products(project):
+    for product in ("App", "Admin"):
+        payload = payload_of(project, product)
+        assert "audit-log" in {f["id"] for f in payload["features"]}
+        assert "c-audit" in {c["id"] for c in payload["cards"]}
+        assert {"noarea", "unlinked"} <= {a["id"] for a in payload["areas"]}
+
+
+def test_entities_in_jira_text_are_unescaped(project):
+    sent = json.dumps(payload_of(project, "App"), ensure_ascii=False)
+    assert "&amp;" not in sent
+    assert "Payments & refunds" in sent and "Fees & limits" in sent and "Phone sign-up & SMS" in sent
+
+
+def test_release_name_over_255_stops_before_anything_is_sent(capsys, project, portal, builds):
+    long = "Release 9 - " + "x" * 300
+
+    def change(data):
+        data["board"]["releases"]["Admin"][0]["name"] = long
+        data["board"]["cards"][7]["row"] = long                 # c-other sits in it
+    change_map(project, change)
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1
+    assert "The Admin Dashboard does not match the contract" in result["error"]
+    assert "(/releases/0/name)" in result["error"] and "Jira → the release" in result["error"]
+    assert portal.requests == [], "the App payload was fine, but nothing goes out until every product passes"
+
+
+def test_card_in_another_products_release_is_left_out_with_a_warning(capsys, project, portal, builds):
+    change_map(project, lambda data: data["board"]["cards"][7].update(row="1.5 (App only)"))
+    code, plan, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 0, plan
+    assert any("Admin: 1 Board card(s) sit in a release of another product" in w for w in plan["warnings"])
+    assert by_product(plan)["Admin"]["left_out"]["cards"] == 2              # that card and the hidden Feature's
+    cleanup(plan)
+
+
+def test_jira_base_falls_back_to_the_profile_then_stops(project):
+    def no_jira(data):
+        for e in data["epics"]:
+            e["jira"] = None
+    change_map(project, no_jira)
+    assert payload_of(project)["jira_base"] == "https://example.atlassian.net"
+    edit_yaml(project / publish.PROFILE, lambda d: d.pop("jira"))
+    with pytest.raises(publish.Stop, match="no jira.site"):
+        payload_of(project)
+
+
+def test_build_payload_needs_a_product_when_there_are_two(project):
+    with pytest.raises(publish.Stop, match="name one"):
+        publish.build_payload(project, yaml.safe_load((project / publish.PROFILE).read_text(encoding="utf-8")))
+
+
+# ---- One product, mapping, keys ----------------------------------------------------------------------
+
+def test_one_product_works_as_before(capsys, project, portal, builds):
+    one_product(project)
+    code, plan, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 0, plan
+    assert [p["product"] for p in plan["products"]] == ["App"]
+    assert all(r.headers["Authorization"] == f"Bearer {KEY}" for r in portal.requests)
+    payload = json.loads(portal.posts()[0].content)
+    assert "audit-log" in {f["id"] for f in payload["features"]}
+    code, sent, _ = run(capsys, project, "dashboard", "send", "--payload", plan["products"][0]["payload"])
+    assert code == 0 and portal.posts()[-1].headers["Authorization"] == f"Bearer {KEY}"
+
+
+def test_missing_mapping_names_both_products_and_the_setting(capsys, project, portal, builds):
+    edit_yaml(project / publish.PROFILE, lambda d: d["tools"]["portal"].pop("products"))
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1
+    assert "App, Admin" in result["error"] and "tools.portal.products" in result["error"]
+    assert "Run `ba-setup project`" in result["error"]
+    assert portal.requests == [] and builds == []
+
+
+def test_missing_mapping_for_one_product(capsys, project, portal, builds):
+    edit_yaml(project / publish.PROFILE, lambda d: d["tools"]["portal"]["products"].pop("Admin"))
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1 and "names no key for: Admin" in result["error"]
+    assert portal.requests == [] and builds == []
+
+
+def test_product_option_never_falls_back_to_the_one_product_key(capsys, project, portal, builds):
+    """--product picks one product of two: it still needs that product's own entry, never PORTAL_PUBLISH_KEY."""
+    edit_yaml(project / publish.PROFILE, lambda d: d["tools"]["portal"]["products"].pop("Admin"))
+    (project / ".env").write_text(f"PORTAL_PUBLISH_KEY={KEY}\nPORTAL_PUBLISH_KEY_APP={KEY_APP}\n", encoding="utf-8")
+    code, result, _ = run(capsys, project, "dashboard", "plan", "--product", "Admin")
+    assert code == 1 and "names no key for: Admin" in result["error"]
+    assert portal.requests == [] and builds == []
+
+
+def test_missing_key_names_the_variable(capsys, project, portal, builds):
+    (project / ".env").write_text(f"PORTAL_PUBLISH_KEY_APP={KEY_APP}\n", encoding="utf-8")
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1
+    assert ".env has no PORTAL_PUBLISH_KEY_ADMIN (the Publish key for Admin)" in result["error"]
+    assert portal.requests == [] and builds == []
+
+
+def test_mapping_must_name_env_variables(capsys, project, portal, builds):
+    edit_yaml(project / publish.PROFILE, lambda d: d["tools"]["portal"].update(products=["App", "Admin"]))
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1 and "tools.portal.products" in result["error"] and "must name" in result["error"]
+    assert portal.requests == []
+
+
+def test_a_product_in_the_map_without_a_key_stops_after_the_build(capsys, project, portal, builds):
+    change_map(project, lambda data: data.update(products=["App", "Admin", "Extra"]))
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1 and "names no key for: Extra" in result["error"]
+    assert portal.requests == []
+
+
+def test_product_option_plans_one_product(capsys, project, portal, builds):
+    code, plan, _ = run(capsys, project, "dashboard", "plan", "--product", "Admin")
+    assert code == 0, plan
+    assert [p["product"] for p in plan["products"]] == ["Admin"]
+    assert all(r.headers["Authorization"] == f"Bearer {KEY_ADMIN}" for r in portal.requests)
+    cleanup(plan)
+
+
+def test_product_option_needs_only_that_products_key(capsys, project, portal, builds):
+    (project / ".env").write_text(f"PORTAL_PUBLISH_KEY_ADMIN={KEY_ADMIN}\n", encoding="utf-8")
+    code, plan, _ = run(capsys, project, "dashboard", "plan", "--product", "Admin")
+    assert code == 0, plan
+    cleanup(plan)
+
+
+@pytest.mark.parametrize("value", ["Nope", ""])
+def test_product_option_unknown_or_empty(capsys, project, portal, builds, value):
+    code, result, _ = run(capsys, project, "dashboard", "plan", "--product", value)
+    assert code == 1
+    if value:
+        assert "no product called 'Nope'" in result["error"] and "App, Admin" in result["error"]
+    else:
+        assert "--product needs a product name" in result["error"]
+    assert portal.requests == [] and builds == []
+
+
+def test_ba_says_yes_to_one_and_no_to_the_other(capsys, project, portal, builds):
     _, plan, _ = run(capsys, project, "dashboard", "plan")
-    payload_file = Path(plan["payload"])
-    code, result, _ = run(capsys, project, "dashboard", "discard", "--payload", str(payload_file))
-    assert code == 0 and result["sent"] is None
-    assert not payload_file.exists()
-    assert len(portal.requests) == 1            # only the dry run
+    got = by_product(plan)
+    code, sent, _ = run(capsys, project, "dashboard", "send", "--payload", got["App"]["payload"])
+    assert code == 0 and sent["product"] == "App"
+    code, result, _ = run(capsys, project, "dashboard", "discard", "--payload", got["Admin"]["payload"])
+    assert code == 0 and result["sent"] is None and "for Admin" in result["report"]
+    real = [r for r in portal.posts() if r.url.params.get("dry_run") != "1"]
+    assert len(real) == 1 and real[0].headers["Authorization"] == f"Bearer {KEY_APP}"
+    assert not Path(got["Admin"]["payload"]).exists()
+
+
+def test_status_refuses_the_key(capsys, project, portal, builds):
+    portal.projects.pop(KEY_ADMIN)
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1
+    assert "The Portal refused the key in PORTAL_PUBLISH_KEY_ADMIN (invalid_key)" in result["error"]
+    assert publish.invalid_key_step("PORTAL_PUBLISH_KEY_ADMIN") in result["error"]
+    assert "products" not in result
+    assert len(portal.posts()) == 1, "App's dry run went out (dry runs store nothing); Admin's did not"
+
+
+def test_status_says_the_portal_does_not_take_dashboard_2(capsys, project, portal, builds):
+    portal.accepted = ["dashboard/1", "clarification/1"]
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1 and "does not accept dashboard/2 yet" in result["error"]
+    assert portal.posts() == []
+
+
+def test_status_reply_not_understood(capsys, project, portal, builds):
+    portal.status_error = (200, {"contract": "status/1"})
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1 and "The Portal's reply was not understood (HTTP 200)" in result["error"]
+
+
+# ---- Two products never share a Portal project -------------------------------------------------------
+
+def test_two_products_naming_the_same_key_variable_stop(capsys, project, portal, builds):
+    edit_yaml(project / publish.PROFILE, lambda d: d["tools"]["portal"].update(
+        products={"App": "PORTAL_PUBLISH_KEY_APP", "Admin": "PORTAL_PUBLISH_KEY_APP"}))
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1
+    assert ("gives App and Admin the same .env variable (PORTAL_PUBLISH_KEY_APP), so both would go to the same "
+            "Portal project") in result["error"]
+    assert "Nothing was sent" in result["error"]
+    assert portal.requests == [] and builds == []
+
+
+def test_two_keys_opening_the_same_portal_project_stop(capsys, project, portal, builds):
+    portal.projects[KEY_ADMIN] = "Sample App"
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1
+    assert ('The keys for App (PORTAL_PUBLISH_KEY_APP) and Admin (PORTAL_PUBLISH_KEY_ADMIN) both open the same '
+            'Portal project, "Sample App"') in result["error"]
+    assert "Nothing was sent" in result["error"] and "products" not in result
+    assert not [r for r in portal.posts() if r.url.params.get("dry_run") != "1"], "no real send"
+
+
+def test_send_stops_when_the_key_now_opens_another_project(capsys, project, portal):
+    path = saved(project)                          # planned for "Sample App"
+    portal.projects[KEY_APP] = "Someone Else"
+    try:
+        code, result, _ = run(capsys, project, "dashboard", "send", "--payload", str(path))
+        assert code == 1
+        assert ('The key in PORTAL_PUBLISH_KEY_APP now opens Portal project "Someone Else", but `dashboard plan` '
+                'showed the App Dashboard going to "Sample App"') in result["error"]
+        assert "run `dashboard plan` again" in result["error"] and "Nothing was sent" in result["error"]
+        assert portal.posts() == [] and path.exists(), "nothing sent; the payload file is kept"
+    finally:
+        path.unlink(missing_ok=True)
 
 
 # ---- No settings -------------------------------------------------------------------------------------
@@ -251,8 +675,8 @@ def test_env_not_ignored_stops(capsys, project, portal, builds, case):
     assert portal.requests == [] and builds == []
 
 
-def test_env_not_ignored_stops_send_too(capsys, project, portal, tmp_path):
-    payload_file = publish.write_payload(publish.encode(payload_of(project)))
+def test_env_not_ignored_stops_send_too(capsys, project, portal):
+    payload_file = saved(project)
     (project / ".gitignore").write_text("", encoding="utf-8")
     code, result, _ = run(capsys, project, "dashboard", "send", "--payload", str(payload_file))
     assert code == 1 and ".env is not ignored" in result["error"]
@@ -264,29 +688,29 @@ def test_env_not_ignored_stops_send_too(capsys, project, portal, tmp_path):
 
 def test_filter(project):
     payload = payload_of(project)
-    ids = [f["id"] for f in payload["features"]]
-    assert ids == ["sign-up", "identity-check"]                        # client: false Feature absent
     titles = [i["title"] for i in payload["items"]]
-    assert "Back office question" not in titles                        # Item of a hidden Feature
     assert "BA to-do never sent" not in titles                         # to-do
     assert "Already answered" not in titles                            # done Item
     assert "Internal only item" not in titles                          # client: false Item
-    assert "Refund rules" in titles                                    # under a topic: sent as written
+    assert "Back office question" not in titles                        # Item of a hidden Feature (and Admin's)
+    admin = payload_of(project, "Admin")
+    assert "back-office" not in {f["id"] for f in admin["features"]}
+    assert "c-back" not in {c["id"] for c in admin["cards"]}           # the hidden Feature's card stays out
     sign_up = payload["features"][0]
-    assert sign_up["summary"] == '<p class="lead">Sign up with your phone number.</p>'   # client_s replaces s
     assert sign_up["open"] == ["Which employers get it first?"]       # empty string left out
     assert sign_up["clar_url"] == "https://pages.example.com/clarifications/sign-up/"
     assert "short" not in payload["features"][1]                       # empty string left out
-    first = payload["items"][0]
-    assert first["text"] == "<p>A short answer is fine.</p>" and first["kind"] == "waiting"
-    assert first["since"] == "2026-10-01" and first["how_to_send"] == "Reply in Slack."
     agenda = [i for i in payload["items"] if i["kind"] == "agenda"]
     assert len(agenda) == 1 and "text" not in agenda[0]
+    assert "Sample BA Dashboard" not in json.dumps(payload)            # the page title is not sent
 
 
 def test_left_out_counts_in_plan(capsys, project, portal, builds):
     _, plan, _ = run(capsys, project, "dashboard", "plan")
-    assert plan["left_out"] == {"features": 1, "items": 4}             # 3 Items + 1 to-do
+    got = by_product(plan)
+    assert got["App"]["left_out"] == {"features": 0, "items": 3, "cards": 0}     # 2 Items + 1 to-do
+    assert got["Admin"]["left_out"] == {"features": 1, "items": 1, "cards": 1}
+    cleanup(plan)
 
 
 # ---- Contacts ----------------------------------------------------------------------------------------
@@ -303,13 +727,38 @@ def test_contacts_fall_back_to_client_owners(project):
     assert payload_of(project)["client_contacts"] == [{"name": "Maria Lopez"}, {"name": "Tom Baker"}]
 
 
-def test_no_contacts_warns(capsys, project, portal, builds):
+def test_no_contacts_warns_once(capsys, project, portal, builds):
     edit_yaml(project / publish.PROFILE, lambda d: d["tools"].pop("client_contacts"))
     (project / publish.SLACK).unlink()
     code, plan, _ = run(capsys, project, "dashboard", "plan")
     assert code == 0
-    assert any("Nothing will show under \"Waiting on you\"" in w for w in plan["warnings"])
-    assert json.loads(portal.requests[0].content)["client_contacts"] == []
+    assert sum("Nothing will show under \"Waiting on you\"" in w for w in plan["warnings"]) == 1
+    assert json.loads(portal.posts()[0].content)["client_contacts"] == []
+    cleanup(plan)
+
+
+# ---- Envelope ----------------------------------------------------------------------------------------
+
+def test_envelope(project):
+    payload = payload_of(project)
+    assert payload["contract"] == "dashboard/2"
+    assert payload["sent_by"] == "Sample BA"
+    assert payload["ba_tools_version"] == "0.8.0"
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=project, capture_output=True, text=True).stdout.strip()
+    assert payload["source_commit"] == head
+    assert len(payload["sent_at"]) == 24 and payload["sent_at"].endswith("Z")
+
+
+def test_envelope_without_commit_or_profile_version(tmp_path):
+    project = tmp_path / "no-commit"
+    shutil.copytree(PROJECT, project)
+    write_map(project, sample_data())
+    git(project, "init", "-q")
+    git(project, "config", "user.name", "Sample BA")
+    edit_yaml(project / publish.PROFILE, lambda d: d.pop("ba_tools_version"))
+    payload = payload_of(project)
+    assert "source_commit" not in payload
+    assert payload["ba_tools_version"]            # from ba-setup's tools_version()
 
 
 # ---- Local check fails -------------------------------------------------------------------------------
@@ -319,24 +768,6 @@ def test_entity_in_a_title_stops(capsys, project, portal, builds):
     code, result, _ = run(capsys, project, "dashboard", "plan")
     assert code == 1
     assert "docs/BA/dashboard.yaml → features 'Sign-up &mdash; phone' → area: holds an HTML entity" in result["error"]
-    assert portal.requests == []
-
-
-def test_too_many_features_stops(capsys, project, portal, builds):
-    def many(d):
-        base = d["features"][1]
-        d["features"] = [dict(base, area=f"Feature {n}", id="identity-check" if n == 0 else f"f-{n}")
-                         for n in range(301)]
-    edit_yaml(project / publish.DASHBOARD, many)
-    data_path = project / publish.MAP_PAGE
-    page = data_path.read_text(encoding="utf-8")
-    at = page.index("const DATA = ") + len("const DATA = ")
-    data, end = json.JSONDecoder().raw_decode(page, at)
-    data["epics"][0]["features"] += [{"id": f"f-{n}", "feature": {}, "stageKey": "concept"} for n in range(1, 301)]
-    data_path.write_text(page[:at] + json.dumps(data) + page[end:], encoding="utf-8")
-    code, result, _ = run(capsys, project, "dashboard", "plan")
-    assert code == 1
-    assert "docs/BA/dashboard.yaml → features" in result["error"] and "(/features)" in result["error"]
     assert portal.requests == []
 
 
@@ -355,6 +786,13 @@ def test_missing_summary_names_s(capsys, project, portal, builds):
     assert "features 'Identity check' → s: required field is missing" in result["error"]
 
 
+def test_feature_without_a_bubble_stops(capsys, project, portal, builds):
+    change_map(project, lambda data: data["epics"][4]["features"].pop(0))         # identity-check
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1 and "has no bubble for the feature 'Identity check'" in result["error"]
+    assert portal.requests == []
+
+
 # ---- Portal error ------------------------------------------------------------------------------------
 
 @pytest.mark.parametrize("code", ["invalid_key", "project_archived", "contract_invalid",
@@ -367,20 +805,21 @@ def test_portal_error(capsys, project, portal, builds, code):
     rc, result, _ = run(capsys, project, "dashboard", "plan")
     assert rc == 1
     assert ERRORS[code]["message"] in result["error"] and code in result["error"]
-    assert publish.NEXT_STEP[code] in result["error"]
+    step = publish.invalid_key_step("PORTAL_PUBLISH_KEY_APP") if code == "invalid_key" else publish.NEXT_STEP[code]
+    assert step in result["error"]
     if details:
         assert "docs/BA/dashboard.yaml → features 'Sign-up with phone number' → area: too long" in result["error"]
-    assert len(portal.requests) == 1
-    assert "payload" not in result               # no payload file is kept after a refused dry run
+    assert len(portal.posts()) == 1
+    assert "products" not in result               # no payload file is kept after a refused dry run
 
 
-def test_portal_error_on_send(capsys, project, portal, tmp_path):
-    payload_file = publish.write_payload(publish.encode(payload_of(project)))
+def test_portal_error_on_send(capsys, project, portal):
+    payload_file = saved(project)
     portal.error = (409, {"error": {"code": "project_archived", "message": ERRORS["project_archived"]["message"],
                                     "details": []}})
     rc, result, _ = run(capsys, project, "dashboard", "send", "--payload", str(payload_file))
     assert rc == 1 and "project_archived" in result["error"]
-    assert len(portal.requests) == 1 and not payload_file.exists()
+    assert len(portal.requests) == 2 and not payload_file.exists()     # the status re-check, then the send
 
 
 # ---- Not reachable -----------------------------------------------------------------------------------
@@ -391,7 +830,7 @@ def test_not_reachable(capsys, project, portal, builds, exc):
     rc, result, _ = run(capsys, project, "dashboard", "plan")
     assert rc == 1
     assert f"The Portal is not reachable at {URL}" in result["error"]
-    assert "payload" not in result
+    assert "products" not in result
 
 
 # ---- Odd reply ---------------------------------------------------------------------------------------
@@ -408,6 +847,12 @@ def test_odd_reply_dry_run_flag_wrong(capsys, project, portal, builds):
     portal.dry = portal.sent                    # a real-send reply to a dry run
     rc, result, _ = run(capsys, project, "dashboard", "plan")
     assert rc == 1 and "not understood (HTTP 200)" in result["error"]
+
+
+def test_odd_reply_with_a_dashboard_1_view(capsys, project, portal, builds):
+    portal.dry = read(VALID / "publish-reply-1-dry-run.json")
+    rc, result, _ = run(capsys, project, "dashboard", "plan")
+    assert rc == 1 and "not a dashboard/2 view" in result["error"]
 
 
 def test_odd_reply_not_json(capsys, project, portal, builds):
@@ -427,9 +872,11 @@ def test_stale_jira_warns_and_offers_refresh(capsys, project, portal, builds):
         os.utime(f, (old, old))
     _, plan, _ = run(capsys, project, "dashboard", "plan")
     assert any("3 days old" in w and "--refresh" in w for w in plan["warnings"])
+    cleanup(plan)
     _, plan, _ = run(capsys, project, "dashboard", "plan", "--refresh")
     assert builds == [False, True]
     assert not any("--refresh" in w for w in plan["warnings"])
+    cleanup(plan)
 
 
 def test_fresh_jira_no_warning(project):
@@ -449,7 +896,7 @@ def test_build_failure_stops(capsys, project, portal, monkeypatch):
     assert portal.requests == []
 
 
-# ---- Review fixes ------------------------------------------------------------------------------------
+# ---- Review fixes (Story 3.4) ------------------------------------------------------------------------
 
 def test_quoted_false_hides_features_and_items(project):
     def change(d):
@@ -457,10 +904,11 @@ def test_quoted_false_hides_features_and_items(project):
         d["awaiting"][0]["client"] = "false"
     edit_yaml(project / publish.DASHBOARD, change)
     payload = payload_of(project)
-    assert [f["id"] for f in payload["features"]] == ["sign-up"]
+    assert [f["id"] for f in payload["features"]] == ["sign-up", "audit-log"]
     titles = [i["title"] for i in payload["items"]]
     assert "Confirm the wording for sign-up" not in titles
     assert "Decide the limit for identity check" not in titles     # Item of the now-hidden Feature
+    assert "c-id" not in {c["id"] for c in payload["cards"]}
 
 
 @pytest.mark.parametrize("url,ok", [("http://portal.example.com", False), ("http://10.0.0.5:3000", False),
@@ -472,18 +920,19 @@ def test_plain_http_only_to_local_hosts(capsys, project, portal, builds, url, ok
     code, result, _ = run(capsys, project, "dashboard", "plan")
     if ok:
         assert code == 0, result
-        Path(result["payload"]).unlink()
+        cleanup(result)
     else:
         assert code == 1 and "must start with https://" in result["error"]
         assert portal.requests == [] and builds == []
 
 
 def test_env_with_byte_order_mark(capsys, project, portal, builds):
-    (project / ".env").write_text(f"PORTAL_PUBLISH_KEY={KEY}\n", encoding="utf-8-sig")
+    (project / ".env").write_text(f"PORTAL_PUBLISH_KEY_APP={KEY_APP}\nPORTAL_PUBLISH_KEY_ADMIN={KEY_ADMIN}\n",
+                                  encoding="utf-8-sig")
     code, result, _ = run(capsys, project, "dashboard", "plan")
     assert code == 0, result
-    assert portal.requests[0].headers["Authorization"] == f"Bearer {KEY}"
-    Path(result["payload"]).unlink()
+    assert portal.requests[0].headers["Authorization"] == f"Bearer {KEY_APP}"
+    cleanup(result)
 
 
 def test_not_a_git_repository(capsys, tmp_path, portal, builds):
@@ -540,6 +989,7 @@ def test_open_as_text_and_clar_as_text(project):
     edit_yaml(project / publish.DASHBOARD, change)
     sign_up = payload_of(project)["features"][0]
     assert sign_up["open"] == ["One question only?"]
+    assert sign_up["answered"] == {"done": 2, "total": 3}
     assert sign_up["clar_url"] == "https://pages.example.com/clarifications/sign-up/"
 
 
@@ -570,8 +1020,9 @@ def test_send_missing_payload_file(capsys, project, portal):
     assert portal.requests == [] and not path.exists()
 
 
-def test_send_non_json_payload(capsys, project, portal):
-    path = publish.write_payload(b"this is not json")
+@pytest.mark.parametrize("body", [b"this is not json", b'{"contract": "dashboard/1"}'])
+def test_send_a_file_plan_did_not_write(capsys, project, portal, body):
+    path = publish.write_payload(body)
     code, result, _ = run(capsys, project, "dashboard", "send", "--payload", str(path))
     assert code == 1 and "is not a payload" in result["error"]
     assert portal.requests == [] and not path.exists()
@@ -580,16 +1031,32 @@ def test_send_non_json_payload(capsys, project, portal):
 def test_send_payload_edited_to_break_the_contract(capsys, project, portal):
     payload = payload_of(project)
     payload["features"][0]["owner"] = "Maria Lopez"
-    path = publish.write_payload(publish.encode(payload))
+    path = saved(project, payload=payload)
     code, result, _ = run(capsys, project, "dashboard", "send", "--payload", str(path))
-    assert code == 1 and "does not match the contract" in result["error"]
+    assert code == 1 and "The App Dashboard does not match the contract" in result["error"]
     assert portal.requests == [] and not path.exists()
+
+
+def test_send_after_the_portal_address_changed(capsys, project, portal):
+    path = saved(project)
+    edit_yaml(project / publish.PROFILE, lambda d: d["tools"]["portal"].update(url="https://portal.example.com"))
+    code, result, _ = run(capsys, project, "dashboard", "send", "--payload", str(path))
+    assert code == 1 and "Run `dashboard plan` again" in result["error"]
+    assert portal.requests == [] and not path.exists()
+
+
+def test_send_without_that_products_key(capsys, project, portal):
+    path = saved(project, "Admin", "PORTAL_PUBLISH_KEY_ADMIN")
+    (project / ".env").write_text(f"PORTAL_PUBLISH_KEY_APP={KEY_APP}\n", encoding="utf-8")
+    code, result, _ = run(capsys, project, "dashboard", "send", "--payload", str(path))
+    assert code == 1 and ".env has no PORTAL_PUBLISH_KEY_ADMIN" in result["error"]
+    assert portal.requests == []
 
 
 @pytest.mark.parametrize("exc", [httpx.ReadTimeout("slow"), httpx.RemoteProtocolError("dropped")])
 def test_real_send_without_a_reply_may_have_arrived(capsys, project, portal, exc):
-    path = publish.write_payload(publish.encode(payload_of(project)))
-    portal.raise_exc = exc
+    path = saved(project)
+    portal.post_exc = exc
     try:
         code, result, _ = run(capsys, project, "dashboard", "send", "--payload", str(path))
         assert code == 1
@@ -612,12 +1079,13 @@ def test_plan_deletes_old_payload_files(capsys, project, portal, builds):
         assert code == 0
         assert not old.exists() and new.exists()
     finally:
-        for f in (old, new, Path(plan.get("payload", old))):
+        for f in (old, new):
             f.unlink(missing_ok=True)
+        cleanup(plan)
 
 
 def test_max_bytes_matches_the_portal():
-    assert publish.MAX_BYTES == 2 * 1024 * 1024
+    assert publish.MAX_BYTES == 5 * 1024 * 1024
 
 
 # run_build with subprocess.run faked
@@ -671,10 +1139,40 @@ def test_run_build_map_failure_and_timeout(monkeypatch, tmp_path):
 
 
 def test_real_build_then_payload(project):
-    """The real dashboard.py build and map/build.py, then build_payload on the page they wrote."""
+    """The real dashboard.py build and map/build.py, then one payload per product from the page they wrote."""
     (project / publish.MAP_PAGE).unlink()
     publish.run_build(project, False)
-    by_id = {f["id"]: f for f in payload_of(project)["features"]}
-    assert set(by_id) == {"sign-up", "identity-check"}
-    assert by_id["sign-up"]["stage"] == "spec" and by_id["sign-up"]["map_area"] == "No area"
-    assert by_id["identity-check"]["stage"] == "dev" and by_id["identity-check"]["map_area"] == "No area"
+    prof = yaml.safe_load((project / publish.PROFILE).read_text(encoding="utf-8"))
+    data = publish.read_map(project)
+    assert publish.map_products(data) == ["App", "Admin"]
+    for product in ("App", "Admin"):
+        payload = publish.build_payload(project, prof, product, data)[0]
+        assert checks.check_publish(payload) is None, product
+        assert payload["jira_base"] == "https://example.atlassian.net"           # no Jira files: the profile's site
+    app = publish.build_payload(project, prof, "App", data)[0]
+    by_id = {f["id"]: f for f in app["features"]}
+    assert set(by_id) == {"sign-up", "identity-check", "audit-log"}
+    assert by_id["sign-up"]["stage"] == "spec" and by_id["sign-up"]["area"] == "noarea"
+    assert by_id["identity-check"]["stage"] == "dev"
+    assert {t["id"] for t in app["topics"]} == {"refunds", "chat", "unlinked"}
+
+
+# ---- The real project (read only; skipped where the folder is not on this computer) ------------------
+
+@pytest.mark.skipif(not (EASY_PAYDAY / publish.MAP_PAGE).exists(), reason="the Acme Lending folder is not here")
+def test_real_project_each_product_passes_the_contract():
+    """A dry build_payload per product on the real Acme Lending folder: reads files, writes nothing, sends nothing."""
+    prof = yaml.safe_load((EASY_PAYDAY / publish.PROFILE).read_text(encoding="utf-8"))
+    data = publish.read_map(EASY_PAYDAY)
+    products = publish.map_products(data)
+    assert len(products) == 2
+    tickets = 0
+    for product in products:
+        payload, _, left_out, _ = publish.build_payload(EASY_PAYDAY, prof, product, data, "2026-10-28T00:00:00.000Z")
+        assert checks.check_publish(payload) is None, product
+        assert len(publish.encode(payload)) < publish.MAX_BYTES
+        mine = [c for c in data["board"]["cards"] if c["prod"] in (product, "Both")]
+        assert len(payload["cards"]) == len(mine) - left_out["cards"]
+        tickets += sum(len(c["tickets"]) for c in payload["cards"])
+    all_tickets = sum(len(c["tickets"]) for c in data["board"]["cards"])
+    assert all_tickets - 5 <= tickets <= all_tickets

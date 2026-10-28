@@ -722,3 +722,34 @@ def test_leftover_ack_invalid_key_keeps_the_tmp(capsys, project, portal):
     assert code == 1 and res["error"].startswith("This key is not valid for this Project")
     assert tmp.exists() and (project / fetch.INTAKE / f"portal-{OTHER_BATCH}.complete").exists()
     assert fetch.RESERVE not in portal.paths()
+
+
+# ---- A key per product (portal-publish Story 3.8) --------------------------------------------------------
+
+def per_product_keys(root: Path, env: str) -> None:
+    prof = root / fetch.PROFILE
+    doc = yaml.safe_load(prof.read_text(encoding="utf-8"))
+    doc["tools"]["portal"]["products"] = {"App": "PORTAL_PUBLISH_KEY_APP", "Admin": "PORTAL_PUBLISH_KEY_ADMIN"}
+    prof.write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    (root / ".env").write_text(env, encoding="utf-8")
+
+
+def test_uses_the_first_products_key(capsys, project, portal):
+    per_product_keys(project, f"PORTAL_PUBLISH_KEY_APP={KEY}\nPORTAL_PUBLISH_KEY_ADMIN=pk_test_other_0000\n")
+    code, res = run(capsys, project)
+    assert code == 0, res
+    assert portal.requests and all(r.headers["Authorization"] == f"Bearer {KEY}" for r in portal.requests)
+
+
+def test_first_products_key_missing_names_it(capsys, project, portal):
+    per_product_keys(project, f"PORTAL_PUBLISH_KEY={KEY}\n")
+    code, res = run(capsys, project)
+    assert code == 1 and ".env has no PORTAL_PUBLISH_KEY_APP" in res["error"]
+    assert portal.requests == []
+
+
+def test_wrong_key_names_the_products_variable(capsys, project, portal):
+    per_product_keys(project, f"PORTAL_PUBLISH_KEY_APP={KEY}\n")
+    portal.reserve_error = error("invalid_key")
+    code, res = run(capsys, project)
+    assert code == 1 and "The key in .env (PORTAL_PUBLISH_KEY_APP)" in res["error"]

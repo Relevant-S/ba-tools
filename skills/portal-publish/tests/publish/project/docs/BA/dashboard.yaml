@@ -33,14 +33,25 @@ features:
     since: 2026-09-01
     s: Internal only.
     client: false
+  - area: Audit log
+    id: audit-log
+    prod: Both
+    stage: spec
+    who: Dev team
+    since: 2026-09-15
+    s: One log of every change, in both products.
 topics:
   - {id: refunds, title: Refunds, prod: App}
+  - {id: chat, title: Chat assistant, prod: App}
 awaiting:
   - {n: 1, prod: App, who: Maria Lopez then Dev team, since: 2026-10-01, t: Confirm the wording for sign-up, s: candid note, client_s: <p>A short answer is fine.</p>, l: Reply in Slack., feature: sign-up}
   - {n: 2, prod: App, who: Tom Baker, since: 2026-10-02, t: Already answered, s: done already, done: true, feature: sign-up}
   - {n: 3, prod: App, who: Tom Baker, since: 2026-10-03, t: Internal only item, s: not for the client, client: false}
   - {n: 4, prod: Admin, who: Priya Shah, since: 2026-10-04, t: Back office question, s: under a hidden feature, feature: back-office}
   - {n: 5, prod: App, who: Priya Shah, since: 2026-10-05, t: Refund rules, s: under a topic, feature: refunds}
+  - {n: 6, prod: App, who: Dev team, since: 2026-10-07, t: Which chat tool to keep, s: under a topic, feature: chat}
+  - {n: 7, prod: App, who: Tom Baker, since: 2026-10-08, t: Loose question, s: on no feature or topic}
+  - {n: 8, prod: Both, who: Maria Lopez, since: 2026-10-09, t: How long to keep the log, s: in both products, feature: audit-log}
 todos:
   - {prod: App, who: BA, since: 2026-10-05, t: BA to-do never sent, s: on the BA}
 agenda:
