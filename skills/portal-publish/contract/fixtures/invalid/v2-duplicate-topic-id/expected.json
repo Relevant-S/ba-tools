@@ -1,0 +1,9 @@
+{
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "unique_topic_id",
+      "path": "/topics/1/id"
+    }
+  ]
+}

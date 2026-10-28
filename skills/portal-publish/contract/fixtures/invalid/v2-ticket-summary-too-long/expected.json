@@ -1,0 +1,9 @@
+{
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "schema",
+      "path": "/cards/0/tickets/0/summary"
+    }
+  ]
+}

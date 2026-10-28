@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/publish-reply-1.schema.json",
   "title": "publish-reply/1",
-  "description": "The 200 reply to a Publish. kind says which form: dashboard (POST /api/v1/publish/dashboard) or page (POST /api/v1/publish/page). On a dry run (?dry_run=1) it also carries client_view (and, for a Dashboard, client_contact_names), and nothing is stored or logged. The top level only picks the form by kind; each form in $defs is a closed object.",
+  "description": "The 200 reply to a Publish. kind says which form: dashboard (POST /api/v1/publish/dashboard) or page (POST /api/v1/publish/page). On a dry run (?dry_run=1) it also carries client_view (for a Dashboard, the view of its dashboard/1 or dashboard/2 send, and client_contact_names), and nothing is stored or logged. The top level only picks the form by kind; each form in $defs is a closed object.",
   "type": "object",
   "if": { "properties": { "kind": { "const": "page" } }, "required": ["kind"] },
   "then": { "$ref": "#/$defs/page" },
@@ -29,104 +29,24 @@
         },
         "kind": { "type": "string", "const": "dashboard" },
         "counts": {
+          "description": "What was sent. areas, topics, cards and tickets come only with a dashboard/2 send (features up to 1,000 and items up to 5,000 there).",
           "type": "object",
           "additionalProperties": false,
           "required": ["features", "items", "client_contacts"],
           "properties": {
-            "features": { "type": "integer", "minimum": 0, "maximum": 300 },
-            "items": { "type": "integer", "minimum": 0, "maximum": 1000 },
-            "client_contacts": { "type": "integer", "minimum": 0, "maximum": 200 }
+            "features": { "type": "integer", "minimum": 0, "maximum": 1000 },
+            "items": { "type": "integer", "minimum": 0, "maximum": 5000 },
+            "client_contacts": { "type": "integer", "minimum": 0, "maximum": 200 },
+            "areas": { "type": "integer", "minimum": 0, "maximum": 1000 },
+            "topics": { "type": "integer", "minimum": 0, "maximum": 1000 },
+            "cards": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "tickets": { "description": "The tickets on the Board cards, all cards together.", "type": "integer", "minimum": 0 }
           }
         },
         "dry_run": { "type": "boolean" },
         "client_view": {
-          "description": "ClientDashboard (AD-4): only client and id fields, plus the derived waitingOnYou, onAgenda, hiddenByDoneFilter and page. Items with no Feature, an unsent Feature, or awaiting with no matching contact are left out.",
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["areas", "release_rows", "features", "items"],
-          "properties": {
-            "areas": {
-              "type": "array",
-              "items": { "type": "string", "minLength": 1, "maxLength": 100 }
-            },
-            "release_rows": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["name", "released"],
-                "properties": {
-                  "name": { "type": "string", "minLength": 1, "maxLength": 100 },
-                  "released": { "type": "boolean" }
-                }
-              }
-            },
-            "features": {
-              "type": "array",
-              "maxItems": 300,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["id", "title", "summary", "stage", "map_area", "hiddenByDoneFilter", "page"],
-                "properties": {
-                  "id": { "type": "string", "minLength": 1, "maxLength": 40 },
-                  "title": { "type": "string", "minLength": 1, "maxLength": 200 },
-                  "short": { "type": "string", "minLength": 1, "maxLength": 40 },
-                  "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
-                  "open": {
-                    "type": "array",
-                    "items": { "type": "string", "minLength": 1, "maxLength": 500 }
-                  },
-                  "stage": { "type": "string", "enum": ["concept", "spec", "ready", "dev", "qa", "done"] },
-                  "map_area": { "type": "string", "minLength": 1, "maxLength": 100 },
-                  "releases": {
-                    "type": "array",
-                    "items": { "type": "string", "minLength": 1, "maxLength": 100 }
-                  },
-                  "hiddenByDoneFilter": { "type": "boolean" },
-                  "page": {
-                    "description": "The Feature's Clarification page. Always null until Epic 4 (shown as Questions coming).",
-                    "anyOf": [
-                      { "type": "null" },
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": ["slug", "answered", "total"],
-                        "properties": {
-                          "slug": { "type": "string", "minLength": 1, "maxLength": 80 },
-                          "answered": { "type": "integer", "minimum": 0 },
-                          "total": { "type": "integer", "minimum": 0 }
-                        }
-                      }
-                    ]
-                  }
-                }
-              }
-            },
-            "items": {
-              "type": "array",
-              "maxItems": 1000,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["key", "feature", "title", "waitingOnYou", "onAgenda"],
-                "properties": {
-                  "key": { "type": "string", "minLength": 12, "maxLength": 12, "pattern": "^[0-9a-f]{12}$" },
-                  "feature": {
-                    "description": "The id of the Feature the Item sits under (an id value).",
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 40
-                  },
-                  "title": { "type": "string", "minLength": 1, "maxLength": 300 },
-                  "text": { "type": "string", "minLength": 1, "maxLength": 2000 },
-                  "how_to_send": { "type": "string", "minLength": 1, "maxLength": 300 },
-                  "waitingOnYou": { "type": "boolean" },
-                  "onAgenda": { "type": "boolean" }
-                }
-              }
-            }
-          }
+          "description": "On a dry run: the Client view of what was sent. client_dashboard_1 for a dashboard/1 send, client_dashboard_2 for a dashboard/2 send.",
+          "anyOf": [{ "$ref": "#/$defs/client_dashboard_1" }, { "$ref": "#/$defs/client_dashboard_2" }]
         },
         "client_contact_names": {
           "description": "The names of the Client contacts sent, so the BA can check them before sending.",
@@ -142,6 +62,701 @@
       },
       "else": {
         "properties": { "publish_id": { "type": "string" }, "client_view": false, "client_contact_names": false }
+      }
+    },
+    "client_dashboard_1": {
+      "description": "ClientDashboard (AD-4), the view of a dashboard/1 send: only client and id fields, plus the derived waitingOnYou, onAgenda, hiddenByDoneFilter and page. Items with no Feature, an unsent Feature, or awaiting with no matching contact are left out.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["areas", "release_rows", "features", "items"],
+      "properties": {
+        "areas": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+        },
+        "release_rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "released"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+              "released": { "type": "boolean" }
+            }
+          }
+        },
+        "features": {
+          "type": "array",
+          "maxItems": 300,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "title", "summary", "stage", "map_area", "hiddenByDoneFilter", "page"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1, "maxLength": 40 },
+              "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+              "short": { "type": "string", "minLength": 1, "maxLength": 40 },
+              "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+              "open": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+              },
+              "stage": { "type": "string", "enum": ["concept", "spec", "ready", "dev", "qa", "done"] },
+              "map_area": { "type": "string", "minLength": 1, "maxLength": 100 },
+              "releases": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+              },
+              "hiddenByDoneFilter": { "type": "boolean" },
+              "page": {
+                "description": "The Feature's Clarification page. Always null until Epic 4 (shown as Questions coming).",
+                "anyOf": [
+                  { "type": "null" },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["slug", "answered", "total"],
+                    "properties": {
+                      "slug": { "type": "string", "minLength": 1, "maxLength": 80 },
+                      "answered": { "type": "integer", "minimum": 0 },
+                      "total": { "type": "integer", "minimum": 0 }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "feature", "title", "waitingOnYou", "onAgenda"],
+            "properties": {
+              "key": { "type": "string", "minLength": 12, "maxLength": 12, "pattern": "^[0-9a-f]{12}$" },
+              "feature": {
+                "description": "The id of the Feature the Item sits under (an id value).",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+              "text": { "type": "string", "minLength": 1, "maxLength": 2000 },
+              "how_to_send": { "type": "string", "minLength": 1, "maxLength": 300 },
+              "waitingOnYou": { "type": "boolean" },
+              "onAgenda": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "client_dashboard_2": {
+      "description": "ClientDashboard2, the view of a dashboard/2 send: everything but the envelope, the Client contacts and clar_url, plus the derived waitingOnYou, onAgenda, hiddenByDoneFilter (Features and cards) and page. Every Item is kept; waitingOnYou is true only for a waiting Item whose first person is a Client contact.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "jira_base",
+        "areas",
+        "features",
+        "topics",
+        "items",
+        "releases",
+        "cards"
+      ],
+      "properties": {
+        "jira_base": {
+          "description": "The Jira site address, https:// only. Null only on a view read from a stored dashboard/1.",
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 9,
+              "maxLength": 2000,
+              "pattern": "^https://[^\\s]+(?![\\s\\S])",
+              "format": "uri"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "areas": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "quiet"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "quiet": {
+                "type": "boolean"
+              },
+              "special": {
+                "type": "string",
+                "enum": [
+                  "no_area",
+                  "not_linked"
+                ]
+              },
+              "jira": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "done",
+                  "in_progress",
+                  "open"
+                ],
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5000
+                  },
+                  "done": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "in_progress": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "open": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "last_done": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 10,
+                    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                    "format": "date"
+                  },
+                  "shipped": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "key",
+                        "summary",
+                        "date"
+                      ],
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 50,
+                          "pattern": "^[A-Z][A-Z0-9_]*-[0-9]+(?![\\s\\S])"
+                        },
+                        "summary": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "date": {
+                          "type": "string",
+                          "minLength": 10,
+                          "maxLength": 10,
+                          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                          "format": "date"
+                        }
+                      }
+                    }
+                  },
+                  "open_tickets": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "key",
+                        "summary",
+                        "status",
+                        "stage"
+                      ],
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 50,
+                          "pattern": "^[A-Z][A-Z0-9_]*-[0-9]+(?![\\s\\S])"
+                        },
+                        "summary": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "status": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        },
+                        "stage": {
+                          "type": "string",
+                          "enum": [
+                            "concept",
+                            "spec",
+                            "ready",
+                            "dev",
+                            "qa",
+                            "done"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "features": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "area",
+              "title",
+              "summary",
+              "stage",
+              "tickets",
+              "hiddenByDoneFilter",
+              "page"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "area": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "short": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20000
+              },
+              "open": {
+                "type": "array",
+                "maxItems": 200,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              },
+              "answered": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "done",
+                  "total"
+                ],
+                "properties": {
+                  "done": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "stage": {
+                "type": "string",
+                "enum": [
+                  "concept",
+                  "spec",
+                  "ready",
+                  "dev",
+                  "qa",
+                  "done"
+                ]
+              },
+              "done_date": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 10,
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                "format": "date"
+              },
+              "tickets": {
+                "type": "array",
+                "maxItems": 5000,
+                "items": {
+                  "$ref": "#/$defs/client_ticket"
+                }
+              },
+              "hiddenByDoneFilter": {
+                "type": "boolean"
+              },
+              "page": {
+                "description": "The Feature's Clarification page. Always null until Epic 4 (shown as Questions coming).",
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "slug",
+                      "answered",
+                      "total"
+                    ],
+                    "properties": {
+                      "slug": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      },
+                      "answered": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "total": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "topics": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "area",
+              "title",
+              "stage",
+              "tickets"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "area": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "stage": {
+                "type": "string",
+                "enum": [
+                  "concept",
+                  "spec",
+                  "ready",
+                  "dev",
+                  "qa",
+                  "done"
+                ]
+              },
+              "tickets": {
+                "type": "array",
+                "maxItems": 5000,
+                "items": {
+                  "$ref": "#/$defs/client_ticket"
+                }
+              }
+            }
+          }
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "kind",
+              "parent",
+              "title",
+              "waitingOnYou",
+              "onAgenda"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 12,
+                "maxLength": 12,
+                "pattern": "^[0-9a-f]{12}$"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "waiting",
+                  "agenda"
+                ]
+              },
+              "parent": {
+                "description": "The id of the Feature or topic the Item sits under (an id value).",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "who": {
+                "description": "Absent only on a view read from a stored dashboard/1.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "since": {
+                "description": "Absent only on a view read from a stored dashboard/1.",
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 10,
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                "format": "date"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 10000
+              },
+              "how_to_send": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "waitingOnYou": {
+                "type": "boolean"
+              },
+              "onAgenda": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "releases": {
+          "type": "array",
+          "maxItems": 2000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "released",
+              "overdue"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "date": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 10,
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                "format": "date"
+              },
+              "released": {
+                "type": "boolean"
+              },
+              "overdue": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "cards": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "area",
+              "release",
+              "title",
+              "stage",
+              "blocked",
+              "tickets",
+              "hiddenByDoneFilter"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "feature",
+                  "epic",
+                  "other"
+                ]
+              },
+              "area": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "release": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "stage": {
+                "type": "string",
+                "enum": [
+                  "concept",
+                  "spec",
+                  "ready",
+                  "dev",
+                  "qa",
+                  "done"
+                ]
+              },
+              "blocked": {
+                "type": "boolean"
+              },
+              "done_date": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 10,
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                "format": "date"
+              },
+              "feature": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "epic": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 50,
+                "pattern": "^[A-Z][A-Z0-9_]*-[0-9]+(?![\\s\\S])"
+              },
+              "tickets": {
+                "type": "array",
+                "maxItems": 5000,
+                "items": {
+                  "$ref": "#/$defs/client_ticket"
+                }
+              },
+              "hiddenByDoneFilter": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "client_ticket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "summary",
+        "status",
+        "stage"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 50,
+          "pattern": "^[A-Z][A-Z0-9_]*-[0-9]+(?![\\s\\S])"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "concept",
+            "spec",
+            "ready",
+            "dev",
+            "qa",
+            "done"
+          ]
+        },
+        "assignee": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        }
       }
     },
     "page": {

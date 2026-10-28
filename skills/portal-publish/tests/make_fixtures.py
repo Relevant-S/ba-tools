@@ -3,6 +3,11 @@
 The Dashboard data is synthetic (no client data), sized like Acme Lending: 18 Features, 148 Items.
 Each invalid case is the small base file with one thing broken, plus expected.json.
 
+dashboard/2 (contract 1.2.0): a small file, and a real-size one that is the upper bound of Acme Lending in one
+send — 48 areas (5 open tickets each), 18 Features, 10 topics, 70 Items, 60 releases, 436 cards (29 Feature,
+290 epic, 117 other) holding 2,042 tickets, a 4,598-character summary and a 130-character release name. All text
+is made up: no client text and no email address. Its invalid cases (named `v2-…`) break the small file.
+
 Pages: the clarification-page skill's example-probate-decisions.yaml converted to clarification/1, and a
 synthetic page of Merchants V7 size (6 Questions, 18 options, 4 screens). A page's invalid case is the
 Merchants-size page with one thing broken; its expected.json says "kind": "clarification", and its folder may
@@ -62,6 +67,11 @@ def slug(text: str) -> str:
 
 def item_key(kind: str, title: str) -> str:
     return hashlib.sha1(f"{kind}|{title.strip()}".encode("utf-8")).hexdigest()[:12]
+
+
+def item_key2(kind: str, parent: str, title: str) -> str:
+    """dashboard/2's Item key: the parent is part of it, so same-title Items under two parents differ."""
+    return hashlib.sha1(f"{kind}|{parent}|{title.strip()}".encode("utf-8")).hexdigest()[:12]
 
 
 def feature(n: int, title: str, short: str | None, area: str) -> dict:
@@ -174,7 +184,7 @@ def invalid_cases() -> dict[str, tuple[dict, dict]]:
     case("duplicate-item-key", d, "contract_invalid", "unique_item_key", "/items/5/key")
     d = small(); d["features"][0]["title"] = "Sign-up &mdash; phone number"
     case("html-entity", d, "contract_invalid", "no_html_entities", "/features/0/title")
-    d = small(); d["contract"] = "dashboard/2"
+    d = small(); d["contract"] = "dashboard/3"  # dashboard/2 is accepted since contract 1.2.0
     case("version-not-accepted", d, "contract_version_not_accepted", "contract_version", "/contract")
     d = small(); d["client_contacts"][0]["email"] = "maria@localhost"
     case("email-no-dot-domain", d, "contract_invalid", "schema", "/client_contacts/0/email")
@@ -191,6 +201,298 @@ def invalid_cases() -> dict[str, tuple[dict, dict]]:
     d = small(); d["features"][0]["open"] = ["Which employers first?", "Is the copy final &hellip;"]
     case("entity-in-list", d, "contract_invalid", "no_html_entities", "/features/0/open/1")
     return cases
+
+
+# ---- dashboard/2 ---------------------------------------------------------------------------------------
+
+JIRA_BASE = "https://example.atlassian.net"
+WORDS = ["account", "batch", "billing", "calendar", "consent", "export", "import", "invoice", "ledger", "limit",
+         "login", "message", "payout", "profile", "report", "reminder", "review", "schedule", "search", "status",
+         "summary", "template", "transfer", "upload", "wallet", "widget"]
+STATUSES = [("To Do", "ready"), ("In Progress", "dev"), ("In Review", "qa"), ("Done", "done")]
+ASSIGNEES = ["Sample Developer", "Sample Tester", "Sample Designer"]
+
+
+def words(n: int, count: int) -> str:
+    return " ".join(WORDS[(n * 7 + i * 3) % len(WORDS)] for i in range(count))
+
+
+def jira_key(n: int) -> str:
+    return f"ABC-{1000 + n}"
+
+
+def ticket(n: int, done: bool = False) -> dict:
+    status, stage = STATUSES[3] if done else STATUSES[n % 3]
+    t = {"key": jira_key(n), "summary": f"{words(n, 4).capitalize()} ({n})", "status": status, "stage": stage}
+    if n % 3 != 2:
+        t["assignee"] = ASSIGNEES[n % len(ASSIGNEES)]
+    return t
+
+
+def area2(n: int, special: str | None = None) -> dict:
+    if special:
+        a = {"id": special.replace("_", ""), "name": "No area" if special == "no_area" else "Not linked",
+             "quiet": False, "special": special}
+    else:
+        a = {"id": f"ABC:Area {n + 1}", "name": f"{words(n, 2).title()} {n + 1}", "quiet": n % 3 == 2}
+    base = 5000 + n * 40
+    a["jira"] = {
+        "done": 10 + n, "in_progress": n % 4, "open": 5 + n % 3,
+        "shipped": [{"key": jira_key(base + j), "summary": f"Shipped {words(n + j, 3)}",
+                     "date": f"2026-{1 + (n + j) % 9:02d}-{1 + j:02d}"} for j in range(n % 4)],
+        "open_tickets": [{"key": jira_key(base + 10 + j), "summary": f"Open {words(n + j, 3)}",
+                          "status": "In Progress" if j < 2 else "To Do", "stage": "dev" if j < 2 else "ready"}
+                         for j in range(5)],
+    }
+    if n % 2 == 0:
+        a["jira"]["description"] = f"The {words(n, 2)} part of the product."
+    if n % 4 != 3:
+        a["jira"]["last_done"] = f"2026-10-{1 + n % 27:02d}"
+    return a
+
+
+def dashboard2(n_areas: int, n_features: int, n_topics: int, n_items: int, n_releases: int,
+               card_tickets: list[int], kinds: tuple[int, int, int]) -> dict:
+    """A synthetic dashboard/2. card_tickets gives each card's ticket count; kinds = (feature, epic, other) cards."""
+    areas = [area2(i) for i in range(n_areas - 2)] + [area2(0, "no_area"), area2(0, "not_linked")]
+    ids = [a["id"] for a in areas]
+    releases = []
+    for i in range(n_releases):
+        r = {"name": f"Release {i // 10 + 1}.{i % 10} - {words(i, 3)}", "released": i < n_releases * 2 // 3,
+             "overdue": i == n_releases * 2 // 3}
+        if i % 5 != 4:
+            r["date"] = f"2026-{1 + i % 12:02d}-{1 + i % 28:02d}"
+        releases.append(r)
+    names = [r["name"] for r in releases]
+    tick = iter(range(100000))
+
+    feats = []
+    for i in range(n_features):
+        title, short, _ = FEATURES[i % len(FEATURES)]
+        stage = STAGES[i % len(STAGES)]
+        f = {"id": slug(title) if i < len(FEATURES) else f"{slug(title)[:30]}-{i}", "area": ids[i % len(ids)],
+             "title": title,
+             "summary": f"<p class=\"lead\">{title} — what it does for the employee.</p>"
+                        f"<p>Status: <strong>{stage}</strong>. Next step agreed on the last call.</p>",
+             "stage": stage, "tickets": [ticket(next(tick), stage == "done") for _ in range(i % 3)]}
+        if short:
+            f["short"] = short
+        if i % 3 == 0:
+            f["open"] = [f"Which employers get {title.lower()} first?", "Is the copy final in every language?"]
+        if i % 2 == 0:
+            f["answered"] = {"done": i % 5, "total": 5}
+        if stage == "done":
+            f["done_date"] = f"2026-10-{(i % 20) + 1:02d}"
+        if i % 4 == 1:
+            f["clar_url"] = f"https://pages.example.com/clarifications/{slug(title)}/"
+        feats.append(f)
+    topics = [{"id": f"topic-{i + 1}", "area": ids[(i * 5) % len(ids)], "title": f"{words(i, 2).capitalize()} work",
+               "stage": STAGES[(i + 2) % len(STAGES)], "tickets": [ticket(next(tick)) for _ in range(i % 2 + 1)]}
+              for i in range(n_topics)]
+    parents = [f["id"] for f in feats] + [t["id"] for t in topics]
+    items = []
+    for i in range(n_items):
+        kind = "waiting" if i % 3 else "agenda"
+        title = f"{ASKS[i % len(ASKS)]} {words(i, 2)} (#{i + 1})"
+        parent = parents[i % len(parents)]
+        it = {"key": item_key2(kind, parent, title), "kind": kind, "parent": parent,
+              "who": PEOPLE[i % len(PEOPLE)] + (" then Dev team" if i % 7 == 0 else ""),
+              "since": f"2026-{9 + i % 2:02d}-{(i % 28) + 1:02d}", "title": title}
+        if i % 2 == 0:
+            it["text"] = "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+        if kind == "waiting" and i % 4 == 1:
+            it["how_to_send"] = "Reply in the project Slack channel."
+        items.append(it)
+
+    n_feature, n_epic, _ = kinds
+    cards = []
+    for i, count in enumerate(card_tickets):
+        kind = "feature" if i < n_feature else "epic" if i < n_feature + n_epic else "other"
+        release = None if i % 6 == 5 or not names else names[i % len(names)]
+        stage = "done" if release is not None and i % 4 == 0 else STAGES[i % 5]
+        card = {"id": f"c{i:05d}", "kind": kind, "area": ids[i % len(ids)], "release": release}
+        if kind == "feature":
+            feat = feats[i % len(feats)]
+            card.update(title=feat["title"], feature=feat["id"], area=feat["area"])
+        elif kind == "epic":
+            card.update(title=f"Epic: {words(i, 3)} ({i})", epic=jira_key(90000 + i))
+        else:
+            card.update(title="Other tickets")
+        card.update(stage=stage, blocked=i % 17 == 3)
+        if stage == "done":
+            card["done_date"] = f"2026-{1 + i % 10:02d}-{1 + i % 28:02d}"
+        card["tickets"] = [ticket(next(tick), stage == "done") for _ in range(count)]
+        cards.append(card)
+    return {
+        "contract": "dashboard/2",
+        "sent_at": "2026-10-28T09:30:00.000Z",
+        "sent_by": "Sample BA",
+        "ba_tools_version": "0.9.0",
+        "source_commit": "4be1f0c9a2d7e3b5f6a8c1d0e9f7a6b5c4d3e2f1",
+        "jira_base": JIRA_BASE,
+        "areas": areas,
+        "features": feats,
+        "topics": topics,
+        "items": items,
+        "releases": releases,
+        "cards": cards,
+        "client_contacts": [{"name": "Maria Lopez", "slack": "maria.lopez"}, {"name": "Tom Baker"},
+                            {"name": "Priya Shah", "slack": "U02ABCD1234"}],
+    }
+
+
+# The real-size file: Acme Lending's upper bound in one send (Story 3.7).
+REAL_CARDS = (29, 290, 117)
+REAL_TICKETS = 2042
+LONG_SUMMARY = 4598
+LONG_RELEASE = 130
+
+
+def real_card_tickets() -> list[int]:
+    """436 ticket counts that add up to 2,042, the first card holding 176 (the largest real card)."""
+    counts = [176] + [1 + (i % 8) for i in range(sum(REAL_CARDS) - 1)]
+    i = 1
+    while sum(counts) != REAL_TICKETS:
+        step = 1 if sum(counts) < REAL_TICKETS else -1
+        if counts[i] + step >= 1:
+            counts[i] += step
+        i = i % (len(counts) - 1) + 1
+    return counts
+
+
+def real_size2() -> dict:
+    d = dashboard2(48, 18, 10, 70, 60, real_card_tickets(), REAL_CARDS)
+    lead = "<p class=\"lead\">A long summary, as long as the longest real one.</p>"
+    para = "<p>" + " ".join(WORDS) + ".</p>"
+    body = lead
+    while len(body) + len(para) <= LONG_SUMMARY - 7:
+        body += para
+    body += "<p>" + "x" * (LONG_SUMMARY - len(body) - 7) + "</p>"
+    d["features"][0]["summary"] = body
+    old = d["releases"][1]["name"]
+    new = (old + " - " + " ".join(WORDS))[:LONG_RELEASE]
+    d["releases"][1]["name"] = new
+    for card in d["cards"]:
+        if card["release"] == old:
+            card["release"] = new
+    return d
+
+
+def small2() -> dict:
+    return dashboard2(4, 4, 2, 8, 3, [2, 1, 3, 1, 2, 0], (2, 2, 2))
+
+
+def v2_invalid_cases() -> dict[str, tuple[dict, dict]]:
+    cases: dict[str, tuple[dict, dict]] = {}
+
+    def case(name, doc, code, check, path):
+        cases[name] = (doc, {"code": code, "check": check, "path": path})
+
+    d = small2(); d["areas"][1]["id"] = d["areas"][0]["id"]
+    for f in d["features"] + d["topics"] + d["cards"]:  # nothing names the lost id
+        if f["area"] == small2()["areas"][1]["id"]:
+            f["area"] = d["areas"][0]["id"]
+    case("v2-duplicate-area-id", d, "contract_invalid", "unique_area_id", "/areas/1/id")
+    def rename(doc, old, new):
+        """Point every Item parent and card Feature that named `old` at `new`, so only one check fails."""
+        for it in doc["items"]:
+            if it["parent"] == old:
+                it["parent"] = new
+        for card in doc["cards"]:
+            if card.get("feature") == old:
+                card["feature"] = new
+
+    d = small2(); rename(d, d["features"][2]["id"], d["features"][1]["id"])
+    d["features"][2]["id"] = d["features"][1]["id"]
+    case("v2-duplicate-feature-id", d, "contract_invalid", "unique_feature_id", "/features/2/id")
+    d = small2(); rename(d, d["topics"][1]["id"], d["topics"][0]["id"])
+    d["topics"][1]["id"] = d["topics"][0]["id"]
+    case("v2-duplicate-topic-id", d, "contract_invalid", "unique_topic_id", "/topics/1/id")
+    d = small2(); rename(d, d["topics"][0]["id"], d["features"][0]["id"])
+    d["topics"][0]["id"] = d["features"][0]["id"]
+    case("v2-topic-id-is-a-feature-id", d, "contract_invalid", "unique_topic_id", "/topics/0/id")
+    d = small2(); d["items"][3]["key"] = d["items"][1]["key"]
+    case("v2-duplicate-item-key", d, "contract_invalid", "unique_item_key", "/items/3/key")
+    d = small2(); d["cards"][4]["id"] = d["cards"][2]["id"]
+    case("v2-duplicate-card-id", d, "contract_invalid", "unique_card_id", "/cards/4/id")
+    d = small2(); d["cards"][2]["tickets"][2]["key"] = d["cards"][2]["tickets"][0]["key"]
+    case("v2-duplicate-ticket-in-card", d, "contract_invalid", "unique_ticket_in_list", "/cards/2/tickets/2/key")
+    d = small2(); d["cards"][3]["area"] = "ABC:No such area"
+    case("v2-unknown-card-area", d, "contract_invalid", "known_area", "/cards/3/area")
+    d = small2(); d["features"][1]["area"] = "ABC:No such area"
+    case("v2-unknown-feature-area", d, "contract_invalid", "known_area", "/features/1/area")
+    d = small2(); d["items"][2]["parent"] = "no-such-feature"
+    case("v2-unknown-parent", d, "contract_invalid", "known_parent", "/items/2/parent")
+    d = small2(); d["cards"][0]["feature"] = "no-such-feature"
+    case("v2-unknown-card-feature", d, "contract_invalid", "known_card_feature", "/cards/0/feature")
+    d = small2(); d["cards"][1]["release"] = "Release 9.9 - not sent"
+    case("v2-unknown-release", d, "contract_invalid", "known_release", "/cards/1/release")
+    d = small2(); d["features"][1]["title"] = "Sign-up &mdash; phone number"
+    case("v2-html-entity", d, "contract_invalid", "no_html_entities", "/features/1/title")
+    d = small2(); d["topics"][1]["area"] = "ABC:No such area"
+    case("v2-unknown-topic-area", d, "contract_invalid", "known_area", "/topics/1/area")
+    d = small2(); d["releases"][2]["name"] = d["releases"][0]["name"]
+    for card in d["cards"]:  # nothing names the lost release
+        if card["release"] == small2()["releases"][2]["name"]:
+            card["release"] = d["releases"][0]["name"]
+    case("v2-duplicate-release-name", d, "contract_invalid", "unique_release_name", "/releases/2/name")
+    d = small2(); d["areas"][1]["special"] = "no_area"
+    case("v2-duplicate-special", d, "contract_invalid", "unique_special", "/areas/2/special")
+    d = small2(); d["features"][2]["tickets"][1]["key"] = d["features"][2]["tickets"][0]["key"]
+    case("v2-duplicate-ticket-in-feature", d, "contract_invalid", "unique_ticket_in_list",
+         "/features/2/tickets/1/key")
+    d = small2(); d["areas"][0]["jira"]["open_tickets"][3]["key"] = d["areas"][0]["jira"]["open_tickets"][1]["key"]
+    case("v2-duplicate-open-ticket", d, "contract_invalid", "unique_ticket_in_list",
+         "/areas/0/jira/open_tickets/3/key")
+    d = small2(); del d["cards"][0]["feature"]
+    case("v2-feature-card-without-feature", d, "contract_invalid", "card_kind_fields", "/cards/0/feature")
+    d = small2(); d["cards"][2]["feature"] = d["features"][0]["id"]
+    case("v2-epic-card-with-feature", d, "contract_invalid", "card_kind_fields", "/cards/2/feature")
+    d = small2(); d["cards"][4]["epic"] = "ABC-77"
+    case("v2-other-card-with-epic", d, "contract_invalid", "card_kind_fields", "/cards/4/epic")
+    d = small2(); d["features"][0]["answered"] = {"done": 6, "total": 5}
+    case("v2-answered-over-total", d, "contract_invalid", "answered_in_range", "/features/0/answered/done")
+    d = small2(); d["jira_base"] = "javascript:alert(1)"
+    case("v2-jira-base-javascript", d, "contract_invalid", "schema", "/jira_base")
+    d = small2(); d["jira_base"] = "http://example.atlassian.net"
+    case("v2-jira-base-http", d, "contract_invalid", "schema", "/jira_base")
+    d = small2(); d["products"] = ["AcmeLending", "Bond Portal"]
+    case("v2-products-field", d, "contract_invalid", "schema", "/products")
+    d = small2(); d["cards"][0]["prod"] = "AcmeLending"
+    case("v2-prod-field", d, "contract_invalid", "schema", "/cards/0/prod")
+    d = small2(); del d["jira_base"]
+    case("v2-missing-jira-base", d, "contract_invalid", "schema", "/jira_base")
+    d = small2(); d["releases"][0]["name"] = "R" * 256  # the schema fails first, so known_release does not run
+    case("v2-release-name-too-long", d, "contract_invalid", "schema", "/releases/0/name")
+    d = small2(); d["cards"][0]["tickets"][0]["summary"] = "S" * 256
+    case("v2-ticket-summary-too-long", d, "contract_invalid", "schema", "/cards/0/tickets/0/summary")
+    d = small2(); d["features"][0]["summary"] = "<p>" + "s" * 20000 + "</p>"
+    case("v2-feature-summary-too-long", d, "contract_invalid", "schema", "/features/0/summary")
+    d = small2(); d["areas"][0]["jira"]["open_tickets"] *= 5
+    case("v2-too-many-open-tickets", d, "contract_invalid", "schema", "/areas/0/jira/open_tickets")
+    d = small2(); d["cards"][1]["tickets"][0]["key"] = "abc-12"
+    case("v2-bad-ticket-key", d, "contract_invalid", "schema", "/cards/1/tickets/0/key")
+    d = small2(); d["cards"][0]["kind"] = "story"
+    case("v2-bad-card-kind", d, "contract_invalid", "schema", "/cards/0/kind")
+    d = small2(); d["contract"] = "dashboard/3"
+    case("v2-version-not-accepted", d, "contract_version_not_accepted", "contract_version", "/contract")
+    return cases
+
+
+def client_view2(doc: dict) -> dict:
+    """The Portal's ClientDashboard2 of a dashboard/2 send, for the reply fixture: everything but the envelope,
+    the contacts and clar_url, plus the derived flags. (The Portal builds the real one; this is an example.)"""
+    contacts = {c["name"].lower() for c in doc["client_contacts"]}
+    features = []
+    for f in doc["features"]:
+        out = {k: v for k, v in f.items() if k != "clar_url"}
+        out.update(hiddenByDoneFilter=False, page=None)
+        features.append(out)
+    items = [{**it, "waitingOnYou": it["kind"] == "waiting" and it["who"].split(" then ")[0].lower() in contacts,
+              "onAgenda": it["kind"] == "agenda"} for it in doc["items"]]
+    cards = [{**c, "hiddenByDoneFilter": False} for c in doc["cards"]]
+    return {"jira_base": doc["jira_base"], "areas": doc["areas"], "features": features, "topics": doc["topics"],
+            "items": items, "releases": doc["releases"], "cards": cards}
 
 
 # ---- pages (clarification/1) -------------------------------------------------------------------------
@@ -584,6 +886,11 @@ def main() -> None:
     for name, (doc, stated) in invalid_cases().items():
         dump(FIXTURES / "invalid" / name / "input.json", doc)
         dump(FIXTURES / "invalid" / name / "expected.json", expected_result(name, doc, stated))
+    dump(FIXTURES / "valid" / "dashboard-2-small.json", small2())
+    dump(FIXTURES / "valid" / "dashboard-2-real-size.json", real_size2())
+    for name, (doc, stated) in v2_invalid_cases().items():
+        dump(FIXTURES / "invalid" / name / "input.json", doc)
+        dump(FIXTURES / "invalid" / name / "expected.json", expected_result(name, doc, stated))
     dump(FIXTURES / "valid" / "clarification-1-probate.json", probate())
     dump(FIXTURES / "valid" / "clarification-1-merchants-v7-size.json", merchants())
     for name, (doc, stated, parts) in page_invalid_cases().items():
@@ -686,9 +993,17 @@ def replies() -> dict[str, dict]:
         "contract": "ack/1", "batch_id": answers["batch_id"], "handed_out": 2,
         "confirmed_at": "2026-10-27T11:00:31.007Z",
     }
+    doc2 = small2()
+    dry2 = {**base, "publish_id": None, "dry_run": True, "counts": {
+        "features": len(doc2["features"]), "items": len(doc2["items"]),
+        "client_contacts": len(doc2["client_contacts"]), "areas": len(doc2["areas"]),
+        "topics": len(doc2["topics"]), "cards": len(doc2["cards"]),
+        "tickets": sum(len(c["tickets"]) for c in doc2["cards"]),
+    }, "client_view": client_view2(doc2), "client_contact_names": [c["name"] for c in doc2["client_contacts"]]}
     return {
         "publish-reply-1-sent.json": base,
         "publish-reply-1-dry-run.json": dry,
+        "publish-reply-1-dashboard-2-dry-run.json": dry2,
         "status-1.json": status,
         "publish-reply-1-page-sent.json": page_sent,
         "publish-reply-1-page-dry-run.json": page_dry,

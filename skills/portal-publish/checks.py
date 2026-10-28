@@ -28,6 +28,20 @@ ENTITY_SKIP = {
         "/items/*/text",
         "/features/*/clar_url",
         "/client_contacts/*/email",
+        # dashboard/2: jira_base is a link. Text copied from Jira (names, summaries, statuses, assignees,
+        # descriptions, and the card titles and release names taken from it) is skipped too: the BA does not
+        # write it and cannot fix it, and the Portal shows it as plain, escaped text.
+        "/jira_base",
+        "/areas/*/name",
+        "/areas/*/jira/description",
+        "/areas/*/jira/shipped/*/summary",
+        "/areas/*/jira/open_tickets/*/summary",
+        "/areas/*/jira/open_tickets/*/status",
+        "/releases/*/name",
+        "/cards/*/release",
+        "/cards/*/title",
+        *(f"/{lst}/*/tickets/*/{field}" for lst in ("features", "topics", "cards")
+          for field in ("summary", "status", "assignee")),
     },
     "clarification": {
         "/description",
@@ -279,6 +293,133 @@ def screens_match_parts(doc: dict, parts) -> list[dict]:
     return out
 
 
+def check_topic_ids(doc: dict) -> list[dict]:
+    """unique_topic_id: no two topics share an id, and no topic takes a Feature's id (an Item's parent names
+    either, so the two must not clash)."""
+    out = check_unique(doc, "topics", "id", "unique_topic_id", "Topic id")
+    features: dict = {}
+    for i, f in enumerate(doc.get("features", [])):
+        features.setdefault(f["id"], f"/features/{i}/id")
+    for i, topic in enumerate(doc.get("topics", [])):
+        if topic["id"] in features:
+            here = f"/topics/{i}/id"
+            out.append(detail(here, "unique_topic_id",
+                              f'Topic id "{topic["id"]}" is also a Feature id: {features[topic["id"]]} and {here}'))
+    return out
+
+
+def ticket_lists(doc: dict) -> list[tuple[str, list]]:
+    """Every ticket list of a dashboard/2, with its path, in checks.md order: each area's open_tickets then
+    shipped, then each Feature's, topic's and card's tickets."""
+    out: list[tuple[str, list]] = []
+    for i, area in enumerate(doc["areas"]):
+        jira = area.get("jira") or {}
+        for name in ("open_tickets", "shipped"):
+            if name in jira:
+                out.append((f"/areas/{i}/jira/{name}", jira[name]))
+    for listname in ("features", "topics", "cards"):
+        for i, entry in enumerate(doc[listname]):
+            out.append((f"/{listname}/{i}/tickets", entry["tickets"]))
+    return out
+
+
+def check_ticket_in_list(doc: dict) -> list[dict]:
+    """unique_ticket_in_list: a ticket key at most once in one ticket list. Two lists may hold the same ticket."""
+    out: list[dict] = []
+    for where, tickets in ticket_lists(doc):
+        seen: dict = {}
+        for j, ticket in enumerate(tickets):
+            value, here = ticket["key"], f"{where}/{j}/key"
+            if value in seen:
+                out.append(detail(here, "unique_ticket_in_list",
+                                  f'Ticket "{value}" is in one list twice: {seen[value]} and {here}'))
+            else:
+                seen[value] = here
+    return out
+
+
+def check_unique_special(doc: dict) -> list[dict]:
+    """unique_special: each special area (no_area, not_linked) at most once."""
+    out: list[dict] = []
+    seen: dict = {}
+    for i, area in enumerate(doc["areas"]):
+        value = area.get("special")
+        if value is None:
+            continue
+        here = f"/areas/{i}/special"
+        if value in seen:
+            out.append(detail(here, "unique_special",
+                              f'The special area "{value}" is sent twice: {seen[value]} and {here}'))
+        else:
+            seen[value] = here
+    return out
+
+
+def check_card_kind(doc: dict) -> list[dict]:
+    """card_kind_fields: a feature card names its Feature and no epic; an epic card names its epic and no
+    Feature; an other card names neither."""
+    out: list[dict] = []
+    wants = {"feature": ("feature",), "epic": ("epic",), "other": ()}
+    for i, card in enumerate(doc["cards"]):
+        kind = card["kind"]
+        for field in ("feature", "epic"):
+            here = f"/cards/{i}/{field}"
+            if field in wants[kind] and field not in card:
+                out.append(detail(here, "card_kind_fields", f"{here} is missing: a {kind} card names its {field}."))
+            elif field not in wants[kind] and field in card:
+                out.append(detail(here, "card_kind_fields", f"{here} is not allowed on a {kind} card."))
+    return out
+
+
+def check_answered(doc: dict) -> list[dict]:
+    """answered_in_range: a Feature's answered.done is at most its answered.total."""
+    out: list[dict] = []
+    for i, f in enumerate(doc["features"]):
+        answered = f.get("answered")
+        if answered is not None and answered["done"] > answered["total"]:
+            here = f"/features/{i}/answered/done"
+            out.append(detail(here, "answered_in_range",
+                              f"{here} is {answered['done']}, more than the total of {answered['total']}."))
+    return out
+
+
+def check_known(doc: dict, listname: str, field: str, known: set, check: str, what: str) -> list[dict]:
+    """Each entry's field, when present and not null, names one of `known`."""
+    out: list[dict] = []
+    for i, entry in enumerate(doc.get(listname, [])):
+        value = entry.get(field)
+        if value is None or value in known:
+            continue
+        here = f"/{listname}/{i}/{field}"
+        out.append(detail(here, check, f'{here} names {what} "{value}" that is not in this Publish.'))
+    return out
+
+
+def dashboard_2_checks(doc: dict) -> list[dict]:
+    """The named checks of dashboard/2, in checks.md order."""
+    areas = {a["id"] for a in doc["areas"]}
+    features = {f["id"] for f in doc["features"]}
+    parents = features | {t["id"] for t in doc["topics"]}
+    releases = {r["name"] for r in doc["releases"]}
+    return (check_unique(doc, "areas", "id", "unique_area_id", "Area id")
+            + check_unique(doc, "features", "id", "unique_feature_id", "Feature id")
+            + check_topic_ids(doc)
+            + check_unique(doc, "items", "key", "unique_item_key", "Item key")
+            + check_unique(doc, "cards", "id", "unique_card_id", "Card id")
+            + check_unique(doc, "releases", "name", "unique_release_name", "Release name")
+            + check_unique_special(doc)
+            + check_ticket_in_list(doc)
+            + check_known(doc, "features", "area", areas, "known_area", "an area")
+            + check_known(doc, "topics", "area", areas, "known_area", "an area")
+            + check_known(doc, "cards", "area", areas, "known_area", "an area")
+            + check_known(doc, "items", "parent", parents, "known_parent", "a Feature or topic")
+            + check_known(doc, "cards", "feature", features, "known_card_feature", "a Feature")
+            + check_known(doc, "cards", "release", releases, "known_release", "a release")
+            + check_card_kind(doc)
+            + check_answered(doc)
+            + check_entities(doc, "dashboard"))
+
+
 def cross_field(doc: dict, kind: str = "dashboard") -> list[dict]:
     if kind == "clarification":
         return (check_unique(doc, "questions", "id", "unique_question_id", "Question id")
@@ -289,6 +430,8 @@ def cross_field(doc: dict, kind: str = "dashboard") -> list[dict]:
                 + check_screenshot_count(doc)
                 + check_unique(doc, "decisions", "id", "unique_decision_id", "Decision id")
                 + check_entities(doc, kind))
+    if doc.get("contract") == "dashboard/2":
+        return dashboard_2_checks(doc)
     return (check_unique(doc, "features", "id", "unique_feature_id", "Feature id")
             + check_unique(doc, "items", "key", "unique_item_key", "Item key")
             + check_entities(doc, kind))
@@ -310,8 +453,9 @@ def check_publish(doc, kind: str = "dashboard", parts=None) -> dict | None:
         return {"code": "contract_version_not_accepted", "details": [detail(
             "/contract", "contract_version",
             f"{contract} is not accepted. This Portal accepts {', '.join(accepted)}.")]}
-    # A missing or non-string contract is left to the schema: the newest accepted version reports it.
-    schema_for = contract if isinstance(contract, str) else accepted[-1]
+    # A missing or non-string contract is left to the schema: the oldest accepted version reports it, so a
+    # new version never changes how such a document fails.
+    schema_for = contract if isinstance(contract, str) else accepted[0]
     found = schema_details(validator(schema_for), doc)
     if found:
         return {"code": "contract_invalid", "details": found}

@@ -1,0 +1,9 @@
+{
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "known_release",
+      "path": "/cards/1/release"
+    }
+  ]
+}

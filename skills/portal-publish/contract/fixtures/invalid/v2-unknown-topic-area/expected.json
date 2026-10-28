@@ -1,0 +1,9 @@
+{
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "known_area",
+      "path": "/topics/1/area"
+    }
+  ]
+}

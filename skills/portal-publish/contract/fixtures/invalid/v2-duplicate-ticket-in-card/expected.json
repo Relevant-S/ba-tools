@@ -1,0 +1,9 @@
+{
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "unique_ticket_in_list",
+      "path": "/cards/2/tickets/2/key"
+    }
+  ]
+}

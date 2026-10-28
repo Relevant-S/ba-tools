@@ -1,0 +1,9 @@
+{
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "unique_release_name",
+      "path": "/releases/2/name"
+    }
+  ]
+}

@@ -1,0 +1,872 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/dashboard-2.schema.json",
+  "title": "dashboard/2",
+  "description": "One Dashboard Publish for one product (one Portal project): the envelope at the top level plus jira_base, areas, features, topics, items, releases, cards and client_contacts — the whole BA dashboard, shaped like the data the BA page draws. Readable twin: dashboard-2.md. x-visibility says who may see each leaf field: client, id, portal or admin.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "sent_at",
+    "sent_by",
+    "ba_tools_version",
+    "jira_base",
+    "areas",
+    "features",
+    "topics",
+    "items",
+    "releases",
+    "cards",
+    "client_contacts"
+  ],
+  "properties": {
+    "contract": {
+      "description": "Which contract this Publish follows. Written by the skill.",
+      "type": "string",
+      "const": "dashboard/2",
+      "x-visibility": "admin"
+    },
+    "sent_at": {
+      "description": "When the skill sent it, UTC, exactly YYYY-MM-DDTHH:MM:SS.sssZ.",
+      "type": "string",
+      "minLength": 24,
+      "maxLength": 24,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+      "format": "date-time",
+      "x-visibility": "admin"
+    },
+    "sent_by": {
+      "description": "The git user name of the BA who sent it.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "x-visibility": "admin"
+    },
+    "ba_tools_version": {
+      "description": "The ba-tools version that sent it.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "x-visibility": "admin"
+    },
+    "source_commit": {
+      "description": "The Project repo commit the data came from.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "x-visibility": "admin"
+    },
+    "jira_base": {
+      "description": "The Jira site address, e.g. https://example.atlassian.net. Ticket keys and \"In Jira\" link here (Decision 3). Only https:// addresses, so a link can never run script.",
+      "type": "string",
+      "minLength": 9,
+      "maxLength": 2000,
+      "pattern": "^https://[^\\s]+(?![\\s\\S])",
+      "format": "uri",
+      "x-visibility": "client"
+    },
+    "areas": {
+      "description": "The Map areas (Jira components) in the BA page's order. Ids unique (unique_area_id).",
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "description": "One area.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "quiet"
+        ],
+        "properties": {
+          "id": {
+            "description": "The area's id. Unique in a Publish (check unique_area_id). Features, topics and cards name it.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "x-visibility": "id"
+          },
+          "name": {
+            "description": "The area's name (a Jira component name; Jira's own limit is 255).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "x-visibility": "client"
+          },
+          "quiet": {
+            "description": "True for an inactive Jira component.",
+            "type": "boolean",
+            "x-visibility": "client"
+          },
+          "special": {
+            "description": "Set on the two areas that are not a Jira component: no_area (work with no component) or not_linked (tickets linked to no Feature).",
+            "type": "string",
+            "enum": [
+              "no_area",
+              "not_linked"
+            ],
+            "x-visibility": "client"
+          },
+          "jira": {
+            "description": "The Jira facts of the area, as the BA page shows them.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "done",
+              "in_progress",
+              "open"
+            ],
+            "properties": {
+              "description": {
+                "description": "The Jira component's description, plain text.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 5000,
+                "x-visibility": "client"
+              },
+              "done": {
+                "description": "How many of its tickets are done.",
+                "type": "integer",
+                "minimum": 0,
+                "x-visibility": "client"
+              },
+              "in_progress": {
+                "description": "How many are being built or tested.",
+                "type": "integer",
+                "minimum": 0,
+                "x-visibility": "client"
+              },
+              "open": {
+                "description": "How many are open (not done).",
+                "type": "integer",
+                "minimum": 0,
+                "x-visibility": "client"
+              },
+              "last_done": {
+                "description": "When its last ticket was done, YYYY-MM-DD.",
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 10,
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                "format": "date",
+                "x-visibility": "client"
+              },
+              "shipped": {
+                "description": "Its latest shipped tickets, newest first.",
+                "type": "array",
+                "maxItems": 20,
+                "items": {
+                  "description": "One shipped ticket.",
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "summary",
+                    "date"
+                  ],
+                  "properties": {
+                    "key": {
+                      "description": "The Jira key.",
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 50,
+                      "pattern": "^[A-Z][A-Z0-9_]*-[0-9]+(?![\\s\\S])",
+                      "x-visibility": "client"
+                    },
+                    "summary": {
+                      "description": "The Jira summary.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255,
+                      "x-visibility": "client"
+                    },
+                    "date": {
+                      "description": "When it was done, YYYY-MM-DD.",
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 10,
+                      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                      "format": "date",
+                      "x-visibility": "client"
+                    }
+                  }
+                }
+              },
+              "open_tickets": {
+                "description": "Its open tickets, sent already ordered: being built or tested first, then newest updated.",
+                "type": "array",
+                "maxItems": 20,
+                "items": {
+                  "description": "One open ticket.",
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "summary",
+                    "status",
+                    "stage"
+                  ],
+                  "properties": {
+                    "key": {
+                      "description": "The Jira key.",
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 50,
+                      "pattern": "^[A-Z][A-Z0-9_]*-[0-9]+(?![\\s\\S])",
+                      "x-visibility": "client"
+                    },
+                    "summary": {
+                      "description": "The Jira summary.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255,
+                      "x-visibility": "client"
+                    },
+                    "status": {
+                      "description": "The Jira status name.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100,
+                      "x-visibility": "client"
+                    },
+                    "stage": {
+                      "description": "dev when Jira says it is being built or tested, else ready.",
+                      "type": "string",
+                      "enum": [
+                        "concept",
+                        "spec",
+                        "ready",
+                        "dev",
+                        "qa",
+                        "done"
+                      ],
+                      "x-visibility": "client"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "features": {
+      "description": "The Features sent. A Feature with client: false is not sent.",
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "description": "One Feature.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "area",
+          "title",
+          "summary",
+          "stage",
+          "tickets"
+        ],
+        "properties": {
+          "id": {
+            "description": "The Feature's id. Unique in a Publish (check unique_feature_id).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "x-visibility": "id"
+          },
+          "area": {
+            "description": "The id of its area (check known_area).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "x-visibility": "id"
+          },
+          "title": {
+            "description": "The Feature's title.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "x-visibility": "client"
+          },
+          "short": {
+            "description": "A short label.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "x-visibility": "client"
+          },
+          "summary": {
+            "description": "Light HTML (light-html.json). From client_s, else s.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000,
+            "x-visibility": "client"
+          },
+          "open": {
+            "description": "Open questions, each plain text.",
+            "type": "array",
+            "maxItems": 200,
+            "items": { "type": "string", "minLength": 1, "maxLength": 2000 },
+            "x-visibility": "client"
+          },
+          "answered": {
+            "description": "How many of its clarification Questions are answered.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "done",
+              "total"
+            ],
+            "properties": {
+              "done": {
+                "description": "Questions answered.",
+                "type": "integer",
+                "minimum": 0,
+                "x-visibility": "client"
+              },
+              "total": {
+                "description": "Questions in all.",
+                "type": "integer",
+                "minimum": 0,
+                "x-visibility": "client"
+              }
+            }
+          },
+          "stage": {
+            "description": "From the map build.",
+            "type": "string",
+            "enum": [
+              "concept",
+              "spec",
+              "ready",
+              "dev",
+              "qa",
+              "done"
+            ],
+            "x-visibility": "client"
+          },
+          "done_date": {
+            "description": "When the Feature was done, YYYY-MM-DD. Used for Hide done > 2 weeks.",
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 10,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "format": "date",
+            "x-visibility": "client"
+          },
+          "clar_url": {
+            "description": "The Clarification page link; matched to a page's url. Server only.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "format": "uri",
+            "x-visibility": "portal"
+          },
+          "tickets": {
+            "description": "The Jira tickets of the Feature.",
+            "type": "array",
+            "maxItems": 5000,
+            "items": {
+              "description": "One Jira ticket.",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "summary",
+                "status",
+                "stage"
+              ],
+              "properties": {
+                "key": {
+                  "description": "The Jira key, e.g. ABC-123. Links to the ticket in jira_base (Decision 3).",
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 50,
+                  "pattern": "^[A-Z][A-Z0-9_]*-[0-9]+(?![\\s\\S])",
+                  "x-visibility": "client"
+                },
+                "summary": {
+                  "description": "The Jira summary (Jira's own limit is 255).",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255,
+                  "x-visibility": "client"
+                },
+                "status": {
+                  "description": "The Jira status name, as Jira shows it.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "x-visibility": "client"
+                },
+                "stage": {
+                  "description": "The ticket's stage, as the BA page works it out from its Jira status.",
+                  "type": "string",
+                  "enum": [
+                    "concept",
+                    "spec",
+                    "ready",
+                    "dev",
+                    "qa",
+                    "done"
+                  ],
+                  "x-visibility": "client"
+                },
+                "assignee": {
+                  "description": "Who the ticket is assigned to in Jira.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255,
+                  "x-visibility": "client"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "topics": {
+      "description": "The Map topics: groups of work in an area that are not a Feature (no spec, no clarification page).",
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "description": "One topic.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "area",
+          "title",
+          "stage",
+          "tickets"
+        ],
+        "properties": {
+          "id": {
+            "description": "The topic's id. Unique in a Publish (check unique_topic_id) and never a Feature's id.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "x-visibility": "id"
+          },
+          "area": {
+            "description": "The id of its area (check known_area).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "x-visibility": "id"
+          },
+          "title": {
+            "description": "The topic's title.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "x-visibility": "client"
+          },
+          "stage": {
+            "description": "From the map build.",
+            "type": "string",
+            "enum": [
+              "concept",
+              "spec",
+              "ready",
+              "dev",
+              "qa",
+              "done"
+            ],
+            "x-visibility": "client"
+          },
+          "tickets": {
+            "description": "The Jira tickets of the topic.",
+            "type": "array",
+            "maxItems": 5000,
+            "items": {
+              "description": "One Jira ticket.",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "summary",
+                "status",
+                "stage"
+              ],
+              "properties": {
+                "key": {
+                  "description": "The Jira key, e.g. ABC-123. Links to the ticket in jira_base (Decision 3).",
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 50,
+                  "pattern": "^[A-Z][A-Z0-9_]*-[0-9]+(?![\\s\\S])",
+                  "x-visibility": "client"
+                },
+                "summary": {
+                  "description": "The Jira summary (Jira's own limit is 255).",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255,
+                  "x-visibility": "client"
+                },
+                "status": {
+                  "description": "The Jira status name, as Jira shows it.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "x-visibility": "client"
+                },
+                "stage": {
+                  "description": "The ticket's stage, as the BA page works it out from its Jira status.",
+                  "type": "string",
+                  "enum": [
+                    "concept",
+                    "spec",
+                    "ready",
+                    "dev",
+                    "qa",
+                    "done"
+                  ],
+                  "x-visibility": "client"
+                },
+                "assignee": {
+                  "description": "Who the ticket is assigned to in Jira.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255,
+                  "x-visibility": "client"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "items": {
+      "description": "Waiting and next-call agenda Items. Never todos, done: true or client: false.",
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "description": "One Item.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "kind",
+          "parent",
+          "who",
+          "since",
+          "title"
+        ],
+        "properties": {
+          "key": {
+            "description": "First 12 characters of the hex sha1 of \"<kind>|<parent>|<title>\" (UTF-8, title trimmed). The parent is in it because every Item is sent, and two Items under different parents may share a title (dashboard/1 keeps sha1(\"<kind>|<title>\")). Unique in a Publish (check unique_item_key).",
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 12,
+            "pattern": "^[0-9a-f]{12}$",
+            "x-visibility": "id"
+          },
+          "kind": {
+            "description": "Which list the Item came from (Decision 1: shown).",
+            "type": "string",
+            "enum": [
+              "waiting",
+              "agenda"
+            ],
+            "x-visibility": "client"
+          },
+          "parent": {
+            "description": "The id of the Feature or topic the Item sits under (check known_parent).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "x-visibility": "id"
+          },
+          "who": {
+            "description": "Who the Item waits on, as the BA wrote it (Decision 1: shown).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "x-visibility": "client"
+          },
+          "since": {
+            "description": "Since when, YYYY-MM-DD (Decision 1: shown, with the days since).",
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 10,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "format": "date",
+            "x-visibility": "client"
+          },
+          "title": {
+            "description": "From t.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "x-visibility": "client"
+          },
+          "text": {
+            "description": "Light HTML (light-html.json). From client_s, else s.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000,
+            "x-visibility": "client"
+          },
+          "how_to_send": {
+            "description": "How the Client sends it, from l.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "x-visibility": "client"
+          }
+        }
+      }
+    },
+    "releases": {
+      "description": "The Board rows (Jira versions), in the BA page's order.",
+      "type": "array",
+      "maxItems": 2000,
+      "items": {
+        "description": "One release.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "released",
+          "overdue"
+        ],
+        "properties": {
+          "name": {
+            "description": "The release name (Jira's own limit is 255). Unique (check unique_release_name): cards name their release by it.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "x-visibility": "client"
+          },
+          "date": {
+            "description": "Its release date, YYYY-MM-DD.",
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 10,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "format": "date",
+            "x-visibility": "client"
+          },
+          "released": {
+            "description": "Whether the release has shipped.",
+            "type": "boolean",
+            "x-visibility": "client"
+          },
+          "overdue": {
+            "description": "Whether its date has passed and it has not shipped.",
+            "type": "boolean",
+            "x-visibility": "client"
+          }
+        }
+      }
+    },
+    "cards": {
+      "description": "The Board cards: one per Feature, Jira epic or group of other tickets, per release and area. Ids unique (unique_card_id).",
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "description": "One card.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "area",
+          "release",
+          "title",
+          "stage",
+          "blocked",
+          "tickets"
+        ],
+        "properties": {
+          "id": {
+            "description": "The card's id. Unique in a Publish (check unique_card_id).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "x-visibility": "id"
+          },
+          "kind": {
+            "description": "feature (a Feature), epic (a Jira epic) or other (other tickets).",
+            "type": "string",
+            "enum": [
+              "feature",
+              "epic",
+              "other"
+            ],
+            "x-visibility": "client"
+          },
+          "area": {
+            "description": "The id of its area, its Board column (check known_area).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "x-visibility": "id"
+          },
+          "release": {
+            "description": "The name of its release, its Board row (check known_release); null for Not planned yet.",
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "x-visibility": "client"
+          },
+          "title": {
+            "description": "The card's title (Jira's own limit is 255).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "x-visibility": "client"
+          },
+          "stage": {
+            "description": "The card's stage.",
+            "type": "string",
+            "enum": [
+              "concept",
+              "spec",
+              "ready",
+              "dev",
+              "qa",
+              "done"
+            ],
+            "x-visibility": "client"
+          },
+          "blocked": {
+            "description": "Whether a ticket on it is blocked.",
+            "type": "boolean",
+            "x-visibility": "client"
+          },
+          "done_date": {
+            "description": "When it was done, YYYY-MM-DD. Used for Hide done > 2 weeks.",
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 10,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "format": "date",
+            "x-visibility": "client"
+          },
+          "feature": {
+            "description": "The id of its Feature (check known_card_feature). Required on a feature card, refused on the others (check card_kind_fields).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "x-visibility": "id"
+          },
+          "epic": {
+            "description": "The Jira key of its epic. Required on an epic card, refused on the others (check card_kind_fields).",
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50,
+            "pattern": "^[A-Z][A-Z0-9_]*-[0-9]+(?![\\s\\S])",
+            "x-visibility": "client"
+          },
+          "tickets": {
+            "description": "The Jira tickets on the card. A key at most once in the list (check unique_ticket_in_list).",
+            "type": "array",
+            "maxItems": 5000,
+            "items": {
+              "description": "One Jira ticket.",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "summary",
+                "status",
+                "stage"
+              ],
+              "properties": {
+                "key": {
+                  "description": "The Jira key, e.g. ABC-123. Links to the ticket in jira_base (Decision 3).",
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 50,
+                  "pattern": "^[A-Z][A-Z0-9_]*-[0-9]+(?![\\s\\S])",
+                  "x-visibility": "client"
+                },
+                "summary": {
+                  "description": "The Jira summary (Jira's own limit is 255).",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255,
+                  "x-visibility": "client"
+                },
+                "status": {
+                  "description": "The Jira status name, as Jira shows it.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "x-visibility": "client"
+                },
+                "stage": {
+                  "description": "The ticket's stage, as the BA page works it out from its Jira status.",
+                  "type": "string",
+                  "enum": [
+                    "concept",
+                    "spec",
+                    "ready",
+                    "dev",
+                    "qa",
+                    "done"
+                  ],
+                  "x-visibility": "client"
+                },
+                "assignee": {
+                  "description": "Who the ticket is assigned to in Jira.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255,
+                  "x-visibility": "client"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "client_contacts": {
+      "description": "Client contacts, from tools.client_contacts (R14). Used only for Waiting on you. Each accepted Publish replaces the whole list. May be empty. Server only.",
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "description": "One contact.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "description": "The contact's name.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "x-visibility": "portal"
+          },
+          "email": {
+            "description": "The contact's email.",
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 254,
+            "format": "email",
+            "x-visibility": "portal"
+          },
+          "slack": {
+            "description": "A Slack name or member id.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "x-visibility": "portal"
+          }
+        }
+      }
+    }
+  }
+}

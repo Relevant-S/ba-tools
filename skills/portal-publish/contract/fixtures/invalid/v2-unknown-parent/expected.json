@@ -1,0 +1,9 @@
+{
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "known_parent",
+      "path": "/items/2/parent"
+    }
+  ]
+}

@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- **`portal-publish` contract 1.2.0** (tag `portal-contract-1.2.0`). Adds **`dashboard/2`**
+  (`dashboard-2.schema.json` and its readable twin `dashboard-2.md`): the whole BA dashboard of one product,
+  shaped like the BA page's own data — `jira_base`, areas with their Jira facts and up to 20 open tickets,
+  Features, Map topics, Items (with `who`, `since` and `kind`, now shown), releases with dates, and Board cards
+  (Feature, epic and other) with their tickets. One send is one product: there is no product field. Limits come
+  from Jira (255 for names and summaries) or are at least twice the real Acme Lending values. `jira_base` must
+  be an `https://` link. The Item key is `sha1("<kind>|<parent>|<title>")` (first 12 hex), so same-title
+  Items under two parents do not clash. New named checks `unique_area_id`, `unique_topic_id` (a topic may not
+  take a Feature's id either), `unique_card_id`, `unique_release_name`, `unique_special`,
+  `unique_ticket_in_list` (every ticket list), `known_area`, `known_parent`, `known_card_feature`,
+  `known_release`, `card_kind_fields` and `answered_in_range`, in `checks.py` and `checks.md`. Text copied
+  from Jira is not checked for HTML entities. `publish-reply/1` now takes either Client view (`client_dashboard_1` or
+  `client_dashboard_2`) and optional `areas`, `topics`, `cards` and `tickets` counts. `index.json` accepts
+  `dashboard/1`, `dashboard/2` and `clarification/1`. A missing `contract` is now checked with the oldest
+  accepted version, so adding `dashboard/2` changed nothing for it. New fixtures: `dashboard-2-small`, a
+  synthetic `dashboard-2-real-size` (48 areas, 436 cards, 2,042 tickets; no client text), a `dashboard/2` dry-run
+  reply and 34 `v2-…` invalid cases; the `version-not-accepted` case now sends `dashboard/3`. The skill still
+  sends `dashboard/1`; sending `dashboard/2` comes with Story 3.8.
+
 - **`fetch-portal`** — new skill: brings the Client's Answers from the Relevant Clients Portal into
   `docs/BA/intake/`, one file per Clarification page (`YYYY-MM-DD-HHMM-portal-<slug>.md`, `source: portal`), for
   `/intake-and-triage`. `fetch.py` reserves a batch (`POST /api/v1/answers/reserve`), writes the files under a

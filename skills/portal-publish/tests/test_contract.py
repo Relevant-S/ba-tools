@@ -91,6 +91,17 @@ DASHBOARD_CASES = {
     "bad-email", "email-no-dot-domain", "bad-uri", "bad-item-key", "contract-not-text",
     "empty-required-text", "duplicate-feature-id", "duplicate-item-key", "html-entity", "entity-in-list",
     "version-not-accepted",
+    # dashboard/2 (contract 1.2.0)
+    "v2-duplicate-area-id", "v2-duplicate-feature-id", "v2-duplicate-topic-id", "v2-topic-id-is-a-feature-id",
+    "v2-duplicate-item-key", "v2-duplicate-card-id", "v2-duplicate-ticket-in-card", "v2-unknown-card-area",
+    "v2-unknown-feature-area", "v2-unknown-parent", "v2-unknown-card-feature", "v2-unknown-release",
+    "v2-html-entity", "v2-products-field", "v2-prod-field", "v2-missing-jira-base",
+    "v2-release-name-too-long", "v2-ticket-summary-too-long", "v2-feature-summary-too-long",
+    "v2-too-many-open-tickets", "v2-bad-ticket-key", "v2-bad-card-kind", "v2-version-not-accepted",
+    # Story 3.7 review fixes
+    "v2-unknown-topic-area", "v2-duplicate-release-name", "v2-duplicate-special", "v2-duplicate-ticket-in-feature",
+    "v2-duplicate-open-ticket", "v2-feature-card-without-feature", "v2-epic-card-with-feature",
+    "v2-other-card-with-epic", "v2-answered-over-total", "v2-jira-base-javascript", "v2-jira-base-http",
 }
 PAGE_CASES = {
     "page-too-many-questions", "page-too-many-screenshots", "question-no-options",
@@ -210,9 +221,9 @@ def test_body_that_is_not_an_object_fails_the_schema():
 
 def test_version_message_lists_accepted():
     doc = small()
-    doc["contract"] = "dashboard/2"
+    doc["contract"] = "dashboard/3"
     (d,) = checks.check_publish(doc)["details"]
-    assert d["message"] == "dashboard/2 is not accepted. This Portal accepts dashboard/1."
+    assert d["message"] == "dashboard/3 is not accepted. This Portal accepts dashboard/1, dashboard/2."
 
 
 # ---- page messages ----------------------------------------------------------------------------------
@@ -590,9 +601,9 @@ def test_limits_match_the_spec():
 
 def test_index_names_existing_schemas():
     idx = checks.index()
-    assert idx["contract_folder"] == "1.1.0"
-    assert idx["accepted"] == ["dashboard/1", "clarification/1"]
-    assert set(idx["schemas"]) == {"dashboard/1", "clarification/1", "publish-reply/1", "status/1",
+    assert idx["contract_folder"] == "1.2.0"
+    assert idx["accepted"] == ["dashboard/1", "dashboard/2", "clarification/1"]
+    assert set(idx["schemas"]) == {"dashboard/1", "dashboard/2", "clarification/1", "publish-reply/1", "status/1",
                                    "answers/1", "ack-request/1", "ack/1"}
     assert {p.name for p in SCHEMAS} == set(idx["schemas"].values())
     for contract, name in idx["schemas"].items():
@@ -634,3 +645,214 @@ def test_client_round_holds_no_portal_fields():
     stored = copy.deepcopy(view)
     stored["design"]["screens"][0]["media"] = "/media/019a2b10-7e2c-7a35-8c4d-5e6f7a8b9c0d"
     assert checks.check_reply({**reply, "client_view": stored}, "publish-reply/1") == []
+
+
+# ---- dashboard/2 (Story 3.7) ------------------------------------------------------------------------
+
+def dashboard2_schema():
+    return checks.load_json("dashboard-2.schema.json")
+
+
+def small2():
+    return read(FIXTURES / "valid" / "dashboard-2-small.json")
+
+
+def real2():
+    return read(FIXTURES / "valid" / "dashboard-2-real-size.json")
+
+
+def test_real_size_is_the_easy_payday_upper_bound():
+    doc = real2()
+    assert len(doc["areas"]) == 48 and all(len(a["jira"]["open_tickets"]) == 5 for a in doc["areas"])
+    assert (len(doc["features"]), len(doc["topics"]), len(doc["items"]), len(doc["releases"])) == (18, 10, 70, 60)
+    assert len(doc["cards"]) == 436
+    assert [sum(c["kind"] == k for c in doc["cards"]) for k in ("feature", "epic", "other")] == [29, 290, 117]
+    assert sum(len(c["tickets"]) for c in doc["cards"]) == 2042
+    assert max(len(f["summary"]) for f in doc["features"]) == 4598
+    assert max(len(r["name"]) for r in doc["releases"]) == 130
+    text = json.dumps(doc)
+    assert "@" not in text  # no email address anywhere
+    assert checks.check_publish(doc) is None
+    body = json.dumps(doc, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    assert len(body) < 5 * 1024 * 1024
+
+
+def test_every_dashboard2_check_has_a_fixture():
+    checks_seen = set()
+    for case in INVALID:
+        if case.name.startswith("v2-"):
+            checks_seen |= {d["check"] for d in read(case / "expected.json")["details"]}
+    assert checks_seen == {
+        "schema", "contract_version", "unique_area_id", "unique_feature_id", "unique_topic_id", "unique_item_key",
+        "unique_card_id", "unique_release_name", "unique_special", "unique_ticket_in_list", "known_area",
+        "known_parent", "known_card_feature", "known_release", "card_kind_fields", "answered_in_range",
+        "no_html_entities",
+    }
+
+
+def test_valid_small_file_has_an_item_under_a_topic():
+    doc = small2()
+    topics = {t["id"] for t in doc["topics"]}
+    assert any(i["parent"] in topics for i in doc["items"])
+    assert checks.check_publish(doc) is None
+
+
+def test_dashboard2_item_key_includes_the_parent():
+    """sha1("<kind>|<parent>|<title>"): two Items with one title under two parents get two keys."""
+    import hashlib
+    for doc in (small2(), real2()):
+        for it in doc["items"]:
+            raw = f'{it["kind"]}|{it["parent"]}|{it["title"].strip()}'
+            assert it["key"] == hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
+
+
+def test_dashboard2_jira_text_may_hold_entities():
+    """Text copied from Jira never blocks a send; the Portal shows it as escaped plain text."""
+    doc = small2()
+    jira = doc["areas"][0]["jira"]
+    jira["open_tickets"][0]["summary"] = "Fix &amp; ship"
+    jira["open_tickets"][0]["status"] = "To&nbsp;Do"
+    jira["description"] = "Fees &amp; limits"
+    doc["areas"][0]["name"] = "Fees &amp; limits"
+    doc["features"][1]["tickets"][0]["summary"] = "A &lt;b&gt; tag"
+    doc["cards"][2]["title"] = "Epic &mdash; payouts"
+    assert checks.check_publish(doc) is None
+
+
+def test_jira_base_must_be_https():
+    for bad in ("javascript:alert(1)", "http://example.atlassian.net", "https://", "https://a b"):
+        doc = small2()
+        doc["jira_base"] = bad
+        result = checks.check_publish(doc)
+        assert result is not None and ("schema", "/jira_base") in {(d["check"], d["path"]) for d in result["details"]}, bad
+
+
+def test_dashboard2_leaves_have_visibility_and_objects_are_closed():
+    assert visibility_problems(dashboard2_schema()) == []
+
+
+def test_dashboard2_visibility_levels_are_the_agreed_ones():
+    vis = {path: prop["x-visibility"] for path, prop in leaves(dashboard2_schema())}
+    assert sorted(p for p, v in vis.items() if v == "admin") == sorted(
+        ["#/contract", "#/sent_at", "#/sent_by", "#/ba_tools_version", "#/source_commit"])
+    assert sorted(p for p, v in vis.items() if v == "id") == sorted(
+        ["#/areas[]/id", "#/features[]/id", "#/features[]/area", "#/topics[]/id", "#/topics[]/area",
+         "#/items[]/key", "#/items[]/parent", "#/cards[]/id", "#/cards[]/area", "#/cards[]/feature"])
+    assert sorted(p for p, v in vis.items() if v == "portal") == sorted(
+        ["#/features[]/clar_url", "#/client_contacts[]/name", "#/client_contacts[]/email",
+         "#/client_contacts[]/slack"])
+    # Decision 1 and 3: ticket keys, assignees, and Item who, since and kind are shown; so is jira_base.
+    for p in ("#/jira_base", "#/items[]/who", "#/items[]/since", "#/items[]/kind", "#/cards[]/tickets[]/key",
+              "#/cards[]/tickets[]/assignee", "#/areas[]/jira/open_tickets[]/key"):
+        assert vis[p] == "client", p
+
+
+def test_dashboard2_has_no_product_field():
+    text = json.dumps(dashboard2_schema())
+    assert '"prod"' not in text and '"products"' not in text and '"product"' not in text
+
+
+def test_dashboard2_limits_match_the_spec():
+    p = dashboard2_schema()["properties"]
+    maxima = {"areas": 1000, "features": 1000, "topics": 1000, "items": 5000, "releases": 2000, "cards": 10000,
+              "client_contacts": 200}
+    assert {k: p[k]["maxItems"] for k in maxima} == maxima
+    a = p["areas"]["items"]["properties"]
+    assert (a["id"]["maxLength"], a["name"]["maxLength"]) == (300, 255)
+    j = a["jira"]["properties"]
+    assert (j["description"]["maxLength"], j["shipped"]["maxItems"], j["open_tickets"]["maxItems"]) == (5000, 20, 20)
+    f = p["features"]["items"]["properties"]
+    assert (f["title"]["maxLength"], f["short"]["maxLength"], f["summary"]["maxLength"]) == (500, 100, 20000)
+    assert (f["open"]["maxItems"], f["open"]["items"]["maxLength"], f["tickets"]["maxItems"]) == (200, 2000, 5000)
+    i = p["items"]["items"]["properties"]
+    assert (i["who"]["maxLength"], i["title"]["maxLength"], i["text"]["maxLength"],
+            i["how_to_send"]["maxLength"]) == (255, 500, 10000, 2000)
+    assert p["releases"]["items"]["properties"]["name"]["maxLength"] == 255
+    c = p["cards"]["items"]["properties"]
+    assert (c["title"]["maxLength"], c["tickets"]["maxItems"]) == (255, 5000)
+    t = c["tickets"]["items"]["properties"]
+    assert (t["key"]["maxLength"], t["summary"]["maxLength"], t["status"]["maxLength"],
+            t["assignee"]["maxLength"]) == (50, 255, 100, 255)
+    assert p["jira_base"]["maxLength"] == 2000
+
+
+@pytest.mark.parametrize("listname,limit", [
+    ("areas", 1000), ("features", 1000), ("topics", 1000), ("items", 5000), ("releases", 2000), ("cards", 10000),
+])
+def test_dashboard2_list_limits(listname, limit):
+    """One over each list limit fails the schema at the list (no fixture: the files would be large)."""
+    doc = small2()
+    doc[listname] = (doc[listname] * (limit // len(doc[listname]) + 1))[:limit + 1]
+    result = checks.check_publish(doc)
+    assert result["code"] == "contract_invalid"
+    assert ("schema", f"/{listname}") in {(d["check"], d["path"]) for d in result["details"]}
+
+
+def test_dashboard2_255_character_release_name_passes():
+    doc = small2()
+    old, new = doc["releases"][0]["name"], "R" * 255
+    doc["releases"][0]["name"] = new
+    for card in doc["cards"]:
+        if card["release"] == old:
+            card["release"] = new
+    assert checks.check_publish(doc) is None
+
+
+def test_dashboard2_not_planned_card_and_shared_ticket_pass():
+    doc = small2()
+    doc["cards"][0]["release"] = None
+    doc["cards"][1]["tickets"].append(copy.deepcopy(doc["cards"][0]["tickets"][0]))  # a ticket on two cards
+    assert checks.check_publish(doc) is None
+
+
+def test_dashboard2_entities_allowed_in_light_html_and_jira_base():
+    doc = small2()
+    doc["features"][0]["summary"] = "<p>Fees &amp; limits</p>"
+    doc["items"][0]["text"] = "<p>a &amp; b</p>"
+    doc["jira_base"] = "https://example.atlassian.net/?a=1&amp;b=2"
+    assert checks.check_publish(doc) is None
+
+
+def test_dashboard2_known_messages_name_the_value():
+    doc = small2()
+    doc["items"][2]["parent"] = "no-such-feature"
+    (d,) = checks.check_publish(doc)["details"]
+    assert d["check"] == "known_parent" and '"no-such-feature"' in d["message"] and "/items/2/parent" in d["message"]
+
+
+def test_dashboard2_ticket_twice_names_both():
+    doc = small2()
+    doc["cards"][2]["tickets"][2]["key"] = doc["cards"][2]["tickets"][0]["key"]
+    (d,) = checks.check_publish(doc)["details"]
+    assert "/cards/2/tickets/0/key" in d["message"] and "/cards/2/tickets/2/key" in d["message"]
+
+
+def test_dashboard1_fields_are_refused_in_dashboard2():
+    doc = small2()
+    doc["release_rows"] = []
+    result = checks.check_publish(doc)
+    assert ("schema", "/release_rows") in {(d["check"], d["path"]) for d in result["details"]}
+
+
+def test_missing_contract_is_checked_as_the_oldest_version():
+    """A missing contract is reported by the dashboard/1 schema, so adding dashboard/2 changed nothing there."""
+    doc = small2()
+    del doc["contract"]
+    paths = {d["path"] for d in checks.check_publish(doc)["details"]}
+    assert "/contract" in paths and "/jira_base" in paths  # jira_base is unknown to dashboard/1
+
+
+def test_reply_holds_either_view():
+    reply = read(FIXTURES / "valid" / "publish-reply-1-dashboard-2-dry-run.json")
+    assert checks.check_reply(reply, "publish-reply/1") == []
+    v1_view = read(FIXTURES / "valid" / "publish-reply-1-dry-run.json")["client_view"]
+    assert checks.check_reply({**reply, "client_view": v1_view}, "publish-reply/1") == []
+    broken = copy.deepcopy(reply["client_view"])
+    broken["release_rows"] = []  # a v1 field in a v2 view
+    assert checks.check_reply({**reply, "client_view": broken}, "publish-reply/1") != []
+    leaked = copy.deepcopy(reply["client_view"])
+    leaked["features"][0]["clar_url"] = "https://pages.example.com/x/"
+    assert checks.check_reply({**reply, "client_view": leaked}, "publish-reply/1") != []
+    schema = read(checks.CONTRACT_DIR / "publish-reply-1.schema.json")
+    for form in ("client_dashboard_1", "client_dashboard_2", "client_ticket"):
+        assert schema["$defs"][form]["additionalProperties"] is False, form

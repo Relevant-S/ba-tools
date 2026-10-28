@@ -25,14 +25,19 @@ A failed check gives one error code and a list of details:
    entries of `index.json` → `accepted` that start with `<type>/`. If the document is an object whose
    `contract` is a string that is not one of them, the result is `contract_version_not_accepted` with one
    detail at `/contract`. Its message names the accepted versions:
-   `dashboard/2 is not accepted. This Portal accepts dashboard/1.` Nothing else is checked.
-   A `contract` that is missing or not a string is left to the schema of the newest accepted version.
+   `dashboard/3 is not accepted. This Portal accepts dashboard/1, dashboard/2.` Nothing else is checked.
+   A `contract` that is missing or not a string is left to the schema of the **oldest** accepted version of
+   the type (`dashboard/1`, `clarification/1`), so adding a version never changes how such a document fails.
 2. **Schema** (`schema`). The document is checked against the schema named for its `contract` in
    `index.json` → `schemas`, with JSON Schema draft 2020-12 and format checks on. Every failure is listed.
    Any failure → `contract_invalid`, and the named checks do not run.
 3. **Named checks.** Only on a document that passed the schema. Every named check of the contract type runs;
    every failure is listed. Any failure → `contract_invalid`.
-   - `dashboard`: `unique_feature_id`, `unique_item_key`, `no_html_entities`.
+   - `dashboard/1`: `unique_feature_id`, `unique_item_key`, `no_html_entities`.
+   - `dashboard/2`, in this order: `unique_area_id`, `unique_feature_id`, `unique_topic_id`,
+     `unique_item_key`, `unique_card_id`, `unique_release_name`, `unique_special`, `unique_ticket_in_list`,
+     `known_area` (Features, then topics, then cards), `known_parent`, `known_card_feature`, `known_release`,
+     `card_kind_fields`, `answered_in_range`, `no_html_entities`.
    - `clarification`: `unique_question_id`, `unique_option_v`, `one_rec_max`, `bare_file_names`,
      `one_hero_max`, `max_screenshots`, `unique_decision_id`, `no_html_entities`.
 4. **Parts** (`screens_match_parts`) — pages only. Only on a page that passed steps 1 to 3, and only when the
@@ -56,6 +61,74 @@ A failed check gives one error code and a list of details:
 - **One detail per repeat:** `path` is the later Item's `key`; the message names both places, for example
   `Item key "3f2a9c0d1e4b" is used twice: /items/5/key and /items/40/key`.
 
+`dashboard/2` makes the Item key from `sha1("<kind>|<parent>|<title>")` (title trimmed, UTF-8, first 12 hex
+characters), so two Items with one title under two parents do not clash. `dashboard/1` keeps
+`sha1("<kind>|<title>")`.
+
+### `unique_area_id`, `unique_card_id`, `unique_release_name` (dashboard/2)
+
+- **Rule:** no two areas share an `id`; no two cards share an `id`; no two releases share a `name` (a card
+  names its release by name).
+- **Raises:** `contract_invalid`.
+- **One detail per repeat:** `path` is the later one's `id` (or `name`); the message names both places, for
+  example `Area id "ABC:Payouts" is used twice: /areas/1/id and /areas/4/id`,
+  `Card id "c00012" is used twice: /cards/2/id and /cards/9/id` or
+  `Release name "6.2" is used twice: /releases/0/name and /releases/2/name`.
+
+### `unique_special` (dashboard/2)
+
+- **Rule:** each `special` value (`no_area`, `not_linked`) is on at most one area.
+- **Raises:** `contract_invalid`.
+- **One detail per repeat:** `path` is the later area's `special`, for example
+  `The special area "no_area" is sent twice: /areas/1/special and /areas/2/special`.
+
+### `unique_topic_id` (dashboard/2)
+
+- **Rule:** no two topics share an `id`, and no topic has a Feature's `id`. An Item's `parent` names a Feature
+  or a topic, so the two lists must not clash.
+- **Raises:** `contract_invalid`.
+- **One detail per repeat:** `path` is the later topic's `id`, for example
+  `Topic id "payouts" is used twice: /topics/0/id and /topics/3/id`; a topic with a Feature's id gives one
+  detail at the topic's `id`: `Topic id "payouts" is also a Feature id: /features/2/id and /topics/0/id`.
+  Repeats are listed first, then clashes with Features.
+
+### `unique_ticket_in_list` (dashboard/2)
+
+- **Rule:** a ticket `key` is in one ticket list at most once. The ticket lists are each area's
+  `jira.open_tickets` and `jira.shipped`, and each Feature's, topic's and card's `tickets`. Two different
+  lists may hold the same ticket.
+- **Raises:** `contract_invalid`.
+- **One detail per repeat:** walking the lists in that order (areas, then Features, topics, cards), `path` is
+  the later ticket's `key`; the message names both places, for example
+  `Ticket "ABC-12" is in one list twice: /cards/2/tickets/0/key and /cards/2/tickets/2/key`.
+
+### `known_area`, `known_parent`, `known_card_feature`, `known_release` (dashboard/2)
+
+- **Rule:** every reference names something sent in the same Publish:
+  - `known_area`: `features[].area`, `topics[].area` and `cards[].area` are area `id`s;
+  - `known_parent`: `items[].parent` is a Feature `id` or a topic `id`;
+  - `known_card_feature`: `cards[].feature`, when sent, is a Feature `id`;
+  - `known_release`: `cards[].release`, when not `null`, is a release `name`.
+- **Raises:** `contract_invalid`.
+- **One detail per unknown reference:** `path` is the field, in list order; the message names it and the value,
+  for example `/items/2/parent names a Feature or topic "no-such-feature" that is not in this Publish.`
+
+### `card_kind_fields` (dashboard/2)
+
+- **Rule:** a card's fields match its `kind`: a `feature` card has `feature` and no `epic`; an `epic` card has
+  `epic` and no `feature`; an `other` card has neither.
+- **Raises:** `contract_invalid`.
+- **One detail per wrong field:** per card in order, `feature` first then `epic`; `path` is the missing or
+  extra field, for example `/cards/0/feature is missing: a feature card names its feature.` or
+  `/cards/4/epic is not allowed on a other card.`
+
+### `answered_in_range` (dashboard/2)
+
+- **Rule:** a Feature's `answered.done` is at most its `answered.total`.
+- **Raises:** `contract_invalid`.
+- **One detail per Feature:** `path` is `answered/done`, for example
+  `/features/0/answered/done is 6, more than the total of 5.`
+
 ### `no_html_entities`
 
 - **Rule:** a plain-text field holds no HTML entity such as `&mdash;`, `&#8212;` or `&#x2014;`
@@ -63,7 +136,13 @@ A failed check gives one error code and a list of details:
 - **Fields:** every string in the document, list entries included, except exactly these. Light-HTML fields may
   hold entities, and the Portal cleans them; the others have a format that may hold `&`.
   - `dashboard`: `features[].summary`, `items[].text` (light HTML), `features[].clar_url` and
-    `client_contacts[].email`.
+    `client_contacts[].email`. In `dashboard/2` also `jira_base` (a link) and every text copied from Jira,
+    because the BA does not write it and cannot fix it, and the Portal shows it as escaped plain text, so an
+    entity there shows as its letters and never as markup: `areas[].name`, `areas[].jira.description`, the
+    `summary` of `jira.shipped[]` and the `summary` and `status` of `jira.open_tickets[]`, `releases[].name`,
+    `cards[].release`, `cards[].title` (an epic's name, or the Feature title), and the `summary`, `status`
+    and `assignee` of every ticket of `features[]`, `topics[]` and `cards[]`. BA-written text (Feature,
+    topic and Item titles, `short`, `open`, `who`, `how_to_send`) is still checked.
   - `clarification`: `description`, `problem`, `solution`, `design.summary`, `design.detail`,
     `questions[].body`, `questions[].body2`, `questions[].snag` (light HTML), `url`, and the screen file
     names `design.screens[].file` and `questions[].screens[].file` (checked by `bare_file_names`).
@@ -163,7 +242,10 @@ A failed check gives one error code and a list of details:
   means the same.
 - Patterns in the schemas are ASCII-only. They are used on fields of one fixed length (dates, times, Item
   `key`, media addresses) — Python's `$` also matches before a final line break, and with a fixed length that
-  cannot change the result — and on `slug`, which ends in `(?![\s\S])` ("nothing follows") instead of `$`.
+  cannot change the result — and on `slug` and the Jira ticket `key` of `dashboard/2`, which end in
+  `(?![\s\S])` ("nothing follows") instead of `$`.
+- The reply to a `dashboard/2` send counts `areas`, `topics`, `cards` and `tickets` too. `tickets` counts the
+  tickets on Board cards only (all `cards[].tickets` together), not the Feature, topic or area ticket lists.
 - Python: `Draft202012Validator(schema, format_checker=FormatChecker())` from `jsonschema[format-nongpl]`.
 - Portal: `Ajv2020` with `strict: true` and `allErrors: true`, `ajv-formats`, and `x-visibility` added with
   `addKeyword` and an enum meta-schema (`client`, `id`, `portal`, `admin`), so a schema with any other value does

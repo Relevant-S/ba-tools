@@ -1,0 +1,9 @@
+{
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "unique_item_key",
+      "path": "/items/3/key"
+    }
+  ]
+}
