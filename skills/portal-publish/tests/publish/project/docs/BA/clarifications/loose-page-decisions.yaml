@@ -1,0 +1,6 @@
+# Test page (Story 4.10): no Feature links it, so it goes with the first product.
+slug: loose-page
+store_key: loose-page-v1
+url: https://pages.example.com/clarifications/loose-page/
+name: Loose page
+round: Round V1

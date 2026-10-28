@@ -33,6 +33,7 @@ features:
     since: 2026-09-01
     s: Internal only.
     client: false
+    clar: {url: 'https://pages.example.com/clarifications/back-office/', label: V1}
   - area: Audit log
     id: audit-log
     prod: Both
@@ -40,6 +41,7 @@ features:
     who: Dev team
     since: 2026-09-15
     s: One log of every change, in both products.
+    clar: {url: 'https://pages.example.com/clarifications/audit-log/', label: V2}
 topics:
   - {id: refunds, title: Refunds, prod: App}
   - {id: chat, title: Chat assistant, prod: App}

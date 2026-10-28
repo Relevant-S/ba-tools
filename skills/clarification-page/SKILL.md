@@ -82,7 +82,10 @@ dated and attributed. If an answer only lives on the page, the spec rots and the
      that link; a placeholder is left out with a warning.
   3. Run `portal-publish page <slug>` (the YAML's `slug:`). It sends the page and its screens to the
      Relevant Clients Portal, where the Client answers it. It shows the BA what the Client will read and
-     sends only after a yes; if the BA says no, nothing is sent.
+     sends only after a yes; if the BA says no, nothing is sent. With two or more products, the page goes to
+     the Portal project of its Feature's product (the Feature whose `clar.url` is the page's `url:`; "Both"
+     sends it to every product's project, one yes or no each). A page no Feature links goes to the first
+     product's project.
   4. When the link is new, run `portal-publish dashboard` too, so the Client's Dashboard links to the page.
 
   Each round needs its own `store_key` and `round:` line: a Round the Client has already answered

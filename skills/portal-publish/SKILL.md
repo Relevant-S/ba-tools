@@ -55,9 +55,20 @@ Admin → Projects → the Project → Publishing, and "Regenerate key" there re
 Two products never share a Portal project. Two products naming the same `.env` variable, or two keys that
 open the same Portal project, stop the run before anything is sent.
 
-Pages (`page <slug>`) and `fetch-portal` use the key of the first product in `tools.portal.products` for now,
-until pages are sent per product (Story 4.10). With two or more products, `page plan` names that project
-first, so the BA sees where the page goes before saying yes.
+Pages (`page <slug>`) and `fetch-portal` use the same keys: each page goes to its own products' Portal
+projects, and `fetch-portal` fetches from every product's project. `targets.py` reads these settings for both
+skills.
+
+**Which product a Clarification page goes with.** A page is a `docs/BA/clarifications/*.yaml` whose `slug:`
+is its file name (`<slug>.yaml` or `<slug>-decisions.yaml`) and that has a `store_key:`. Other YAMLs are
+skipped. A slug that breaks the slug rule is skipped with a warning. When `<slug>.yaml` and
+`<slug>-decisions.yaml` both hold the page, the `-decisions` file is used, with a warning. With two or more
+products, a page goes with the `prod` of every Feature in `docs/BA/dashboard.yaml` whose `clar.url` is the
+page's `url:` (both trimmed and a trailing `/` dropped, as the Portal compares them; "Both" means every
+product). If only Features with a `prod` that has no Portal project (a misspelled product) link a page, the run
+stops and names them. A page no Feature links at all goes with the first product in `tools.portal.products`,
+with a warning. With one product, or no `dashboard.yaml`, every page goes with the first product. To move a page to another product, change its Feature's `prod`: the next
+Dashboard send removes it from the old project, and the next page send adds it to the new one.
 
 ## Run
 
@@ -69,6 +80,10 @@ first, so the BA sees where the page goes before saying yes.
      areas (with each area's Jira facts and its first 5 open tickets, in the BA page's order), Features, Map
      topics, Waiting and agenda Items (an Item on no Feature goes under its topic, or under "Not linked yet"),
      releases, and Board cards with their tickets. No payload holds a product field;
+   - lists, in each payload, the slugs of the Clarification pages that go with that product
+     (`clarification_pages`). **The Portal removes from that project every page not on the list** (the Client
+     stops seeing it; its data is deleted once its Answers are fetched). So a YAML that cannot be read, or two
+     YAMLs with one slug, stop the run: a page missing from the list would be removed;
    - leaves out what the Client must not see: a Feature or Item with `client: false`, the Items and Board
      cards of a hidden Feature, to-dos, `done` Items, the BA's notes and the page title. `client_s` replaces
      `s`. Release names are sent whole (Jira allows 255 characters). A Board card that sits in another
@@ -81,13 +96,15 @@ first, so the BA sees where the page goes before saying yes.
      Portal project, it stops; nothing is sent.
 2. **Show the BA, product by product, word for word:**
    - every line of `warnings`, once (stale Jira files, no Client contacts, a Board card in another product's
-     release);
+     release, pages no Feature links, a product with no pages at all);
    - each entry of `products`: its `client_list` starts with `<product> → Portal project "<project_name>"`,
      then the areas, the Features (title, short label, summary, stage, open questions, its Clarification
      page), the topics, one Board line ("Board: N cards (feature / epic / other), N tickets"), the Items
      grouped as "Waiting on you" and "Next-call agenda", and the Client contacts' names. Ticket lists are not
      printed. It comes from the Portal's own dry-run reply. Never rebuild it, reorder it or work out "Waiting
-     on you" yourself;
+     on you" yourself. When the send would remove pages from that project, its last line is
+     `These pages will be removed from the Portal project "<project_name>": <title> (<slug>), …` (from the
+     reply's `pages_removed`). The BA must see it before saying yes;
    - that product's `left_out` as one line: "Left in the repo: N Features, N Items and N Board cards
      (client: false, done, to-dos)".
 3. **Ask one question per product:** "Send this to the Portal project "<project_name>"?" If `warnings` has
@@ -101,7 +118,7 @@ first, so the BA sees where the page goes before saying yes.
    product. A "no" to one product does not stop the others.
 5. **Report** `report` from each `send`: which product went to which Portal project, the counts (areas,
    Features, topics, Items, Board cards and tickets, Client contacts), the Portal's `publish_id` and its
-   confirmation time (`received_at`, UTC). The BA can see the new row at Admin → Projects → the Project →
+   confirmation time (`received_at`, UTC), and the pages it removed, if any. The BA can see the new row at Admin → Projects → the Project →
    Publishing.
 
 If the BA edits `dashboard.yaml` after `plan`, discard and run `plan` again — `send` sends what `plan` built.
@@ -119,6 +136,10 @@ Show `error` as it is; it already says what to do. Nothing was sent in these cas
 | At `send`, the key opens a different project from the one `plan` showed | "The key in PORTAL_PUBLISH_KEY_… now opens Portal project "…", but `dashboard plan` showed the … Dashboard going to "…" …": check `.env`, run `dashboard plan` again. The payload file is kept; `dashboard discard` removes it |
 | A product's variable is not in `.env` | ".env has no PORTAL_PUBLISH_KEY_BOND (the Publish key for Bond Portal) …" |
 | `--product` names no product of this repo | "There is no product called '…'. This repo's products: …" |
+| A page YAML cannot be read and has no `slug:` line | "<file> does not read as YAML, and no top-level `slug:` line could be found in it …" |
+| A page YAML cannot be read and its `slug:` line is not its file name | "<file> does not read as YAML, and its `slug:` line ('…') does not match its file name …" |
+| A page YAML is not UTF-8 | "<file> is not UTF-8 text, so it is not clear whether it is a Clarification page …" |
+| Only Features with an unknown `prod` link a page | "The page … (<file>) is linked only by Features whose prod is not a product with a Portal project (…): '<Feature>' (prod '…') in docs/BA/dashboard.yaml. Fix the prod …" |
 | `.env` not ignored by git | ".env is not ignored by git …" |
 | The build fails | "dashboard.py build failed: …" or "map/build.py failed: …" |
 | The local check fails (any product) | "The Bond Portal Dashboard does not match the contract …", then one line per problem, like `docs/BA/dashboard.yaml → features 'Sign-up' → area: …` or `Jira → the release '…' → its name: … (/releases/3/name)` |
@@ -135,7 +156,7 @@ Show `error` as it is; it already says what to do. Nothing was sent in these cas
 Same settings, same Step 0, same two steps with the BA's yes in between.
 
 ```
-uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py page plan <slug>
+uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py page plan <slug> [--product "<name>"]
 uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py page send --payload <file>
 uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py page discard --payload <file>
 ```
@@ -156,22 +177,32 @@ uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.
      file name; a second file with the same name goes as `name-2.png`, then `-3` …;
    - checks it all: the contract (at most 50 Questions, 30 screenshots), each screenshot there, PNG, JPEG or
      WebP, at most 10 MB, and at most 90 MB in all. A failure names the YAML file, the row and the field;
-   - with two or more products in `tools.portal.products`: asks the Portal which project the first product's
-     key opens (`GET /status`). `client_view` then starts with `Goes to Portal project "<name>"`, the result
-     has `project_name`, and a warning says every page goes to that project until pages are sent per product;
-   - sends a **dry run** (multipart: the page JSON, then one part per screenshot). The Portal stores and logs
-     nothing. The payload file in temp holds the page JSON and each screenshot's path and checksum — never the
-     screenshots themselves.
-2. **Show the BA, word for word:** every line of `warnings`; `client_view` — with two or more products its
-   first line, `Goes to Portal project "<name>"`, which the BA must see before saying yes; then the page name,
-   the Round label, whether it is a new Round or replaces one, each Question with its options and the recommended one, the
-   settled decisions and the counts. It comes from the Portal's own dry run: never rebuild or reorder it.
-   Then `left_out` as one line: "Left in the repo: <the fields, comma-separated>".
-3. **Ask one question:** "Send this page to the Client?" (with two or more products: "Send this page to the
-   Portal project "<project_name>"?"). Wait for the answer.
-4. **Yes** → `page send --payload <the payload path from plan>`. It re-reads every screenshot; if one changed
-   since `plan`, it stops ("run `page plan` again"). Then it sends the same page for real and deletes the file.
-   **No** (or anything but a clear yes) → `page discard --payload <path>`. Nothing is sent.
+   - finds the page's products (see "Which product a Clarification page goes with" above). With
+     `--product "<name>"`, only that one, which must be one of them;
+   - per product, with that product's key: with two or more products, asks the Portal which project the key
+     opens (`GET /status`); then sends a **dry run** (multipart: the page JSON, then one part per screenshot).
+     The Portal stores and logs nothing. **If any project refuses, the whole plan stops**: no payload file is
+     kept and nothing is sent anywhere. If two keys open the same project, it stops too;
+   - writes one payload file per project, in temp. Each holds the page JSON, each screenshot's path and
+     checksum (never the screenshots themselves), the product and the name of its `.env` variable (never the
+     key).
+   The result has `products`: one entry per Portal project, each with its `payload`, `client_view`, `round`
+   and `counts` (and `project_name` with two or more products). With one project, these are also at the top.
+2. **Show the BA, word for word, for each entry of `products`:** every line of `warnings` (once); its
+   `client_view` — with two or more products its first line is `<product> → Portal project "<name>"`, which
+   the BA must see before saying yes; then the page name, the Round label, whether it is a new Round or
+   replaces one, each Question with its options and the recommended one, the settled decisions and the
+   counts. It comes from the Portal's own dry run: never rebuild or reorder it. Then `left_out` as one line:
+   "Left in the repo: <the fields, comma-separated>".
+3. **Ask one question per project:** "Send this page to the Client?" (with two or more products: "Send this
+   page to the Portal project "<project_name>"?"). Wait for each answer.
+4. **Yes** → `page send --payload <that project's payload path>`. It reads the key from the `.env` variable
+   saved in the file, and stops if that variable is gone or the profile no longer gives it to that product. It
+   re-reads every screenshot; if one changed since `plan`, it stops ("run `page plan` again"). With two or
+   more products it asks the Portal again which project the key opens, and stops (keeping the file) if that is
+   not the project `plan` showed. Then it sends the same page for real and deletes the file.
+   **No** (or anything but a clear yes) → `page discard --payload <path>`. Nothing is sent to that project. A
+   "no" to one project does not stop the others.
 5. **Report** `report` from `send`: the page, the Round label, new Round or replaced, the counts of Questions
    and screenshots, the Portal's `publish_id` and its confirmation time (`received_at`, UTC). The BA sees the
    row at Admin → Projects → the Project → Publishing.
@@ -183,6 +214,11 @@ If the BA edits the YAML after `plan`, discard and run `plan` again — `send` s
 | Case | What the BA sees |
 |---|---|
 | No YAML for the slug | "No page YAML for '<slug>'. Looked for … and …" |
+| One project refuses the dry run (two or more products) | `<product> → Portal project "<name>": ` then the refusal, then "No payload was kept: nothing was sent to any Portal project." |
+| `--product` names a product the page does not go with | "The page … goes with …, not …: the Features in docs/BA/dashboard.yaml that link it (by clar.url) say so …" |
+| `--product` on a page no Feature links | "No Feature in docs/BA/dashboard.yaml links the page … (by clar.url), so it goes with the first product, …, not … . To send it with …, put the page's url in the clar.url of a … Feature …" |
+| At `page send`, the saved `.env` variable is gone, or no longer the product's | ".env has no …" or "`page plan` used the key in … for …, but the profile now names … for …" |
+| At `page send`, the key opens a different project from the one `plan` showed | "The key in … now opens Portal project "…", but `page plan` showed the page going to "…" …". The payload file is kept; `page discard` removes it |
 | The YAML's `slug:` is different | "… has slug 'a', but you asked for 'b' …" |
 | No `round:` line | "… has no `round:` line …" |
 | A screenshot is missing, not PNG / JPEG / WebP, or over 10 MB | `docs/BA/clarifications/<file> → design.screens[1] → src: …` |
@@ -195,6 +231,8 @@ If the BA edits the YAML after `plan`, discard and run `plan` again — `send` s
 ## Files
 
 - `publish.py` — the commands above (`dashboard …` and `page …`).
+- `targets.py` — the Portal address, and each product's `.env` variable and key. `fetch-portal` loads the same
+  file.
 - `checks.py` and `contract/` — the data contract both sides check against. Do not edit them here; a contract
   change is its own ba-tools change, copied to the Portal.
 - `tests/` — `uv run pytest` in this folder.

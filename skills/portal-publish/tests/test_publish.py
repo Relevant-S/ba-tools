@@ -332,7 +332,8 @@ def test_each_payload_passes_the_contract_and_holds_no_product(project):
         payload = payload_of(project, product)
         assert checks.check_publish(payload) is None, product
         assert set(payload) <= {"contract", "sent_at", "sent_by", "ba_tools_version", "source_commit", "jira_base",
-                                "areas", "features", "topics", "items", "releases", "cards", "client_contacts"}
+                                "areas", "features", "topics", "items", "releases", "cards", "client_contacts",
+                                "clarification_pages"}
         assert '"prod"' not in json.dumps(payload) and "products" not in payload
 
 
@@ -1176,3 +1177,230 @@ def test_real_project_each_product_passes_the_contract():
         tickets += sum(len(c["tickets"]) for c in payload["cards"])
     all_tickets = sum(len(c["tickets"]) for c in data["board"]["cards"])
     assert all_tickets - 5 <= tickets <= all_tickets
+
+
+# ---- Story 4.10: each product's Dashboard send lists its Clarification pages --------------------------
+# The sample has six YAMLs in docs/BA/clarifications/: sign-up (App), audit-log (Both), back-office (Admin, a
+# hidden Feature), loose-page (no Feature links it), draft-page (no store_key) and renamed (its slug is not its
+# file name).
+
+CLAR = "docs/BA/clarifications"
+
+
+def page_yaml(root: Path, name: str, body: str) -> None:
+    (root / CLAR / name).write_text(body, encoding="utf-8")
+
+
+def test_each_product_sends_its_pages(capsys, project, portal, builds):
+    code, plan, _ = run(capsys, project, "dashboard", "plan")
+    try:
+        assert code == 0, plan
+        app, admin = (json.loads(r.content) for r in portal.posts())
+        assert app["clarification_pages"] == ["audit-log", "loose-page", "sign-up-decisions"]
+        assert admin["clarification_pages"] == ["audit-log", "back-office"]
+        assert checks.check_publish(app) is None and checks.check_publish(admin) is None
+        assert any("these Clarification pages" in w and "first product, App: loose-page" in w
+                   for w in plan["warnings"])
+        assert not any("draft-page" in w or "other-name" in w for w in plan["warnings"]), "skipped quietly"
+        assert all(p["pages_removed"] == [] for p in plan["products"])
+        assert "will be removed" not in by_product(plan)["App"]["client_list"], "no line when none is removed"
+    finally:
+        cleanup(plan)
+
+
+def test_pages_removed_are_shown_before_the_yes(capsys, project, portal, builds):
+    portal.dry = read(VALID / "publish-reply-1-dashboard-2-pages-removed-dry-run.json")
+    portal.sent = read(VALID / "publish-reply-1-dashboard-2-pages-removed.json")
+    code, plan, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 0, plan
+    got = by_product(plan)
+    try:
+        line = ('These pages will be removed from the Portal project "Sample Admin": Onboarding questions '
+                '(old-onboarding-questions), Employer search: who can be found (employer-search)')
+        assert got["Admin"]["client_list"].endswith(line)
+        assert [p["slug"] for p in got["Admin"]["pages_removed"]] == ["old-onboarding-questions", "employer-search"]
+        assert portal.posts() and all("dry_run=1" in str(r.url) for r in portal.posts()), "nothing sent yet"
+        code, sent, _ = run(capsys, project, "dashboard", "send", "--payload", got["Admin"]["payload"])
+        assert code == 0, sent
+        assert ('It removed 2 page(s) from Portal project "Sample Admin", because the repo no longer sends them '
+                'with Admin: Onboarding questions (old-onboarding-questions)') in sent["report"]
+        assert len(sent["pages_removed"]) == 2
+    finally:
+        cleanup(plan)
+
+
+def test_no_page_has_a_store_key_sends_an_empty_list_with_a_warning(capsys, project, portal, builds):
+    for f in (project / CLAR).glob("*.yaml"):
+        doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+        doc.pop("store_key", None)
+        f.write_text(yaml.safe_dump(doc), encoding="utf-8")
+    code, plan, _ = run(capsys, project, "dashboard", "plan")
+    try:
+        assert code == 0, plan
+        assert [json.loads(r.content)["clarification_pages"] for r in portal.posts()] == [[], []]
+        for product in ("App", "Admin"):
+            assert any(w.startswith(f"No Clarification page in {CLAR}/ goes with {product}") and
+                       f"remove every page it has in {product}'s Portal project" in w for w in plan["warnings"])
+    finally:
+        cleanup(plan)
+
+
+def test_same_slug_in_slug_yaml_and_decisions_yaml_uses_decisions_with_a_warning(project):
+    """<slug>.yaml and <slug>-decisions.yaml with one slug: -decisions is the page, as `page plan` picks it."""
+    page_yaml(project, "loose-page.yaml", "slug: loose-page\nstore_key: loose-page-v9\nname: Older copy\n")
+    pages, warnings = publish.page_index(project)
+    loose = [p for p in pages if p["slug"] == "loose-page"]
+    assert len(loose) == 1 and loose[0]["file"] == f"{CLAR}/loose-page-decisions.yaml"
+    assert any(w.startswith(f"Two page YAMLs have the slug 'loose-page': {CLAR}/loose-page-decisions.yaml and "
+                            f"{CLAR}/loose-page.yaml") for w in warnings)
+
+
+def test_same_slug_twice_still_sends(capsys, project, portal, builds):
+    page_yaml(project, "loose-page.yaml", "slug: loose-page\nstore_key: loose-page-v9\nname: Older copy\n")
+    code, plan, _ = run(capsys, project, "dashboard", "plan")
+    try:
+        assert code == 0, plan
+        assert "loose-page" in json.loads(portal.posts()[0].content)["clarification_pages"]
+    finally:
+        cleanup(plan)
+
+
+def test_yaml_that_does_not_parse_is_read_by_its_top_lines(project):
+    page_yaml(project, "broken-decisions.yaml", "slug: broken\nstore_key: 'broken-v1'\n"
+                                                "url: https://pages.example.com/clarifications/audit-log/\n"
+                                                "name: [not closed\n")
+    pages, _ = publish.page_index(project)
+    broken = next(p for p in pages if p["slug"] == "broken")
+    assert broken["store_key"] == "broken-v1" and broken["url"].endswith("/audit-log/")
+    found, _, _ = publish.page_products(project, ["App", "Admin"], pages)
+    assert found["broken"] == ["App", "Admin"], "linked by the Audit log Feature, prod Both"
+
+
+def test_yaml_with_no_readable_slug_stops(capsys, project, portal, builds):
+    page_yaml(project, "mystery.yaml", "name: [not closed\n")
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1 and f"{CLAR}/mystery.yaml does not read as YAML" in result["error"]
+    assert "Nothing was sent" in result["error"] and portal.requests == []
+
+
+def test_bad_slug_is_skipped_with_a_warning(project):
+    page_yaml(project, "Bad_Slug.yaml", "slug: Bad_Slug\nstore_key: bad-v1\n")
+    pages, warnings = publish.page_index(project)
+    assert "Bad_Slug" not in {p["slug"] for p in pages}
+    assert any("Bad_Slug" in w and "not a page slug" in w for w in warnings)
+
+
+def test_a_page_linked_only_by_an_unknown_prod_stops(capsys, project, portal, builds):
+    """A misspelled prod must not move a page to the first product (or remove it from the right one)."""
+    edit_yaml(project / publish.DASHBOARD, lambda d: d["features"].append(
+        {"area": "Typo feature", "prod": "Admn", "s": "x",
+         "clar": {"url": "https://pages.example.com/clarifications/loose-page/"}}))
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1 and portal.requests == []
+    assert ("The page loose-page (docs/BA/clarifications/loose-page-decisions.yaml) is linked only by Features "
+            "whose prod is not a product with a Portal project (App, Admin): 'Typo feature' (prod 'Admn')"
+            in result["error"])
+
+
+def test_an_unknown_prod_beside_a_known_one_is_ignored_with_a_warning(project):
+    pages = [{"slug": "x", "store_key": "x-v1", "url": "https://pages.example.com/x/", "file": "x.yaml"}]
+    edit_yaml(project / publish.DASHBOARD, lambda d: d["features"].extend([
+        {"area": "Gone product feature", "prod": "Extra", "s": "x", "clar": {"url": "https://pages.example.com/x/"}},
+        {"area": "Admin feature", "prod": "Admin", "s": "x", "clar": {"url": "https://pages.example.com/x/"}}]))
+    found, unlinked, warnings = publish.page_products(project, ["App", "Admin"], pages)
+    assert found == {"x": ["Admin"]} and unlinked == []
+    assert any("'Gone product feature' (prod 'Extra')" in w and "ignored" in w for w in warnings)
+
+
+@pytest.mark.parametrize("page_url,feature_url", [("https://pages.example.com/x", "https://pages.example.com/x/"),
+                                                  ("https://pages.example.com/x/", " https://pages.example.com/x ")])
+def test_links_match_as_the_portal_matches_them(project, page_url, feature_url):
+    """Both sides trimmed and a trailing / dropped, as the Portal compares clar_url with the page url."""
+    pages = [{"slug": "x", "store_key": "x-v1", "url": page_url, "file": "x.yaml"}]
+    edit_yaml(project / publish.DASHBOARD, lambda d: d["features"].append(
+        {"area": "Admin feature", "prod": "Admin", "s": "x", "clar": {"url": feature_url}}))
+    found, unlinked, _ = publish.page_products(project, ["App", "Admin"], pages)
+    assert found == {"x": ["Admin"]} and unlinked == []
+
+
+def test_top_lines_drop_comments_and_a_byte_order_mark():
+    raw = "\ufeffslug: 'x'   # the page slug\nstore_key: \"x-v1\" # round key\nurl: https://p.example.com/x # link\n"
+    assert publish.top_lines(raw) == {"slug": "x", "store_key": "x-v1", "url": "https://p.example.com/x"}
+
+
+def test_unparsable_yaml_whose_slug_is_not_its_file_name_stops(capsys, project, portal, builds):
+    page_yaml(project, "mismatch-decisions.yaml", "slug: something-else\nstore_key: x-v1\nname: [not closed\n")
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1 and portal.requests == []
+    assert (f"{CLAR}/mismatch-decisions.yaml does not read as YAML, and its `slug:` line ('something-else') does "
+            "not match its file name") in result["error"]
+
+
+def test_a_yaml_that_is_not_utf8_stops(capsys, project, portal, builds):
+    (project / CLAR / "latin-decisions.yaml").write_bytes("slug: latin\nname: caf\u00e9\n".encode("latin-1"))
+    code, result, _ = run(capsys, project, "dashboard", "plan")
+    assert code == 1 and portal.requests == []
+    assert f"{CLAR}/latin-decisions.yaml is not UTF-8 text" in result["error"]
+
+
+def test_no_dashboard_yaml_sends_every_page_with_the_first_product(project):
+    (project / publish.DASHBOARD).unlink()
+    pages, _ = publish.page_index(project)
+    found, unlinked, warnings = publish.page_products(project, ["App", "Admin"], pages)
+    assert set(found) == {"audit-log", "back-office", "loose-page", "sign-up-decisions"}
+    assert all(v == ["App"] for v in found.values()) and unlinked == [] and warnings == []
+
+
+def test_one_product_sends_every_page(capsys, project, portal, builds):
+    one_product(project)
+    code, plan, _ = run(capsys, project, "dashboard", "plan")
+    try:
+        assert code == 0, plan
+        sent = json.loads(portal.posts()[0].content)
+        assert sent["clarification_pages"] == ["audit-log", "back-office", "loose-page", "sign-up-decisions"]
+        assert not any("first product" in w for w in plan["warnings"])
+    finally:
+        cleanup(plan)
+
+
+def test_pages_follow_the_profile_order_not_the_map_order(project):
+    """The first product in tools.portal.products takes the unlinked pages."""
+    edit_yaml(project / publish.PROFILE, lambda d: d["tools"]["portal"].update(
+        products={"Admin": "PORTAL_PUBLISH_KEY_ADMIN", "App": "PORTAL_PUBLISH_KEY_APP"}))
+    prof = yaml.safe_load((project / publish.PROFILE).read_text(encoding="utf-8"))
+    pages, _ = publish.dashboard_pages(project, prof, ["App", "Admin"], "Admin")
+    assert "loose-page" in pages
+
+
+@pytest.mark.skipif(not (EASY_PAYDAY / publish.MAP_PAGE).exists(), reason="the Acme Lending folder is not here")
+def test_real_project_dashboard_plan_lists_15_and_6_pages(capsys, tmp_path, portal, builds):
+    """A copy of the Acme Lending folder (read only) with two mapped keys, against the fake Portal."""
+    root = tmp_path / "easy-payday"
+    for rel in (publish.PROFILE, publish.DASHBOARD, publish.SLACK, publish.MAP_PAGE):
+        if (EASY_PAYDAY / rel).exists():
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(EASY_PAYDAY / rel, root / rel)
+    (root / CLAR).mkdir(parents=True, exist_ok=True)
+    for f in (EASY_PAYDAY / CLAR).glob("*.yaml"):
+        shutil.copyfile(f, root / CLAR / f.name)
+    edit_yaml(root / publish.PROFILE, lambda d: d.setdefault("tools", {}).update(portal={
+        "url": URL, "products": {"AcmeLending": "PORTAL_PUBLISH_KEY_APP",
+                                 "Bond Portal": "PORTAL_PUBLISH_KEY_ADMIN"}}))
+    git(root, "init", "-q")
+    git(root, "config", "user.name", "Sample BA")
+    git(root, "config", "user.email", "ba@example.com")
+    (root / ".gitignore").write_text(".env\n", encoding="utf-8")
+    (root / ".env").write_text(f"PORTAL_PUBLISH_KEY_APP={KEY_APP}\nPORTAL_PUBLISH_KEY_ADMIN={KEY_ADMIN}\n",
+                               encoding="utf-8")
+    code, plan, _ = run(capsys, root, "dashboard", "plan")
+    try:
+        assert code == 0, plan
+        easy, investor = (json.loads(r.content) for r in portal.posts())
+        assert checks.check_publish(easy) is None and checks.check_publish(investor) is None
+        assert len(easy["clarification_pages"]) == 15 and len(investor["clarification_pages"]) == 6
+        assert "security-log-decisions" in easy["clarification_pages"]
+        assert "security-log-decisions" in investor["clarification_pages"]
+        unlinked = next(w for w in plan["warnings"] if "these Clarification pages" in w)
+        assert unlinked.count("-decisions") == 3
+    finally:
+        cleanup(plan)

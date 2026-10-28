@@ -1,0 +1,4 @@
+# Test YAML (Story 4.10): no store_key yet, so it is not a page.
+slug: draft-page
+url: https://pages.example.com/clarifications/draft-page/
+name: Draft

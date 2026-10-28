@@ -1,0 +1,4 @@
+# Test YAML (Story 4.10): its slug does not match its file name, so it is not a page.
+slug: other-name
+store_key: other-name-v1
+name: Renamed

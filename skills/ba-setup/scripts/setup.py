@@ -207,6 +207,35 @@ def cmd_check_me():
 
 # ---------------------------------------------------------------- check-project
 
+PORTAL_TARGETS = SKILL.parent / "portal-publish" / "targets.py"
+
+
+def portal_key_rows(root, prof):
+    """One row per Portal product key: in .env, or missing. Reads which .env variable each product uses with
+    portal-publish's targets.py (the same rule page sends, Dashboard sends and fetch-portal use). Only the names
+    in .env are looked at; a key is never shown."""
+    fix = "ba-setup project, step 5 (Client Portal)"
+    if not PORTAL_TARGETS.exists():
+        return [row("Portal keys", "broken", "the portal-publish skill is not installed next to ba-setup",
+                    "install ba-tools again")]
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("portal_publish_targets", PORTAL_TARGETS)
+    targets = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(targets)
+    try:
+        names = targets.portal_names(prof)
+    except targets.TargetError as e:
+        return [row("Portal keys", "broken", str(e), fix)]
+    env_file = root / ".env"
+    env = targets.read_env_file(env_file) if env_file.exists() else {}
+    rows = []
+    for product, name in names.items():
+        there = bool(env.get(name, "").strip())
+        rows.append(row(f"Portal key: {product}" if product else "Portal key", "ok" if there else "missing",
+                        f"{name} is in .env" if there else f".env has no {name}", "" if there else fix))
+    return rows
+
+
 def cmd_check_project(root):
     root = Path(root).resolve()
     p = root / "docs/BA/specs/.ba-profile.yml"
@@ -239,6 +268,8 @@ def cmd_check_project(root):
             continue
         ok = bool(v) if need is None else bool(v) and all(v.get(n) for n in need)
         rows.append(row(label, "ok" if ok else "missing", "set" if ok else "not set", "ba-setup project"))
+    if isinstance(t.get("portal"), dict) and t["portal"]:
+        rows += portal_key_rows(root, prof)
     # The dashboard is best started right after the project brief: every feature and question hangs from it.
     dash = t.get("dashboard") or {}
     briefs = sorted({*root.glob("docs/**/product-brief*.md"), *root.glob("docs/planning-artifacts/**/*brief*.md")})

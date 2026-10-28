@@ -8,27 +8,33 @@ Commands (run from the project root, or pass --root):
                                       build the dashboard and make one dashboard/2 payload per product (or only the
                                       product named). Check every payload against the contract first; then, per
                                       product, ask the Portal which project its key opens (GET /status), send the
-                                      payload as a dry run and print what the Client will read (client_list).
+                                      payload as a dry run and print what the Client will read (client_list),
+                                      then the pages the send would remove from that project (pages_removed).
+                                      Each payload lists the product's Clarification pages (clarification_pages).
                                       Writes each payload to a temp file outside the repo and prints its path.
   dashboard send --payload <file>     after the BA says yes to that product: send that same payload for real,
                                       report, delete the file
   dashboard discard --payload <file>  after the BA says no to that product: delete the payload file, send nothing
-  page plan <slug>                    find docs/BA/clarifications/<slug>-decisions.yaml (else <slug>.yaml), run
+  page plan <slug> [--product <name>] find docs/BA/clarifications/<slug>-decisions.yaml (else <slug>.yaml), run
                                       clarification-page's _fixyaml.py on it, build the clarification/1 page (only
                                       the contract's fields; old `settled:` lines become decisions), collect its
                                       screenshots (bare, unique file names), check everything, send it as a
-                                      multipart dry run and print what the Client will read (client_view).
-                                      Writes the page JSON plus each screenshot's path and SHA-256 to a temp file.
-                                      `page <slug>` does the same.
-  page send --payload <file>          after the BA says yes: re-read the screenshots (stop if one changed), send the
-                                      same page for real, report, delete the file
+                                      multipart dry run to each Portal project of the page's products (or only
+                                      the product named) and print what the Client will read (client_view).
+                                      Writes, per project, the page JSON plus each screenshot's path and SHA-256
+                                      to a temp file. `page <slug>` does the same.
+  page send --payload <file>          after the BA says yes to that project: re-read the screenshots (stop if one
+                                      changed), send the same page for real with the key saved in the file,
+                                      report, delete the file
   page discard --payload <file>       after the BA says no: delete the payload file, send nothing
 
-Settings: tools.portal.url in docs/BA/specs/.ba-profile.yml; the Publish key in .env at the repo root, which git
-must ignore. A repo with one product uses PORTAL_PUBLISH_KEY. A repo with two or more products sends each product to
-its own Portal project: tools.portal.products in the profile names, per product, the .env variable that holds that
-project's key. Pages use the first product's key there. Keys are never printed. The "Waiting on you" list and the
-page's Client view come only from the Portal's dry-run reply.
+Settings (targets.py, shared with fetch-portal): tools.portal.url in docs/BA/specs/.ba-profile.yml; the Publish key
+in .env at the repo root, which git must ignore. A repo with one product uses PORTAL_PUBLISH_KEY. A repo with two or
+more products sends each product to its own Portal project: tools.portal.products in the profile names, per product,
+the .env variable that holds that project's key. A Clarification page goes with the product of every Feature in
+docs/BA/dashboard.yaml whose clar.url is the page's url ("Both" means every product); a page no Feature links goes
+with the first product in tools.portal.products. Keys are never printed. The "Waiting on you" list and the page's
+Client view come only from the Portal's dry-run reply.
 """
 from __future__ import annotations
 
@@ -50,6 +56,7 @@ import httpx
 import yaml
 
 import checks
+import targets
 
 HERE = Path(__file__).resolve().parent
 SKILLS = HERE.parent
@@ -68,15 +75,15 @@ CONTRACT = "dashboard/2"
 REPLY = "publish-reply/1"
 STATUS = "status/1"
 MAX_BYTES = 5 * 1024 * 1024      # the Portal refuses a Dashboard over 5 MB (DASHBOARD_MAX_BYTES, payload_too_large)
-DEFAULT_KEY = "PORTAL_PUBLISH_KEY"
-KEY_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+DEFAULT_KEY = targets.DEFAULT_KEY
+KEY_NAME = targets.KEY_NAME
 OPEN_TICKETS_SHOWN = 5           # an area's open tickets, as the BA page shows them
 STALE_SECONDS = 24 * 3600
 TIMEOUT = 30.0
 BUILD_TIMEOUT = 600                # seconds for each build step
 PAYLOAD_GLOB = "portal-publish-*.json"
 PAYLOAD_MAX_AGE = 24 * 3600
-SETUP_HINT = "Run `ba-setup project`"
+SETUP_HINT = targets.SETUP_HINT
 STAGE_NAME = {"concept": "Concept", "spec": "Spec & design", "ready": "Ready for dev", "dev": "In dev",
               "qa": "In QA", "done": "Done"}
 
@@ -122,154 +129,65 @@ def arg(argv: list[str], name: str, default=None):
     return argv[argv.index(name) + 1] if name in argv and argv.index(name) + 1 < len(argv) else default
 
 
-# ---------------------------------------------------------------- settings
+# ---------------------------------------------------------------- settings (targets.py, shared with fetch-portal)
 
-def read_env_file(path: Path) -> dict[str, str]:
-    values = {}
-    for line in path.read_text(encoding="utf-8-sig").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        name, value = line.split("=", 1)
-        name = name.strip().removeprefix("export ").strip()
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
-            value = value[1:-1]
-        values[name] = value
-    return values
+def sent_stop(e: targets.TargetError) -> Stop:
+    """A settings stop from targets.py, in portal-publish's words."""
+    return Stop(f"{e} Nothing was sent.")
 
 
 def run_git(root: Path, *args: str) -> subprocess.CompletedProcess:
     try:
-        return subprocess.run(["git", *args], cwd=root, capture_output=True)
-    except FileNotFoundError:
-        raise Stop("git is not installed (or not on PATH). portal-publish needs git. Nothing was sent.") from None
-
-
-def env_is_ignored(root: Path) -> bool:
-    r = run_git(root, "check-ignore", "-q", ".env")
-    if r.returncode == 128:
-        raise Stop(f"{root} is not a git repository, so git cannot keep .env out of commits. Run portal-publish "
-                   "from the project repo. Nothing was sent.")
-    return r.returncode == 0
-
-
-LOCAL_HOSTS = ("localhost", "127.0.0.1")
-
-
-def check_url(url: str) -> None:
-    """The key travels in the request: plain http:// only to this computer or a .localhost / .test name."""
-    try:
-        u = httpx.URL(url)
-    except httpx.InvalidURL:
-        raise Stop(f"tools.portal.url ({url}) is not a web address. {SETUP_HINT} to fix it.") from None
-    host = (u.host or "").lower()
-    if u.scheme == "https" and host:
-        return
-    if u.scheme == "http" and (host in LOCAL_HOSTS or host.endswith(".localhost") or host.endswith(".test")):
-        return
-    raise Stop(f"tools.portal.url ({url}) must start with https:// — plain http:// would send the Publish key "
-               "unencrypted. http:// is allowed only for localhost, 127.0.0.1, *.localhost and *.test. "
-               "Nothing was sent.")
+        return targets.run_git(root, *args)
+    except targets.TargetError as e:
+        raise sent_stop(e) from None
 
 
 def settings(root: Path) -> tuple[str, dict, dict]:
     """The Portal address, the profile and the values in .env. Stops before anything is built or sent.
     The keys themselves are read by read_keys."""
-    prof_path = root / PROFILE
-    if not prof_path.exists():
-        raise Stop(f"No project profile at {PROFILE}. {SETUP_HINT} first.")
-    prof = yaml.safe_load(prof_path.read_text(encoding="utf-8")) or {}
-    portal = (prof.get("tools") or {}).get("portal") or {}
-    url = str(portal.get("url") or "").strip().rstrip("/") if isinstance(portal, dict) else ""
-    if not url:
-        raise Stop(f"The profile has no Portal address (tools.portal.url in {PROFILE}). {SETUP_HINT} to add it.")
-    check_url(url)
-    env = root / ".env"
-    if not env.exists():
-        raise Stop(f"There is no .env file at the repo root, so there is no Publish key. {SETUP_HINT}: it puts "
-                   "the Publish key in .env.")
-    if not env_is_ignored(root):
-        raise Stop(".env is not ignored by git (it is tracked, or .gitignore does not list it). The Publish key "
-                   "must never be committed: add .env to .gitignore (and `git rm --cached .env` if it was "
-                   "committed), then run again. Nothing was sent.")
-    return url, prof, read_env_file(env)
+    try:
+        return targets.settings(root)
+    except targets.TargetError as e:
+        raise sent_stop(e) from None
 
 
 def key_map(prof: dict) -> dict[str, str]:
-    """tools.portal.products: product name → the name of the .env variable that holds that Portal project's key.
-    Empty when the profile has none."""
-    portal = (prof.get("tools") or {}).get("portal") or {}
-    found = portal.get("products") if isinstance(portal, dict) else None
-    if found in (None, "", {}):
-        return {}
-    if not isinstance(found, dict) or not all(
-            isinstance(k, str) and k.strip() and isinstance(v, str) and KEY_NAME.fullmatch(v.strip())
-            for k, v in found.items()):
-        raise Stop(f"tools.portal.products in {PROFILE} must name, for each product, the .env variable that holds "
-                   "its Portal project's key, for example {AcmeLending: PORTAL_PUBLISH_KEY_ACME}. "
-                   f"{SETUP_HINT} to fix it. Nothing was sent.")
-    names = {k.strip(): v.strip() for k, v in found.items()}
-    seen: dict[str, str] = {}
-    for product, name in names.items():           # one key per product: two products never share a project
-        if name in seen:
-            raise Stop(f"tools.portal.products in {PROFILE} gives {seen[name]} and {product} the same .env "
-                       f"variable ({name}), so both would go to the same Portal project. Each product needs its "
-                       f"own Portal project and its own key. {SETUP_HINT} to fix it. Nothing was sent.")
-        seen[name] = product
-    return names
+    try:
+        return targets.key_map(prof)
+    except targets.TargetError as e:
+        raise sent_stop(e) from None
 
 
 def key_names(prof: dict, products: list[str], only: str | None = None) -> dict[str, str]:
-    """Which .env variable holds each product's key (only the product `only`, when given). A repo with one
-    product: its tools.portal.products entry, else PORTAL_PUBLISH_KEY. Two or more: each needs its own entry, or
-    the run stops before anything is sent."""
-    found = key_map(prof)
-    if len(products) == 1 and products[0] not in found:
-        return {products[0]: DEFAULT_KEY}
-    missing = [p for p in ([only] if only else products) if p not in found]
-    if missing:
-        example = ", ".join(f"{p}: PORTAL_PUBLISH_KEY_{re.sub(r'[^A-Z0-9]+', '_', p.upper()).strip('_')}"
-                            for p in missing)
-        raise Stop(f"This repo has {len(products)} products ({', '.join(products)}). Each goes to its own Portal "
-                   "project, with that project's own key. tools.portal.products in "
-                   f"{PROFILE} names no key for: {', '.join(missing)}. Add one entry per product, naming the .env "
-                   f"variable that holds its key, for example {{{example}}}. {SETUP_HINT} to set it up. "
-                   "Nothing was sent.")
-    return {p: found[p] for p in ([only] if only else products)}
+    try:
+        return targets.key_names(prof, products, only)
+    except targets.TargetError as e:
+        raise sent_stop(e) from None
 
 
 def read_keys(env: dict, names: dict[str, str]) -> dict[str, str]:
-    """Each product's key from .env. A missing one stops the run, naming the variable."""
-    keys = {}
-    for product, name in names.items():
-        key = env.get(name, "").strip()
-        if not key:
-            whose = "" if name == DEFAULT_KEY else f" (the Publish key for {product})"
-            raise Stop(f".env has no {name}{whose}. {SETUP_HINT}: it tells you where to get the key. "
-                       "Nothing was sent.")
-        keys[product] = key
-    return keys
+    try:
+        return targets.read_keys(env, names)
+    except targets.TargetError as e:
+        raise sent_stop(e) from None
 
 
-def page_key(prof: dict, env: dict) -> tuple[str, str]:
-    """The key for a page send, and its .env variable. With tools.portal.products, the first product's key (until
-    pages are sent per product); else PORTAL_PUBLISH_KEY."""
-    found = key_map(prof)
-    name = next(iter(found.values())) if found else DEFAULT_KEY
-    return read_keys(env, {"page": name})["page"], name
+def portal_targets(root: Path, prof: dict, env: dict, only: list[str] | None = None) -> list[targets.Target]:
+    try:
+        return targets.portal_targets(root, prof, env, only)
+    except targets.TargetError as e:
+        raise sent_stop(e) from None
 
 
-def profile_products(prof: dict) -> list[str]:
-    """The product names, read the way ba-dashboard's map/build.py reads them: tools.dashboard.map.products, else
-    the profile's products that have a jira_project. Used to check the keys before the build."""
-    dash = (prof.get("tools") or {}).get("dashboard") or {}
-    mapped = (dash.get("map") or {}).get("products") if isinstance(dash, dict) and isinstance(
-        dash.get("map") or {}, dict) else None
-    if isinstance(mapped, dict) and mapped:
-        return list(dict.fromkeys(text(v) for v in mapped.values() if text(v)))
-    return list(dict.fromkeys(text(p.get("name")) for p in prof.get("products") or []
-                              if isinstance(p, dict) and p.get("jira_project") and text(p.get("name"))))
+def portal_names(prof: dict) -> dict[str, str]:
+    try:
+        return targets.portal_names(prof)
+    except targets.TargetError as e:
+        raise sent_stop(e) from None
+
+
+profile_products = targets.profile_products
 
 
 # ---------------------------------------------------------------- build
@@ -496,7 +414,8 @@ def area_of_epic(e: dict) -> dict:
 def build_payload(root: Path, prof: dict, product: str | None = None, data: dict | None = None,
                   sent_at: str | None = None):
     """One product's dashboard/2 payload (contract dashboard-2.md), built from the BA page's own data; where each
-    sent value came from; counts of what was left out; warnings. Rows whose prod is the product or "Both" go in."""
+    sent value came from; counts of what was left out; warnings. Rows whose prod is the product or "Both" go in.
+    clarification_pages lists the slugs of the Clarification pages that go to this product's Portal project."""
     d = yaml.safe_load((root / DASHBOARD).read_text(encoding="utf-8")) or {}
     data = read_map(root) if data is None else data
     products = map_products(data)
@@ -685,6 +604,9 @@ def build_payload(root: Path, prof: dict, product: str | None = None, data: dict
     put(payload, "source_commit", git(root, "rev-parse", "HEAD"))
     payload.update(jira_base=jira_base(data, prof), areas=areas, features=features, topics=topics, items=items,
                    releases=releases, cards=cards, client_contacts=people)
+    pages, more = dashboard_pages(root, prof, products, product)
+    payload["clarification_pages"] = pages
+    warnings += more
     return payload, sources, left_out, warnings
 
 
@@ -705,6 +627,7 @@ def where(path: str, sources: dict) -> str:
         "client_contacts": f"{PROFILE} → tools.client_contacts", "sent_by": "git config user.name",
         "ba_tools_version": f"{PROFILE} → ba_tools_version", "source_commit": "git rev-parse HEAD",
         "sent_at": "the send time", "contract": "the contract version",
+        "clarification_pages": f"the page YAMLs in {CLARIFICATIONS}/ (their slug: lines)",
     }
     return top.get(parts[0], "the payload") if parts else "the payload"
 
@@ -916,7 +839,16 @@ def client_list(reply: dict, product: str = "", project: str = "") -> str:
         out_lines += [f"- {i['title']}" + (f" — {i['who']}" if i.get("who") else "") for i in other]
     names = reply.get("client_contact_names") or []
     out_lines += ["", f"Client contacts ({len(names)}): " + (", ".join(names) if names else "none")]
+    removed = removed_pages(reply)
+    if removed:
+        out_lines += ["", f"These pages will be removed from the Portal project \"{project}\": {removed}"]
     return "\n".join(out_lines)
+
+
+def removed_pages(reply: dict) -> str:
+    """The reply's pages_removed as "<title> (<slug>), …"; "" when there are none."""
+    return ", ".join(f"{plain(p.get('title')) or '?'} ({p.get('slug')})" for p in reply.get("pages_removed") or []
+                     if isinstance(p, dict))
 
 
 # ---------------------------------------------------------------- commands
@@ -984,6 +916,7 @@ def cmd_plan(root: Path, refresh: bool, only: str | None = None) -> dict:
         path = save_dashboard(product, project, url, names[product], body)
         out_products.append({"product": product, "project_name": project, "payload": str(path),
                              "counts": reply["counts"], "left_out": left_out,
+                             "pages_removed": reply.get("pages_removed") or [],
                              "client_list": client_list(reply, product, project)})
     return {"ok": True, "portal": url, "sent_at": sent_at, "warnings": warnings, "products": out_products}
 
@@ -1084,8 +1017,12 @@ def cmd_send(root: Path, path: Path) -> dict:
               f"{c['features']} Features, {got['topics']} topics, {c['items']} Items, {got['cards']:,} Board cards "
               f"with {tickets:,} tickets, {c['client_contacts']} Client contacts. The Portal confirmed it at "
               f"{reply['received_at']} (UTC), publish id {reply['publish_id']}.")
+    removed = removed_pages(reply)
+    if removed:
+        report += (f" It removed {len(reply['pages_removed'])} page(s) from Portal project \"{project}\", because "
+                   f"the repo no longer sends them with {product}: {removed}.")
     return {"ok": True, "sent": "Dashboard", "product": product, "project_name": project, "portal": url,
-            "counts": c, "publish_id": reply["publish_id"], "received_at": reply["received_at"], "report": report}
+            "counts": c, "pages_removed": reply.get("pages_removed") or [], "publish_id": reply["publish_id"], "received_at": reply["received_at"], "report": report}
 
 
 def cmd_discard(path: Path, kind: str = "dashboard") -> dict:
@@ -1149,6 +1086,166 @@ def find_page_yaml(root: Path, slug_arg: str) -> Path:
             return root / rel
     raise Stop(f"No page YAML for '{slug_arg}'. Looked for {tried[0]} and {tried[1]}. Check the slug "
                "(it is the `slug:` line of the page YAML). Nothing was sent.")
+
+
+# ---------------------------------------------------------------- which pages the repo has, and their products
+
+SLUG_MAX = 80                            # the clarification/1 slug rule: 1 to 80 characters
+TOP_LINE = re.compile(r"^(slug|store_key|url):[ \t]*(.*?)[ \t]*$", re.M)
+
+
+def link_key(url) -> str:
+    """A page link as the Portal compares it: trimmed, a trailing / dropped (ba-dashboard's map does the same)."""
+    url = text(url)
+    return url[:-1] if url.endswith("/") else url
+
+
+def top_lines(raw: str) -> dict[str, str] | None:
+    """A YAML that does not parse: its top-level slug:, store_key: and url: lines, read as plain text. None when
+    there is no slug: line."""
+    found: dict[str, str] = {}
+    for name, value in TOP_LINE.findall(raw.lstrip("﻿")):
+        if name in found:
+            continue
+        value = re.sub(r"\s+#.*$", "", value).strip()           # a trailing " # comment" first
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+            value = value[1:-1]
+        found[name] = value.strip()
+    return found if found.get("slug") else None
+
+
+def page_index(root: Path) -> tuple[list[dict], list[str]]:
+    """Every Clarification page in the repo: [{slug, store_key, url, file}], and warnings. A page is a
+    docs/BA/clarifications/*.yaml whose slug: equals its file name (<slug>.yaml or <slug>-decisions.yaml) and that
+    has a store_key:. Other YAMLs are skipped quietly. Nothing is guessed: a page left off the list would be
+    removed from the Portal, so a file that is not UTF-8, a YAML with no readable slug: line, or a YAML that only
+    reads line by line and whose slug: is not its file name, stops the run. When <slug>.yaml and
+    <slug>-decisions.yaml both hold the page, -decisions wins (as `page plan` picks it), with a warning."""
+    folder = root / CLARIFICATIONS
+    pages: dict[str, dict] = {}
+    warnings: list[str] = []
+    for path in sorted(folder.glob("*.yaml")) if folder.is_dir() else []:
+        rel = path.relative_to(root).as_posix()
+        try:
+            raw = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            raise Stop(f"{rel} is not UTF-8 text, so it is not clear whether it is a Clarification page. A page "
+                       "left off the list would be removed from the Portal. Save it as UTF-8, then run again. "
+                       "Nothing was sent.") from None
+        by_lines = False
+        try:
+            cfg = yaml.safe_load(raw)
+        except yaml.YAMLError:
+            cfg, by_lines = top_lines(raw), True
+            if cfg is None:
+                raise Stop(f"{rel} does not read as YAML, and no top-level `slug:` line could be found in it, so "
+                           "it is not clear whether it is a Clarification page. A page left off the list would be "
+                           "removed from the Portal. Fix the file, then run again. Nothing was sent.") from None
+        if not isinstance(cfg, dict):
+            continue
+        slug_ = text(cfg.get("slug"))
+        if not slug_ or path.stem not in (slug_, f"{slug_}-decisions"):
+            if by_lines:
+                raise Stop(f"{rel} does not read as YAML, and its `slug:` line ('{slug_}') does not match its file "
+                           "name, so it is not clear whether it is a Clarification page. A page left off the list "
+                           "would be removed from the Portal. Fix the file, then run again. Nothing was sent.")
+            continue
+        if not text(cfg.get("store_key")):
+            continue
+        if not (SLUG_RE.fullmatch(slug_) and len(slug_) <= SLUG_MAX):
+            warnings.append(f"{rel} has the slug '{slug_}', which is not a page slug (a-z, 0-9 and single "
+                            f"hyphens, at most {SLUG_MAX} characters), so it is not listed. Fix its slug: line "
+                            "(and the file name).")
+            continue
+        page = {"slug": slug_, "store_key": text(cfg.get("store_key")), "url": text(cfg.get("url")), "file": rel}
+        if slug_ in pages:
+            old = pages[slug_]
+            keep, other = (page, old) if path.stem == f"{slug_}-decisions" else (old, page)
+            warnings.append(f"Two page YAMLs have the slug '{slug_}': {keep['file']} and {other['file']}. The "
+                            f"-decisions file is the page (as `page plan` picks it); {other['file']} is not read. "
+                            "Delete or rename the other one.")
+            pages[slug_] = keep
+            continue
+        pages[slug_] = page
+    return list(pages.values()), warnings
+
+
+def page_products(root: Path, products: list[str], pages: list[dict]) -> tuple[dict[str, list[str]], list[str],
+                                                                                list[str]]:
+    """Which products each page goes with: {slug: [product]}, the slugs no Feature links, and warnings.
+    `products` are the products with a Portal project, in tools.portal.products order. A page goes with the prod
+    of every Feature in docs/BA/dashboard.yaml whose clar.url is the page's url (both trimmed, a trailing /
+    dropped, as the Portal compares them); "Both" means every product. A prod that is not one of `products` is
+    ignored with a warning when another Feature links the page; when only such Features link it, the run stops,
+    naming them (a misspelled prod must not move or remove a page). A page no Feature links goes with the first
+    product. One product, or no dashboard.yaml: every page goes with the first product."""
+    first = products[0]
+    path = root / DASHBOARD
+    if len(products) == 1 or not path.exists():
+        return {p["slug"]: [first] for p in pages}, [], []
+    d = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    by_url: dict[str, list[dict]] = {}
+    for f in d.get("features") or [] if isinstance(d, dict) else []:
+        if not isinstance(f, dict):
+            continue
+        clar = f.get("clar")
+        url = link_key(clar.get("url") if isinstance(clar, dict) else clar)
+        if url:
+            by_url.setdefault(url, []).append(f)
+    found: dict[str, list[str]] = {}
+    unlinked: list[str] = []
+    warnings: list[str] = []
+    for p in pages:
+        mine: list[str] = []
+        unknown: list[str] = []
+        for f in by_url.get(link_key(p["url"]), []) if link_key(p["url"]) else []:
+            prod = text(f.get("prod"))
+            if prod == "Both":
+                mine += products
+            elif prod in products:
+                mine.append(prod)
+            else:
+                unknown.append(f"'{text(f.get('area')) or text(f.get('id')) or '?'}' (prod '{prod}')")
+        if unknown and not mine:
+            raise Stop(f"The page {p['slug']} ({p['file']}) is linked only by Features whose prod is not a product "
+                       f"with a Portal project ({', '.join(products)}): {', '.join(unknown)} in {DASHBOARD}. Fix "
+                       "the prod (for example a misspelled product name), then run again. Nothing was sent.")
+        if unknown:
+            warnings.append(f"The page {p['slug']} is also linked by Features whose prod is not a product with a "
+                            f"Portal project ({', '.join(products)}): {', '.join(unknown)} in {DASHBOARD}. Those "
+                            "links are ignored.")
+        if not mine:
+            unlinked.append(p["slug"])
+            mine = [first]
+        found[p["slug"]] = [x for x in products if x in mine]
+    return found, unlinked, warnings
+
+
+def page_order(prof: dict, products: list[str]) -> list[str]:
+    """The products in tools.portal.products order (the first one takes the pages no Feature links)."""
+    if len(products) < 2:
+        return products
+    order = [p for p in key_map(prof) if p in products]
+    return order + [p for p in products if p not in order]
+
+
+def dashboard_pages(root: Path, prof: dict, products: list[str], product: str) -> tuple[list[str], list[str]]:
+    """The slugs, sorted, of the pages that go with this product's Dashboard send (clarification_pages), and
+    warnings."""
+    order = page_order(prof, products)
+    pages, warnings = page_index(root)
+    found, unlinked, more = page_products(root, order, pages)
+    warnings += more
+    if unlinked:
+        warnings.append(f"No Feature in {DASHBOARD} links these Clarification pages (by clar.url), so they go with "
+                        f"the first product, {order[0]}: {', '.join(unlinked)}. To send one with another product, "
+                        "put its url in that Feature's clar.url.")
+    mine = sorted(s for s, ps in found.items() if product in ps)
+    if not mine:
+        warnings.append(f"No Clarification page in {CLARIFICATIONS}/ goes with {product} (a page needs a slug: "
+                        "that matches its file name and a store_key:), so its send lists none: the Portal will "
+                        f"remove every page it has in {product}'s Portal project. The dry run names them, if any.")
+    return mine, warnings
 
 
 def fix_yaml(path: Path) -> int:
@@ -1571,12 +1668,47 @@ def page_view(reply: dict) -> str:
     return "\n".join(lines)
 
 
-def cmd_page_plan(root: Path, slug_arg: str) -> dict:
+def page_targets(root: Path, prof: dict, env: dict, slug_arg: str, only: str | None) -> tuple[list, list[str]]:
+    """The Portal projects a page goes to: [Target] in tools.portal.products order, and warnings. One product: its
+    one project. Two or more: the page's products (see page_products), or only the product named."""
+    names = portal_names(prof)
+    products = list(names)
+    if only and only not in names:
+        raise Stop(f"There is no product called '{only}'. This repo's products: "
+                   f"{', '.join(p for p in products if p) or 'none named'}. Nothing was sent.")
+    warnings: list[str] = []
+    mine = products[:1]
+    linked = True
+    if len(products) > 1:
+        pages, warnings = page_index(root)
+        found, unlinked, more = page_products(root, products, pages)
+        warnings = [w for w in warnings + more if f"page {slug_arg} " in w or f"'{slug_arg}'" in w]
+        mine = found.get(slug_arg) or products[:1]
+        linked = slug_arg in found and slug_arg not in unlinked
+        if not linked:
+            warnings.append(f"No Feature in {DASHBOARD} links this page (by clar.url), so it goes with the first "
+                            f"product, {products[0]}. To send it with another product, put its url in that "
+                            "Feature's clar.url.")
+    if only:
+        if only not in mine and len(products) > 1 and not linked:
+            raise Stop(f"No Feature in {DASHBOARD} links the page {slug_arg} (by clar.url), so it goes with the "
+                       f"first product, {products[0]}, not {only}. To send it with {only}, put the page's url in "
+                       f"the clar.url of a {only} Feature, then run again. Nothing was sent.")
+        if only not in mine:
+            raise Stop(f"The page {slug_arg} goes with {', '.join(mine)}, not {only}: the Features in {DASHBOARD} "
+                       "that link it (by clar.url) say so. To move it, change those Features' prod, then run "
+                       "again. Nothing was sent.")
+        mine = [only]
+    return portal_targets(root, prof, env, mine), warnings
+
+
+def cmd_page_plan(root: Path, slug_arg: str, only: str | None = None) -> dict:
     url, prof, env = settings(root)
-    key, key_name = page_key(prof, env)
+    multi = len(portal_names(prof)) > 1
+    if not multi:                                 # one product: stop on a missing key before anything, as before
+        portal_targets(root, prof, env)
     clean_old_payloads()
     yaml_path = find_page_yaml(root, slug_arg)
-    products = list(key_map(prof))
     rel = yaml_path.relative_to(root).as_posix()
 
     def first_checks(cfg) -> dict:
@@ -1597,39 +1729,61 @@ def cmd_page_plan(root: Path, slug_arg: str) -> dict:
     except (yaml.YAMLError, UnicodeDecodeError):
         pass
     fixed = fix_yaml(yaml_path)
+    results = []
     try:
         cfg = first_checks(yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {})
         page, parts, sources, left_out, warnings = build_page(root, yaml_path, cfg, prof)
         body = encode(page)
         page_local_check(page, body, parts, rel, sources)
-        # Two or more products: the page goes with the first product's key (until pages are sent per product),
-        # so the BA must see which Portal project that is before saying yes.
-        target = project_name(url, key, key_name, contract=None) if len(products) > 1 else ""
-        reply = post_page(url, key, body, parts, True, rel, sources, page["round"], key_name)
+        goes_to, more = page_targets(root, prof, env, slug_arg, only)
+        warnings += more
+        owner: dict[str, str] = {}                # Portal project → the product whose key opened it
+        for t in goes_to:                         # every dry run passes before any payload file is kept
+            project = ""
+            try:
+                if multi:                         # the BA sees which Portal project each send goes to
+                    project = project_name(url, t.key, t.key_name, contract=None)
+                    if project in owner:
+                        raise Stop(f"The keys for {owner[project]} ({portal_names(prof)[owner[project]]}) and "
+                                   f"{t.product} ({t.key_name}) both open the same Portal project, \"{project}\". "
+                                   "Each product needs its own Portal project. Ask an Admin for the right key for "
+                                   "one of them, put it in .env, and run `page plan` again. Nothing was sent.")
+                    owner[project] = t.product
+                reply = post_page(url, t.key, body, parts, True, rel, sources, page["round"], t.key_name)
+            except Stop as e:
+                if not multi:
+                    raise
+                where_ = f"{t.product} → Portal project \"{project}\"" if project else t.product
+                raise Stop(f"{where_}: {e}\nNo payload was kept: nothing was sent to any Portal project.") from None
+            results.append((t, project, reply))
     except Stop as e:
         if fixed:
             raise Stop(f"{e}\n(Before this stop, _fixyaml.py quoted {fixed} line(s) in {rel}: the file changed; "
                        "keep the change.)") from None
         raise
-    saved = {"kind": "page", "slug": page["slug"], "name": page["name"], "round": page["round"], "yaml": rel,
-             "portal": url, "publish": body.decode("utf-8"),
-             "parts": [{"name": p["name"], "path": p["path"], "type": p["type"],
-                        "sha256": hashlib.sha256(p["data"]).hexdigest()} for p in parts]}
-    path = write_payload(json.dumps(saved, ensure_ascii=False).encode("utf-8"))
     if fixed:
         warnings.insert(0, f"_fixyaml.py quoted {fixed} line(s) in {rel} (values holding a colon). The file "
                            "changed: commit it with the page.")
-    view = page_view(reply)
-    result = {"ok": True, "portal": url, "payload": str(path), "page": page["slug"], "yaml": rel,
-              "round": reply["round"], "sent_at": page["sent_at"], "counts": reply["counts"],
-              "left_out": left_out, "warnings": warnings, "fixed_lines": fixed}
-    if target:
-        view = f"Goes to Portal project \"{target}\" (the key in {key_name}).\n\n{view}"
-        warnings.append(f"This repo has {len(products)} products ({', '.join(products)}). Until pages are sent "
-                        f"per product, every page goes to the first product's Portal project, \"{target}\". "
-                        "Check that this is the right project before saying yes.")
-        result["project_name"] = target
-    result["client_view"] = view
+    out_products = []
+    for t, project, reply in results:
+        saved = {"kind": "page", "slug": page["slug"], "name": page["name"], "round": page["round"], "yaml": rel,
+                 "portal": url, "product": t.product, "key_var": t.key_name, "project_name": project,
+                 "publish": body.decode("utf-8"),
+                 "parts": [{"name": p["name"], "path": p["path"], "type": p["type"],
+                            "sha256": hashlib.sha256(p["data"]).hexdigest()} for p in parts]}
+        path = write_payload(json.dumps(saved, ensure_ascii=False).encode("utf-8"))
+        view = page_view(reply)
+        if project:
+            view = f"{t.product} → Portal project \"{project}\"\n\n{view}"
+        entry = {"product": t.product, "payload": str(path), "round": reply["round"], "counts": reply["counts"],
+                 "client_view": view}
+        if project:
+            entry["project_name"] = project
+        out_products.append(entry)
+    result = {"ok": True, "portal": url, "page": page["slug"], "yaml": rel, "sent_at": page["sent_at"],
+              "left_out": left_out, "warnings": warnings, "fixed_lines": fixed, "products": out_products}
+    if len(out_products) == 1:                    # one Portal project: its fields at the top too, as before
+        result.update({k: v for k, v in out_products[0].items() if k != "product"})
     return result
 
 
@@ -1670,13 +1824,32 @@ def cmd_page_send(root: Path, path: Path) -> dict:
     keep = False
     try:
         url, prof, env = settings(root)
-        key, key_name = page_key(prof, env)
         saved, body, parts = read_page_payload(path, root)
         if text(saved.get("portal")).rstrip("/") != url:
             raise Stop(f"`page plan` ran its dry run against {saved.get('portal') or 'another Portal'}, but "
                        f"tools.portal.url is now {url}. Run `page plan {saved.get('slug')}` again. Nothing was sent.")
+        product, key_name = text(saved.get("product")), text(saved.get("key_var"))
+        project = text(saved.get("project_name"))
+        if not KEY_NAME.fullmatch(key_name):
+            raise Stop(f"{path} does not say which key to send it with (an older `page plan` wrote it). Run "
+                       f"`page plan {saved.get('slug')}` again. Nothing was sent.")
+        now_named = portal_names(prof).get(product)
+        if now_named != key_name:
+            whose = product or "this repo"
+            raise Stop(f"`page plan` used the key in {key_name} for {whose}, but the profile now names "
+                       f"{now_named or 'no key'} for {whose} (tools.portal.products). Run `page plan "
+                       f"{saved.get('slug')}` again. Nothing was sent.")
+        key = read_keys(env, {product: key_name})[product]
         rel = text(saved.get("yaml")) or "the page YAML"
         page_local_check(json.loads(body.decode("utf-8")), body, parts, rel, {})
+        if project:                               # the key must still open the project the BA said yes to
+            now_opens = project_name(url, key, key_name, contract=None)
+            if now_opens != project:
+                keep = True                       # kept: `page discard` removes it, or it goes after a day
+                raise Stop(f"The key in {key_name} now opens Portal project \"{now_opens}\", but `page plan` showed "
+                           f"the page going to \"{project}\" for {product}. Check that {key_name} in .env holds the "
+                           f"key for the right project, then run `page plan {saved.get('slug')}` again and look at "
+                           "the new dry run before sending. Nothing was sent.")
         try:
             reply = post_page(url, key, body, parts, False, rel, {}, text(saved.get("round")), key_name)
         except MaybeSent:
@@ -1687,12 +1860,17 @@ def cmd_page_send(root: Path, path: Path) -> dict:
             path.unlink(missing_ok=True)
     c, rnd = reply["counts"], reply["round"]
     how = "a new Round" if rnd.get("new") else "it replaced the Round with the same key"
-    report = (f"Sent the page \"{saved.get('name')}\" ({saved.get('slug')}) to {url}: "
+    to = f"Portal project \"{project}\" at {url}" if project else url
+    report = (f"Sent the page \"{saved.get('name')}\" ({saved.get('slug')}) to {to}: "
               f"Round {round_words(rnd['label'])} — {how}. {c['questions']} Questions, {c['screenshots']} "
               f"screenshots. The Portal confirmed it at {reply['received_at']} (UTC), "
               f"publish id {reply['publish_id']}.")
-    return {"ok": True, "sent": "page", "page": saved.get("slug"), "portal": url, "round": rnd, "counts": c,
-            "publish_id": reply["publish_id"], "received_at": reply["received_at"], "report": report}
+    result = {"ok": True, "sent": "page", "page": saved.get("slug"), "product": product, "portal": url,
+              "round": rnd, "counts": c, "publish_id": reply["publish_id"], "received_at": reply["received_at"],
+              "report": report}
+    if project:
+        result["project_name"] = project
+    return result
 
 
 def main(argv: list[str]) -> int:
@@ -1704,7 +1882,10 @@ def main(argv: list[str]) -> int:
             rest = words[2:] if words[1:2] == ["plan"] else words[1:]
             if len(rest) != 1:
                 raise Stop("Name one page: `page plan <slug>` (the `slug:` line of its YAML).")
-            result = cmd_page_plan(root, rest[0])
+            if "--product" in argv and not text(arg(argv, "--product")):
+                raise Stop("--product needs a product name, as the profile writes it (for example "
+                           "--product \"Bond Portal\"). Nothing was sent.")
+            result = cmd_page_plan(root, rest[0], text(arg(argv, "--product")) or None)
         elif words[:2] == ["page", "send"]:
             result = cmd_page_send(root, payload_arg(argv))
         elif words[:2] == ["page", "discard"]:

@@ -96,11 +96,17 @@ jira_areas = load_json("areas.json", [])
 rel = load_json("releases.json", {"releases": [], "tickets": {}})
 
 # ---------- Bubbles: features and topics ----------
+def link_key(url):
+    """A page link as the Portal compares it: trimmed, a trailing / dropped."""
+    url = str(url or "").strip()
+    return url[:-1] if url.endswith("/") else url
+
+
 clar_by_url = {}
 for f in sorted((ba / "clarifications").glob("*-decisions.yaml")):
     c = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
-    if c.get("url"):
-        clar_by_url[c["url"]] = c
+    if link_key(c.get("url")):
+        clar_by_url[link_key(c["url"])] = c
 
 
 def days(since):
@@ -133,7 +139,7 @@ for fi, f in enumerate(d.get("features") or []):
          "jira_area": f.get("jira_area")}
     open_qs = f.get("open") or []
     clar_url = (f.get("clar") or {}).get("url")
-    c = clar_by_url.get(clar_url) or {}
+    c = clar_by_url.get(link_key(clar_url)) or {}
     settled = None
     if isinstance(c.get("settled"), list):
         settled = len(c["settled"])

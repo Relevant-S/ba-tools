@@ -24,7 +24,8 @@ and runs nothing. It prints one JSON line: `ok`, `files` (the intake files
 written, as repo paths) and `message` — or `ok: false` and `error`. Both are already worded for the BA.
 
 fetch-portal needs the `portal-publish` skill installed next to it: it checks every reply with that skill's
-contract (`portal-publish/checks.py`, `portal-publish/contract/`). `install.py` copies both.
+contract (`portal-publish/checks.py`, `portal-publish/contract/`), and reads its settings with that skill's
+`portal-publish/targets.py`. `install.py` copies both.
 
 ## Step 0 — every run
 
@@ -38,13 +39,24 @@ The same settings as `portal-publish`:
 | Setting | Where | When it is missing |
 |---|---|---|
 | The Portal address | `tools.portal.url` in `docs/BA/specs/.ba-profile.yml` | stop: run `ba-setup project` |
-| The Publish key | `PORTAL_PUBLISH_KEY=<key>` in `.env` at the repo root. With `tools.portal.products` (a key per product), the first product's variable there, until Answers are fetched per product (Story 4.10) | stop: run `ba-setup project` |
+| The Publish key, one product | `PORTAL_PUBLISH_KEY=<key>` in `.env` at the repo root | stop: run `ba-setup project` |
+| The Publish keys, two or more products | `tools.portal.products` in the profile names, per product, the `.env` variable that holds its Portal project's key, and `.env` holds each one | stop before anything is fetched, naming the product and the variable: run `ba-setup project` |
 | `.env` kept out of git | `.gitignore` lists `.env`, and `.env` is not committed | stop: add it to `.gitignore` (and `git rm --cached .env` if it was committed) |
 
 `tools.portal.url` must start with `https://`. Plain `http://` is allowed only for localhost, 127.0.0.1,
 `*.localhost` and `*.test`. The script checks all of this itself before it asks the Portal anything. **Never
 print, echo or paste the key.** Never open `.env` to show it. An Admin finds the key in the Portal at
 Admin → Projects → the Project → Publishing.
+
+**Two or more products.** Each product has its own Portal project, so fetch-portal fetches from every one, in
+`tools.portal.products` order, one key at a time: first that project's leftovers, then reserve, write and ack.
+First it asks the Portal which project each key opens (`GET /status`). If two products' keys open the same
+project, it stops before fetching anything, naming both products and their variables. One product's failure
+(the Portal not reachable, a wrong key, a file that cannot be written) does not stop the others; files already
+written stay and are listed. The result then has `products` (one entry per product: `product`, `ok`, `files`,
+`project_name`), and `message` (or `error`) holds one block per product, headed
+`<product> → Portal project "<name>":`. If any product failed, `ok` is `false` and `error` ends with "Not fetched: <products>. The other
+products are done. …". A repo with one product works as before.
 
 ## Run
 
@@ -59,6 +71,16 @@ Admin → Projects → the Project → Publishing.
    ```
 
    or "No new answers since 2026-10-27 11:00 UTC." (or "No new answers. None have been fetched yet.").
+   With two or more products, `message` has one block per product, and each file names its product:
+
+   ```
+   AcmeLending:
+     Wrote 1 intake file:
+       - docs/BA/intake/2026-10-27-1100-portal-merchants-decisions.md (AcmeLending: Merchants, 2 answers)
+
+   Bond Portal:
+     No new answers since 2026-10-27 11:00 UTC.
+   ```
 3. If `files` is not empty, ask one question:
 
    ```
@@ -66,18 +88,23 @@ Admin → Projects → the Project → Publishing.
    ```
 
    On `Y`: invoke `/intake-and-triage`. On `n`: stop.
-4. **`ok: false`** → show `error` as it is and stop. Do not retry in a loop.
+4. **`ok: false`** → show `error` as it is and stop. Do not retry in a loop. With two or more products, the
+   other products' files are written (`files`): ask the step 3 question for them too.
 
 Never commit a `.tmp` or `.complete` file in `docs/BA/intake/`. They belong to a fetch that is not finished yet;
 the next run finishes it. Triage lists only `*.md`, so it never reads them. A `portal-<batch>.complete` marker is
 written only once every page of a batch is on disk; a batch without it was cut off mid-write and is deleted,
-never confirmed, so its Answers come again after the hold (about 10 minutes).
+never confirmed, so its Answers come again after the hold (about 10 minutes). The marker also names the `.env`
+variable whose key fetched the batch, so a leftover is confirmed in its own Portal project. A marker from before
+(no variable) is confirmed with `PORTAL_PUBLISH_KEY` when `.env` still has it; otherwise its files are left alone,
+with a note, and never deleted.
 
 ## The intake file
 
 One file per Clarification page, named `YYYY-MM-DD-HHMM-portal-<slug>.md` from the fetch time (UTC). If the name
 is taken, `-2`, `-3` … is added. All times end in "UTC". Answers keep the order the Portal sent (page, Round,
-Question position, send time).
+Question position, send time). In a repo with two or more products, the header has one more line after
+`project:`, `product: '<name>'`: the product whose Portal project the Answers came from.
 
 ```markdown
 ---

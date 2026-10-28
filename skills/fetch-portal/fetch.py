@@ -12,9 +12,11 @@ Run from the project root, or pass --root. What it does, in order:
   4. On 200, rename each to docs/BA/intake/YYYY-MM-DD-HHMM-portal-<slug>.md (-2, -3 … if taken).
 
 Settings: tools.portal.url in docs/BA/specs/.ba-profile.yml; the Publish key in .env at the repo root, which git
-must ignore: PORTAL_PUBLISH_KEY, or, when the profile has tools.portal.products (one Portal project per product), the
-first product's variable there. The key is never printed. Every reply is checked against the portal-publish
-contract (answers/1, ack/1); a reply that fails stops the run: nothing written, no ack.
+must ignore: PORTAL_PUBLISH_KEY in a repo with one product. A repo with two or more products has one Portal project
+per product: tools.portal.products names each product's .env variable, and the steps above run for every product, in
+that order, each with its own key. One product's failure does not stop the others. Keys are never printed. The
+settings are read by portal-publish's targets.py (one copy for both skills). Every reply is checked against the
+portal-publish contract (answers/1, ack/1); a reply that fails stops that product's run: nothing written, no ack.
 """
 from __future__ import annotations
 
@@ -22,7 +24,6 @@ import datetime as dt
 import importlib.util
 import json
 import re
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -33,11 +34,13 @@ import yaml
 HERE = Path(__file__).resolve().parent
 SKILLS = HERE.parent
 CHECKS_PY = SKILLS / "portal-publish" / "checks.py"
+TARGETS_PY = SKILLS / "portal-publish" / "targets.py"
 
 PROFILE = "docs/BA/specs/.ba-profile.yml"
 INTAKE = "docs/BA/intake"
 RESERVE = "/api/v1/answers/reserve"
 ACK = "/api/v1/answers/ack"
+STATUS = "/api/v1/status"
 TIMEOUT = 30.0
 ACK_TRIES = 3
 ACK_WAITS = (2.0, 5.0)            # seconds before the 2nd and the 3rd ack try
@@ -45,7 +48,7 @@ SETUP_HINT = "Run `ba-setup project`"
 KEY_PLACE = "Admin → Projects → the Project → Publishing"
 DEFAULT_KEY = "PORTAL_PUBLISH_KEY"
 KEY_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
-key_name = DEFAULT_KEY            # the .env variable the key came from; settings() sets it, messages name it
+key_name = DEFAULT_KEY            # the .env variable of the product being fetched; run() sets it, messages name it
 TMP_NAME = re.compile(r"^portal-([0-9a-fA-F-]{36})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md\.tmp$")
 DONE_NAME = re.compile(r"^portal-([0-9a-fA-F-]{36})\.complete$")
 HOLD = "about 10 minutes"
@@ -61,18 +64,36 @@ class NoReply(Stop):
     """The Portal did not answer (connect error, timeout, or a 5xx on every ack try)."""
 
 
-def load_checks():
-    """portal-publish's checks.py, imported from the sibling folder: one contract, never a copy."""
-    if not CHECKS_PY.exists():
-        raise Stop(f"fetch-portal needs the portal-publish skill next to it ({CHECKS_PY} is missing). "
+def load_module(path: Path, name: str):
+    """A module from the sibling portal-publish folder: one copy, never a copy here."""
+    if not path.exists():
+        raise Stop(f"fetch-portal needs the portal-publish skill next to it ({path} is missing). "
                    "Install ba-tools again. Nothing was written.")
-    spec = importlib.util.spec_from_file_location("portal_publish_checks", CHECKS_PY)
+    spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
 
 
-checks = None   # loaded in main(), so a missing portal-publish gives a plain stop message
+def load_checks():
+    """portal-publish's checks.py: the contract's checks."""
+    return load_module(CHECKS_PY, "portal_publish_checks")
+
+
+def load_targets():
+    """portal-publish's targets.py: the Portal address, and each product's .env variable and key."""
+    return load_module(TARGETS_PY, "portal_publish_targets")
+
+
+checks = None    # loaded in main(), so a missing portal-publish gives a plain stop message
+targets = None   # the same, loaded on first use
+
+
+def tg():
+    global targets
+    if targets is None:
+        targets = load_targets()
+    return targets
 
 
 # ---------------------------------------------------------------- output and arguments
@@ -86,100 +107,26 @@ def arg(argv: list[str], name: str, default=None):
     return argv[argv.index(name) + 1] if name in argv and argv.index(name) + 1 < len(argv) else default
 
 
-# ---------------------------------------------------------------- settings (copied from portal-publish/publish.py)
-
-def read_env_file(path: Path) -> dict[str, str]:
-    values = {}
-    for line in path.read_text(encoding="utf-8-sig").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        name, value = line.split("=", 1)
-        name = name.strip().removeprefix("export ").strip()
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
-            value = value[1:-1]
-        values[name] = value
-    return values
-
-
-def run_git(root: Path, *args: str) -> subprocess.CompletedProcess:
-    try:
-        return subprocess.run(["git", *args], cwd=root, capture_output=True)
-    except FileNotFoundError:
-        raise Stop("git is not installed (or not on PATH). fetch-portal needs git. Nothing was written.") from None
-
-
-def env_is_ignored(root: Path) -> bool:
-    r = run_git(root, "check-ignore", "-q", ".env")
-    if r.returncode == 128:
-        raise Stop(f"{root} is not a git repository, so git cannot keep .env out of commits. Run fetch-portal "
-                   "from the project repo. Nothing was written.")
-    return r.returncode == 0
-
-
-LOCAL_HOSTS = ("localhost", "127.0.0.1")
-
+# ---------------------------------------------------------------- settings (portal-publish's targets.py)
 
 def check_url(url: str) -> None:
     """The key travels in the request: plain http:// only to this computer or a .localhost / .test name."""
+    t = tg()
     try:
-        u = httpx.URL(url)
-    except httpx.InvalidURL:
-        raise Stop(f"tools.portal.url ({url}) is not a web address. {SETUP_HINT} to fix it.") from None
-    host = (u.host or "").lower()
-    if u.scheme == "https" and host:
-        return
-    if u.scheme == "http" and (host in LOCAL_HOSTS or host.endswith(".localhost") or host.endswith(".test")):
-        return
-    raise Stop(f"tools.portal.url ({url}) must start with https:// — plain http:// would send the Publish key "
-               "unencrypted. http:// is allowed only for localhost, 127.0.0.1, *.localhost and *.test. "
-               "Nothing was written.")
+        t.check_url(url)
+    except t.TargetError as e:
+        raise Stop(f"{e} Nothing was written.") from None
 
 
-def settings(root: Path) -> tuple[str, str, dict]:
-    """The Portal address, the key and the profile. Stops before anything is asked of the Portal."""
-    prof_path = root / PROFILE
-    if not prof_path.exists():
-        raise Stop(f"No project profile at {PROFILE}. {SETUP_HINT} first.")
-    prof = yaml.safe_load(prof_path.read_text(encoding="utf-8")) or {}
-    tools = (prof.get("tools") or {}) if isinstance(prof, dict) else None
-    if not isinstance(tools, dict):
-        raise Stop(f"{PROFILE} is not laid out as a project profile (it, or its tools: part, is not a set of "
-                   f"named settings). {SETUP_HINT} to fix it. Nothing was written.")
-    portal = tools.get("portal") or {}
-    url = str(portal.get("url") or "").strip().rstrip("/") if isinstance(portal, dict) else ""
-    if not url:
-        raise Stop(f"The profile has no Portal address (tools.portal.url in {PROFILE}). {SETUP_HINT} to add it.")
-    check_url(url)
-    env = root / ".env"
-    if not env.exists():
-        raise Stop(f"There is no .env file at the repo root, so there is no Publish key. {SETUP_HINT}: it puts "
-                   "the Publish key in .env.")
-    if not env_is_ignored(root):
-        raise Stop(".env is not ignored by git (it is tracked, or .gitignore does not list it). The Publish key "
-                   "must never be committed: add .env to .gitignore (and `git rm --cached .env` if it was "
-                   "committed), then run again. Nothing was written.")
-    global key_name
-    key_name = first_product_key(portal)
-    key = read_env_file(env).get(key_name, "").strip()
-    if not key:
-        raise Stop(f".env has no {key_name}. {SETUP_HINT}: it tells you where to get the key.")
-    return url, key, prof
-
-
-def first_product_key(portal: dict) -> str:
-    """The .env variable to use. With tools.portal.products (a key per product, portal-publish Story 3.8), the
-    first product's variable, until Answers are fetched per product (Story 4.10); else PORTAL_PUBLISH_KEY."""
-    found = portal.get("products") if isinstance(portal, dict) else None
-    if found in (None, "", {}):
-        return DEFAULT_KEY
-    names = list(found.values()) if isinstance(found, dict) else []
-    if not names or not all(isinstance(v, str) and KEY_NAME.fullmatch(v.strip()) for v in names):
-        raise Stop(f"tools.portal.products in {PROFILE} must name, for each product, the .env variable that holds "
-                   "its Portal project's key, for example {AcmeLending: PORTAL_PUBLISH_KEY_ACME}. "
-                   f"{SETUP_HINT} to fix it. Nothing was written.")
-    return names[0].strip()
+def settings(root: Path) -> tuple[str, dict, list, dict]:
+    """The Portal address, the profile, the targets [(product, .env variable, key)] in tools.portal.products
+    order, and the values in .env. Stops before anything is asked of the Portal."""
+    t = tg()
+    try:
+        url, prof, env = t.settings(root)
+        return url, prof, t.portal_targets(root, prof, env), env
+    except t.TargetError as e:
+        raise Stop(f"{e} Nothing was written.") from None
 
 
 # ---------------------------------------------------------------- times
@@ -213,7 +160,7 @@ def portal_error(r: httpx.Response, doc) -> tuple[str, str]:
 
 
 def refused(url: str, r: httpx.Response, doc, step: str) -> Stop:
-    tail = ("Nothing was written." if step == "reserve" else
+    tail = ("Nothing was written." if step in ("reserve", "status check") else
             f"Any .tmp files stay in {INTAKE}/ (triage skips them); the next run finishes them.")
     code, msg = portal_error(r, doc)
     if not code:
@@ -317,8 +264,9 @@ def note_block(note) -> list[str]:
     return ["", *[("    " + ln) if ln.strip() else "" for ln in str(note).replace("\r\n", "\n").split("\n")]]
 
 
-def render(project: str, slug: str, answers: list[dict], fetched: dt.datetime) -> str:
-    """One page's Answers as an intake file. Answers stay in the order the Portal sent."""
+def render(project: str, slug: str, answers: list[dict], fetched: dt.datetime, product: str = "") -> str:
+    """One page's Answers as an intake file. Answers stay in the order the Portal sent. `product`: in a repo with
+    two or more products, the product whose Portal project the Answers came from (a `product:` header line)."""
     fetched_at = fetched.strftime("%Y-%m-%d %H:%M UTC")
     title = one_line(answers[-1]["page"]["title"])
     rounds, participants = [], []
@@ -333,7 +281,7 @@ def render(project: str, slug: str, answers: list[dict], fetched: dt.datetime) -
     sent = sorted(a["sent_at"] for a in answers)
 
     lines = ["---", "source: portal", f"date: {fetched.strftime('%Y-%m-%d')}", f"project: {quoted(project)}",
-             f"page: {quoted(slug)}", f"page_title: {quoted(title)}", "rounds:"]
+             *([f"product: {quoted(product)}"] if product else []), f"page: {quoted(slug)}", f"page_title: {quoted(title)}", "rounds:"]
     for rnd in rounds:
         lines += [f"  - key: {quoted(rnd['key'])}", f"    label: {quoted(rnd['label'])}",
                   f"    published: {quoted(rnd['published'])}"]
@@ -412,8 +360,20 @@ def rename_all(root: Path, tmps: list[tuple[Path, str]]) -> list[Path]:
 
 
 def done_marker(root: Path, batch_id: str) -> Path:
-    """Written only after every page of the batch is on disk: only a marked batch is ever acked."""
+    """Written only after every page of the batch is on disk: only a marked batch is ever acked. It holds the
+    number of files, then the .env variable whose key reserved the batch, so a leftover is acked in its own
+    Portal project."""
     return root / INTAKE / f"portal-{batch_id}.complete"
+
+
+def marker_key(marker: Path) -> str | None:
+    """The .env variable a marker names (its second line); None for a marker written before Story 4.10."""
+    try:
+        lines = marker.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return None
+    name = lines[1].strip() if len(lines) > 1 else ""
+    return name if KEY_NAME.fullmatch(name) else None
 
 
 def rel(root: Path, p: Path) -> str:
@@ -449,42 +409,84 @@ def drop(paths) -> None:
             pass
 
 
-def finish_leftovers(root: Path, url: str, key: str) -> tuple[list[Path], list[str]]:
-    """Ack each leftover batch first. Returns the files renamed and plain notes for the BA."""
+def finish_leftovers(root: Path, url: str, key: str, first: bool = True, known: tuple[str, ...] = (),
+                     old_key: tuple[str, str] | None = None) -> tuple[list[Path], list[str]]:
+    """Ack each leftover batch of this key first. Returns the files renamed and plain notes for the BA.
+    A batch is this key's when its marker names this key's .env variable (key_name). A marker that names none (an
+    older one) belongs to PORTAL_PUBLISH_KEY: `old_key` is (that variable, its key) when .env still has it, else
+    None and such a batch is left alone. `first`: this is the first product's run, which also deletes cut-off
+    batches, acks old batches whose variable is not a product's, and reports strays and batches it cannot ack
+    (`known` are the variables the profile names)."""
+    global key_name
     written, notes = [], []
     batches, strays = leftovers(root)
-    if strays:
-        notes.append("These files in " + INTAKE + "/ look like unfinished fetch-portal files, but fetch-portal does "
-                     "not write names like these, so it leaves them alone. Delete them if you do not need them: "
-                     + ", ".join(rel(root, p) for p in strays))
+    mine: dict[str, tuple[list, str, str]] = {}          # batch id -> (its .tmp files, the key, its variable)
     for batch_id, tmps in batches.items():
         marker = done_marker(root, batch_id)
         if not marker.exists():
-            drop(p for p, _ in tmps)
-            notes.append(f"Deleted {len(tmps)} file(s) from an earlier fetch that was cut off while writing. The "
-                         f"Portal was never told it had them, so those Answers come again after the hold ({HOLD}).")
+            if first:
+                mine[batch_id] = (tmps, key, key_name)
             continue
-        if not tmps:
-            drop([marker])
-            continue
-        try:
-            result, _ = ack(url, key, batch_id)
-        except NoReply as e:
-            raise Stop(f"{e} {len(tmps)} file(s) from an earlier fetch are still waiting in {INTAKE}/ as .tmp; the "
-                       "next run finishes them. Nothing new was fetched.") from None
-        if result == "ok":
-            written += rename_all(root, tmps)
-            drop([marker])
-            notes.append(f"Finished an earlier fetch: {len(tmps)} file(s) confirmed by the Portal.")
-        else:
-            drop([*(p for p, _ in tmps), marker])
-            notes.append(f"Deleted {len(tmps)} unfinished file(s) from an earlier fetch: the Portal had already "
-                         "given those Answers to a newer fetch, or no longer knows that batch. Those Answers come "
-                         "with this fetch or the next one.")
+        owner = marker_key(marker)
+        if owner is None:                                # written before Story 4.10
+            if old_key is None:
+                if first and tmps:
+                    notes.append(f"{len(tmps)} file(s) from an earlier fetch wait in {INTAKE}/ as .tmp. Their "
+                                 f"marker is from an older fetch-portal and names no key, and .env has no "
+                                 f"{DEFAULT_KEY}, so it is not clear which Portal project they came from. They are "
+                                 f"left alone. Put {DEFAULT_KEY} back in .env to finish them, or delete them.")
+                continue
+            owner = old_key[0]
+        if owner == key_name:
+            mine[batch_id] = (tmps, key, key_name)
+        elif first and old_key and owner == old_key[0] and owner not in known:
+            mine[batch_id] = (tmps, old_key[1], old_key[0])
+        elif owner not in known and first and tmps:
+            notes.append(f"{len(tmps)} file(s) from an earlier fetch wait in {INTAKE}/ as .tmp. They were fetched "
+                         f"with the key in {owner}, which tools.portal.products no longer names, so they are left "
+                         "alone. Put that key back in the profile to finish them, or delete them.")
+    if strays and first:
+        notes.append("These files in " + INTAKE + "/ look like unfinished fetch-portal files, but fetch-portal does "
+                     "not write names like these, so it leaves them alone. Delete them if you do not need them: "
+                     + ", ".join(rel(root, p) for p in strays))
+    mine_name = key_name
+    try:
+        for batch_id, (tmps, batch_key, batch_var) in mine.items():
+            marker = done_marker(root, batch_id)
+            if not marker.exists():
+                drop(p for p, _ in tmps)
+                notes.append(f"Deleted {len(tmps)} file(s) from an earlier fetch that was cut off while writing. "
+                             f"The Portal was never told it had them, so those Answers come again after the hold "
+                             f"({HOLD}).")
+                continue
+            if not tmps:
+                drop([marker])
+                continue
+            key_name = batch_var                         # messages name the variable this batch is acked with
+            try:
+                result, _ = ack(url, batch_key, batch_id)
+            except NoReply as e:
+                raise Stop(f"{e} {len(tmps)} file(s) from an earlier fetch are still waiting in {INTAKE}/ as .tmp; "
+                           "the next run finishes them. Nothing new was fetched.") from None
+            finally:
+                key_name = mine_name
+            if result == "ok":
+                written += rename_all(root, tmps)
+                drop([marker])
+                notes.append(f"Finished an earlier fetch: {len(tmps)} file(s) confirmed by the Portal.")
+            else:
+                drop([*(p for p, _ in tmps), marker])
+                notes.append(f"Deleted {len(tmps)} unfinished file(s) from an earlier fetch: the Portal had already "
+                             "given those Answers to a newer fetch, or no longer knows that batch. Those Answers "
+                             "come with this fetch or the next one.")
+    except Stop as e:
+        if written:
+            e.files = [rel(root, f) for f in written]
+        raise
     return written, notes
 
 
-def write_batch(root: Path, project: str, batch: dict) -> list[tuple[Path, str]]:
+def write_batch(root: Path, project: str, batch: dict, product: str = "") -> list[tuple[Path, str]]:
     """Write one .tmp file per page. On any write error delete what this batch wrote, ack nothing."""
     fetched = now()
     written: list[tuple[Path, str]] = []
@@ -492,9 +494,10 @@ def write_batch(root: Path, project: str, batch: dict) -> list[tuple[Path, str]]
         (root / INTAKE).mkdir(parents=True, exist_ok=True)
         for slug, answers in by_page(batch["answers"]):
             path = tmp_path(root, batch["batch_id"], slug)
-            path.write_text(render(project, slug, answers, fetched), encoding="utf-8", newline="\n")
+            path.write_text(render(project, slug, answers, fetched, product), encoding="utf-8", newline="\n")
             written.append((path, slug))
-        done_marker(root, batch["batch_id"]).write_text(f"{len(written)}\n", encoding="utf-8")
+        done_marker(root, batch["batch_id"]).write_text(f"{len(written)}\n{key_name}\n", encoding="utf-8",
+                                                        newline="\n")
     except (OSError, ValueError) as e:
         folder = root / INTAKE
         partial = [p for p, _ in written] + (list(folder.glob(f"portal-{batch['batch_id']}-*.md.tmp"))
@@ -514,19 +517,126 @@ def summary(root: Path, files: list[Path]) -> str:
             head = f.read_text(encoding="utf-8")
             n = re.search(r"^answer_count: (\d+)$", head, flags=re.M)
             t = re.search(r"^page_title: '(.*)'$", head, flags=re.M)
-            extra = f" ({t[1].replace(chr(39) * 2, chr(39)) if t else '?'}, {n[1] if n else '?'} answer{'' if n and n[1] == '1' else 's'})"
+            p = re.search(r"^product: '(.*)'$", head, flags=re.M)
+            product = f"{p[1].replace(chr(39) * 2, chr(39))}: " if p else ""
+            extra = f" ({product}{t[1].replace(chr(39) * 2, chr(39)) if t else '?'}, {n[1] if n else '?'} answer{'' if n and n[1] == '1' else 's'})"
         except OSError:
             extra = ""
         lines.append(f"  - {rel(root, f)}{extra}")
     return "\n".join(lines)
 
 
-def run(root: Path) -> dict:
-    url, key, prof = settings(root)
-    project = str(prof.get("project") or "").strip()
-    files, notes = finish_leftovers(root, url, key)
+def project_name(url: str, key: str) -> str:
+    """GET /status with one product's key: the name of the Portal project that key opens. Fetches nothing."""
     try:
-        return fetch_new(root, url, key, project, files, notes)
+        with http_client() as client:
+            r = client.get(url + STATUS, headers={"Authorization": f"Bearer {key}", "Accept": "application/json"})
+    except httpx.InvalidURL:
+        raise Stop(f"tools.portal.url ({url}) is not a web address. {SETUP_HINT} to fix it. "
+                   "Nothing was written.") from None
+    except httpx.RequestError:
+        raise Stop(f"The Portal is not reachable at {url}. Check that it is running and that tools.portal.url is "
+                   "right. Nothing was written.") from None
+    try:
+        doc = r.json()
+    except ValueError:
+        doc = None
+    if r.status_code == 200 and isinstance(doc, dict) and not checks.check_reply(doc, "status/1"):
+        return doc["project_name"]
+    if r.status_code == 200:
+        raise Stop(f"The Portal's reply was not understood (HTTP {r.status_code}). It may be an older Portal. "
+                   "Nothing was written.")
+    raise refused(url, r, doc, "status check")
+
+
+def intake_md(root: Path) -> set[str]:
+    folder = root / INTAKE
+    return {rel(root, f) for f in folder.glob("*.md")} if folder.is_dir() else set()
+
+
+def plain_error(e: Exception, wrote: bool) -> str:
+    """An unexpected error in one product's run, in plain words. "Nothing was written" only when it is true."""
+    if isinstance(e, UnicodeDecodeError):
+        why = f"A file is not UTF-8 text ({e.reason})."
+    elif isinstance(e, OSError):
+        why = (f"A file could not be read or written: {e}. Check {INTAKE}/ for .tmp files; the next run finishes "
+               "them.")
+    else:
+        why = f"The request to the Portal failed ({type(e).__name__})."
+    return why + ("" if wrote else " Nothing was written.")
+
+
+def run(root: Path) -> dict:
+    """Every product's Portal project, in tools.portal.products order, one key at a time. A repo with one product
+    works as before. With two or more, each key's Portal project is named first (GET /status), and two keys that
+    open the same project stop the run before anything is fetched. One product's failure does not stop the
+    others: the result reports each product and is ok: false when any failed."""
+    global key_name
+    url, prof, goes, env = settings(root)
+    project = str(prof.get("project") or "").strip()
+    old = env.get(DEFAULT_KEY, "").strip()
+    old_key = (DEFAULT_KEY, old) if old else None
+    if len(goes) == 1:
+        key_name = goes[0].key_name
+        return run_one(root, url, goes[0].key, project, known=(key_name,), old_key=old_key)
+    known = tuple(t.key_name for t in goes)
+    names: dict[str, str] = {}                     # product -> its Portal project
+    early: dict[str, str] = {}                     # product -> why its project could not be named
+    owner: dict[str, str] = {}
+    for t in goes:
+        key_name = t.key_name
+        try:
+            name = project_name(url, t.key)
+        except Stop as e:
+            early[t.product] = str(e)
+            continue
+        if name in owner:
+            first = next(x for x in goes if x.product == owner[name])
+            raise Stop(f"The keys for {first.product} ({first.key_name}) and {t.product} ({t.key_name}) both open "
+                       f"the same Portal project, \"{name}\". Each product needs its own Portal project. Ask an "
+                       "Admin for the right key for one of them, put it in .env, and run fetch-portal again. "
+                       "Nothing was written.")
+        owner[name] = t.product
+        names[t.product] = name
+    files: list[str] = []
+    blocks, failed, products = [], [], []
+    for n, t in enumerate(goes):
+        key_name = t.key_name
+        got: list[str] = []
+        seen = intake_md(root)
+        if t.product in early:
+            ok, msg = False, early[t.product]
+        else:
+            try:
+                res = run_one(root, url, t.key, project, t.product, first=n == 0, known=known, old_key=old_key)
+                ok, got, msg = True, res["files"], res["message"]
+            except Stop as e:
+                ok, got, msg = False, list(e.files), str(e)
+            except (OSError, UnicodeDecodeError, httpx.HTTPError) as e:
+                got = sorted(intake_md(root) - seen)       # files this product renamed before the error
+                ok, msg = False, plain_error(e, bool(got))
+        if not ok:
+            failed.append(t.product)
+        files += got
+        products.append({"product": t.product, "ok": ok, "files": got,
+                         **({"project_name": names[t.product]} if t.product in names else {})})
+        where = f"{t.product} → Portal project \"{names[t.product]}\"" if t.product in names else t.product
+        head = f"{where}:" if ok else f"{where} — stopped:"
+        blocks.append("\n".join([head, *("  " + ln if ln else "" for ln in msg.splitlines())]))
+    message = "\n\n".join(blocks)
+    if not failed:
+        return {"ok": True, "files": files, "products": products, "message": message}
+    message += (f"\n\nNot fetched: {', '.join(failed)}. The other products are done. Fix what stopped, then run "
+                "fetch-portal again.")
+    return {"ok": False, "files": files, "products": products, "error": message}
+
+
+def run_one(root: Path, url: str, key: str, project: str, product: str = "", first: bool = True,
+            known: tuple[str, ...] = (), old_key: tuple[str, str] | None = None) -> dict:
+    """One Portal project: leftovers, then reserve, write and ack, with that project's key."""
+    files, notes = finish_leftovers(root, url, key, first, known, old_key)
+    try:
+        return fetch_new(root, url, key, project, files, notes, product)
     except Stop as e:
         if not files and not notes:
             raise
@@ -538,7 +648,8 @@ def run(root: Path) -> dict:
         raise stop from None
 
 
-def fetch_new(root: Path, url: str, key: str, project: str, files: list[Path], notes: list[str]) -> dict:
+def fetch_new(root: Path, url: str, key: str, project: str, files: list[Path], notes: list[str],
+              product: str = "") -> dict:
     batch = reserve(url, key)
     if batch["batch_id"] is None:
         last = batch["last_fetched_at"]
@@ -546,7 +657,7 @@ def fetch_new(root: Path, url: str, key: str, project: str, files: list[Path], n
         msg = "\n".join([*notes, *([summary(root, files)] if files else []), nothing])
         return {"ok": True, "files": [rel(root, f) for f in files], "message": msg}
 
-    tmps = write_batch(root, project, batch)
+    tmps = write_batch(root, project, batch, product)
     try:
         result, _ = ack(url, key, batch["batch_id"])
     except NoReply as e:
@@ -597,7 +708,7 @@ def main(argv: list[str]) -> int:
                                                 "Nothing was written."})
         return 1
     out(result)
-    return 0
+    return 0 if result.get("ok") else 1
 
 
 if __name__ == "__main__":

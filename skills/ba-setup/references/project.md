@@ -55,8 +55,10 @@ Show each list as numbered lines; the BA answers with numbers.
      per product in `tools.portal.products`, naming the `.env` variable that will hold its key — the product
      name exactly as the dashboard writes it (`prod:`), for example
      `products: {AcmeLending: PORTAL_PUBLISH_KEY_ACME, Bond Portal: PORTAL_PUBLISH_KEY_BOND}`.
-     The BA puts each key in `.env` under that name. Clarification pages and `fetch-portal` use the first
-     product's key for now;
+     The BA puts each key in `.env` under that name. The Dashboard send, Clarification page sends and
+     `fetch-portal` all use these keys: each product's Dashboard and pages go to its own Portal project, and
+     `fetch-portal` fetches the Answers from every product's project. `check` shows one row per product key
+     (in `.env`, or missing);
    - `.gitignore` must list `.env`. Check with `git check-ignore -q .env` (exit 0 = ignored); if it is not,
      add `.env` to `.gitignore`. Never commit `.env`.
 

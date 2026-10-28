@@ -1,0 +1,6 @@
+# Test page (Story 4.10): linked to the Audit log Feature, prod Both.
+slug: audit-log
+store_key: audit-log-v2
+url: https://pages.example.com/clarifications/audit-log/
+name: Audit log
+round: Round V2

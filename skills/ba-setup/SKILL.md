@@ -46,6 +46,9 @@ uv run --with pyyaml python "<this skill>/scripts/setup.py" <command> [project-r
    - **Atlassian** — call `atlassianUserInfo`. If the tool does not exist or fails, the connector is
      not connected.
    - **Figma** — call `whoami`. Same rule.
+   When the profile has `tools.portal`, `check-project` gives one row per Portal key ("Portal key: <product>",
+   or "Portal key" with one product): ✅ when its `.env` variable is there, ❌ when it is missing. It reads only
+   the variable names, never a key.
 3. Show **one table**: tool · what it is for · state (✅ works · ⚠️ works with a warning · ❌ missing or
    broken · — not used here) · what to do. Group the rows under **You** and **This project**.
 4. Then suggest the next step, in one line:

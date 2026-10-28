@@ -52,6 +52,7 @@ class FakePortal:
     """Hands out one batch, then nothing — like the Portal after an ack. Acks answer per `ack_mode`."""
 
     def __init__(self):
+        self.key = KEY                     # the key this Portal project takes
         self.requests: list[httpx.Request] = []
         self.batches: list[dict] = [copy.deepcopy(BATCH)]
         self.ack_mode = "ok"               # ok | expired | unknown | noreply | 500 | invalid_key | odd
@@ -60,14 +61,25 @@ class FakePortal:
         self.reserve_exc: Exception | None = None
         self.acked: list[str] = []
         self.last_fetched_at = NOTHING["last_fetched_at"]
+        self.project = "Sample App"         # the Portal project's name (GET /status)
+        self.status_calls = 0
+        self.status_exc: Exception | None = None
 
     def paths(self) -> list[str]:
         return [r.url.path for r in self.requests]
 
     def handler(self, request: httpx.Request) -> httpx.Response:
+        if request.url.path == fetch.STATUS:            # which Portal project the key opens (two or more products)
+            self.status_calls += 1
+            assert request.method == "GET" and request.headers["Authorization"] == f"Bearer {self.key}"
+            if self.status_exc is not None:
+                raise self.status_exc
+            return httpx.Response(200, json={"contract": "status/1", "project_name": self.project,
+                                             "archived": False, "waiting": 0, "last_fetched_at": None,
+                                             "accepted_contracts": ["dashboard/2", "clarification/1"]})
         self.requests.append(request)
         assert request.method == "POST"
-        assert request.headers["Authorization"] == f"Bearer {KEY}"
+        assert request.headers["Authorization"] == f"Bearer {self.key}"
         if request.url.path == fetch.RESERVE:
             if self.reserve_exc is not None:
                 raise self.reserve_exc
@@ -724,32 +736,219 @@ def test_leftover_ack_invalid_key_keeps_the_tmp(capsys, project, portal):
     assert fetch.RESERVE not in portal.paths()
 
 
-# ---- A key per product (portal-publish Story 3.8) --------------------------------------------------------
+# ---- Story 4.10: every product's Portal project, one key at a time ---------------------------------------
 
-def per_product_keys(root: Path, env: str) -> None:
+KEY_ADMIN = "pk_test_0a1b2c3d4e5f60718293a4b5c6d7e8f9"
+ADMIN_BATCH = "019a2c40-0000-7000-8000-0000000000ad"
+
+
+def per_product_keys(root: Path, env: str | None = None) -> None:
+    """Make the sample a repo with two products, App then Admin, each with its own Portal project and key."""
     prof = root / fetch.PROFILE
     doc = yaml.safe_load(prof.read_text(encoding="utf-8"))
     doc["tools"]["portal"]["products"] = {"App": "PORTAL_PUBLISH_KEY_APP", "Admin": "PORTAL_PUBLISH_KEY_ADMIN"}
     prof.write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False), encoding="utf-8")
-    (root / ".env").write_text(env, encoding="utf-8")
+    (root / ".env").write_text(env if env is not None else
+                               f"PORTAL_PUBLISH_KEY_APP={KEY}\nPORTAL_PUBLISH_KEY_ADMIN={KEY_ADMIN}\n",
+                               encoding="utf-8")
 
 
-def test_uses_the_first_products_key(capsys, project, portal):
-    per_product_keys(project, f"PORTAL_PUBLISH_KEY_APP={KEY}\nPORTAL_PUBLISH_KEY_ADMIN=pk_test_other_0000\n")
+def admin_batch() -> dict:
+    b = copy.deepcopy(BATCH)
+    b["batch_id"] = ADMIN_BATCH
+    for a in b["answers"]:
+        a["page"] = {"slug": "back-office", "title": "Back office"}
+    assert checks.check_reply(b, "answers/1") == []
+    return b
+
+
+@pytest.fixture
+def two(monkeypatch):
+    """Two fake Portal projects, one per key: App answers with KEY, Admin with KEY_ADMIN."""
+    app, admin = FakePortal(), FakePortal()
+    admin.key = KEY_ADMIN
+    admin.project = "Sample Admin"
+    admin.batches = [admin_batch()]
+    by_key = {KEY: app, KEY_ADMIN: admin}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return by_key[request.headers["Authorization"].removeprefix("Bearer ")].handler(request)
+    monkeypatch.setattr(fetch, "http_client", lambda: httpx.Client(transport=httpx.MockTransport(handler)))
+    monkeypatch.setattr(fetch, "sleep", lambda s: None)
+    return app, admin
+
+
+def run_two(capsys, root: Path) -> tuple[int, dict]:
+    code = fetch.main(["--root", str(root)])
+    printed = capsys.readouterr().out
+    assert KEY not in printed and KEY_ADMIN not in printed, "a key must never be printed"
+    return code, json.loads(printed.strip().splitlines()[-1])
+
+
+def test_two_products_fetch_from_both_projects(capsys, project, two):
+    app, admin = two
+    per_product_keys(project)
+    code, res = run_two(capsys, project)
+    assert code == 0 and res["ok"] is True, res
+    assert app.paths() == [fetch.RESERVE, fetch.ACK] and admin.paths() == [fetch.RESERVE, fetch.ACK]
+    assert app.acked == [BATCH["batch_id"]] and admin.acked == [ADMIN_BATCH]
+    assert intake(project) == ["2026-10-27-1100-portal-back-office.md", "2026-10-27-1100-portal-merchant-payouts.md"]
+    assert [(p["product"], p["ok"], len(p["files"])) for p in res["products"]] == [("App", True, 1),
+                                                                                  ("Admin", True, 1)]
+    assert header(project / fetch.INTAKE / "2026-10-27-1100-portal-merchant-payouts.md")["product"] == "App"
+    assert header(project / fetch.INTAKE / "2026-10-27-1100-portal-back-office.md")["product"] == "Admin"
+    msg = res["message"]
+    assert msg.startswith('App → Portal project "Sample App":\n  Wrote 1 intake file:')
+    assert "(App: Merchant payouts, 2 answers)" in msg
+    assert '\n\nAdmin → Portal project "Sample Admin":\n  Wrote 1 intake file:' in msg
+    assert "(Admin: Back office, 2 answers)" in msg
+    assert app.status_calls == admin.status_calls == 1, "each key's project is named before the fetch"
+    assert [p["project_name"] for p in res["products"]] == ["Sample App", "Sample Admin"]
+
+
+def test_one_product_down_the_others_still_run(capsys, project, two):
+    app, admin = two
+    per_product_keys(project)
+    admin.reserve_exc = httpx.ConnectError("refused")
+    code, res = run_two(capsys, project)
+    assert code == 1 and res["ok"] is False
+    assert intake(project) == ["2026-10-27-1100-portal-merchant-payouts.md"], "App's files are written"
+    assert res["files"] == [f"{fetch.INTAKE}/2026-10-27-1100-portal-merchant-payouts.md"]
+    assert [(p["product"], p["ok"]) for p in res["products"]] == [("App", True), ("Admin", False)]
+    assert '\n\nAdmin → Portal project "Sample Admin" — stopped:\n  The Portal is not reachable' in res["error"]
+    assert res["error"].endswith("Not fetched: Admin. The other products are done. Fix what stopped, then run "
+                                 "fetch-portal again.")
+
+
+def test_first_product_with_a_wrong_key_does_not_stop_the_second(capsys, project, two):
+    app, admin = two
+    per_product_keys(project)
+    app.reserve_error = error("invalid_key")
+    code, res = run_two(capsys, project)
+    assert code == 1 and res["ok"] is False
+    assert 'App → Portal project "Sample App" — stopped:' in res["error"] and "The key in .env (PORTAL_PUBLISH_KEY_APP)" in res["error"]
+    assert admin.acked == [ADMIN_BATCH] and intake(project) == ["2026-10-27-1100-portal-back-office.md"]
+
+
+def test_marker_names_the_key_variable(capsys, project, portal):
+    portal.ack_mode = "noreply"
+    code, res = run(capsys, project)
+    assert code == 1
+    marker = project / fetch.INTAKE / f"portal-{BATCH['batch_id']}.complete"
+    assert marker.read_text(encoding="utf-8") == "1\nPORTAL_PUBLISH_KEY\n"
+
+
+def test_leftover_is_acked_with_its_own_projects_key(capsys, project, two):
+    app, admin = two
+    per_product_keys(project)
+    leftover(project)
+    (project / fetch.INTAKE / f"portal-{OTHER_BATCH}.complete").write_text("1\nPORTAL_PUBLISH_KEY_ADMIN\n",
+                                                                         encoding="utf-8")
+    app.batches, admin.batches = [], []
+    code, res = run_two(capsys, project)
+    assert code == 0, res
+    assert admin.acked == [OTHER_BATCH] and app.acked == []
+    assert intake(project) == ["2026-10-20-0915-portal-merchant-payouts.md"]
+
+
+def test_old_leftover_is_acked_with_portal_publish_key_when_env_has_it(capsys, project, two):
+    app, admin = two
+    per_product_keys(project, f"PORTAL_PUBLISH_KEY={KEY}\nPORTAL_PUBLISH_KEY_APP={KEY}\n"
+                              f"PORTAL_PUBLISH_KEY_ADMIN={KEY_ADMIN}\n")
+    leftover(project)                                    # its marker is "1\n": written before Story 4.10
+    app.batches, admin.batches = [], []
+    code, res = run_two(capsys, project)
+    assert code == 0, res
+    assert app.acked == [OTHER_BATCH] and admin.acked == []
+    assert intake(project) == ["2026-10-20-0915-portal-merchant-payouts.md"]
+
+
+def test_old_leftover_without_portal_publish_key_is_left_alone(capsys, project, two):
+    app, admin = two
+    per_product_keys(project)                            # .env has no PORTAL_PUBLISH_KEY
+    tmp = leftover(project)
+    app.batches, admin.batches = [], []
+    code, res = run_two(capsys, project)
+    assert code == 0, res
+    assert tmp.exists() and (project / fetch.INTAKE / f"portal-{OTHER_BATCH}.complete").exists()
+    assert app.acked == [] and admin.acked == []
+    assert "names no key, and .env has no PORTAL_PUBLISH_KEY" in res["message"]
+
+
+def test_two_keys_opening_one_project_stop_before_fetching(capsys, project, two):
+    app, admin = two
+    per_product_keys(project)
+    admin.project = "Sample App"
+    code, res = run_two(capsys, project)
+    assert code == 1
+    assert ('The keys for App (PORTAL_PUBLISH_KEY_APP) and Admin (PORTAL_PUBLISH_KEY_ADMIN) both open the same '
+            'Portal project, "Sample App"') in res["error"]
+    assert app.requests == [] and admin.requests == [] and intake(project) == []
+
+
+def test_status_not_reachable_for_one_product_the_other_still_runs(capsys, project, two):
+    app, admin = two
+    per_product_keys(project)
+    app.status_exc = httpx.ConnectError("refused")
+    code, res = run_two(capsys, project)
+    assert code == 1 and "App — stopped:\n  The Portal is not reachable" in res["error"]
+    assert app.requests == [] and admin.acked == [ADMIN_BATCH]
+
+
+def test_unexpected_error_keeps_files_already_written_and_goes_on(capsys, project, two, monkeypatch):
+    app, admin = two
+    per_product_keys(project)
+    leftover(project)
+    (project / fetch.INTAKE / f"portal-{OTHER_BATCH}.complete").write_text("1\nPORTAL_PUBLISH_KEY_APP\n",
+                                                                         encoding="utf-8")
+    real = fetch.fetch_new
+
+    def broken(root, url, key, *a, **k):
+        if key == KEY:
+            raise OSError(28, "No space left on device")
+        return real(root, url, key, *a, **k)
+    monkeypatch.setattr(fetch, "fetch_new", broken)
+    code, res = run_two(capsys, project)
+    assert code == 1
+    left = f"{fetch.INTAKE}/2026-10-20-0915-portal-merchant-payouts.md"
+    assert res["products"][0] == {"product": "App", "ok": False, "files": [left], "project_name": "Sample App"}
+    assert left in res["files"] and admin.acked == [ADMIN_BATCH]
+    app_block = res["error"].split("\n\n")[0]
+    assert "No space left on device" in app_block and "Nothing was written" not in app_block
+
+
+def test_leftover_of_a_variable_no_longer_in_the_profile_is_left_alone(capsys, project, two):
+    app, admin = two
+    per_product_keys(project)
+    tmp = leftover(project)
+    (project / fetch.INTAKE / f"portal-{OTHER_BATCH}.complete").write_text("1\nPORTAL_PUBLISH_KEY_GONE\n",
+                                                                         encoding="utf-8")
+    app.batches, admin.batches = [], []
+    code, res = run_two(capsys, project)
+    assert code == 0, res
+    assert tmp.exists() and app.acked == [] and admin.acked == []
+    assert "fetched with the key in PORTAL_PUBLISH_KEY_GONE, which tools.portal.products no longer names" in \
+        res["message"]
+
+
+def test_a_missing_product_key_stops_before_anything(capsys, project, two):
+    app, admin = two
+    per_product_keys(project, f"PORTAL_PUBLISH_KEY_APP={KEY}\n")
+    code, res = run_two(capsys, project)
+    assert code == 1 and ".env has no PORTAL_PUBLISH_KEY_ADMIN (the Publish key for Admin)" in res["error"]
+    assert "Nothing was written" in res["error"]
+    assert app.requests == [] and admin.requests == []
+
+
+def test_one_product_has_no_product_line(capsys, project, portal):
     code, res = run(capsys, project)
     assert code == 0, res
-    assert portal.requests and all(r.headers["Authorization"] == f"Bearer {KEY}" for r in portal.requests)
+    path = project / fetch.INTAKE / "2026-10-27-1100-portal-merchant-payouts.md"
+    assert "product" not in header(path) and "products" not in res
+    assert res["message"].startswith("Wrote 1 intake file:")
+    assert "(Merchant payouts, 2 answers)" in res["message"]
 
 
-def test_first_products_key_missing_names_it(capsys, project, portal):
-    per_product_keys(project, f"PORTAL_PUBLISH_KEY={KEY}\n")
-    code, res = run(capsys, project)
-    assert code == 1 and ".env has no PORTAL_PUBLISH_KEY_APP" in res["error"]
-    assert portal.requests == []
-
-
-def test_wrong_key_names_the_products_variable(capsys, project, portal):
-    per_product_keys(project, f"PORTAL_PUBLISH_KEY_APP={KEY}\n")
-    portal.reserve_error = error("invalid_key")
-    code, res = run(capsys, project)
-    assert code == 1 and "The key in .env (PORTAL_PUBLISH_KEY_APP)" in res["error"]
+def test_settings_come_from_portal_publish_targets():
+    assert fetch.TARGETS_PY == (HERE.parent.parent / "portal-publish" / "targets.py").resolve()
+    assert fetch.tg().portal_targets.__module__ == "portal_publish_targets"

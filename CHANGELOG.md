@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+- **`portal-publish` and `fetch-portal` work per product; the Dashboard send lists its pages** (Story 4.10).
+  - **Which pages:** a page is a `docs/BA/clarifications/*.yaml` whose `slug:` is its file name (`<slug>.yaml` or
+    `<slug>-decisions.yaml`) and that has a `store_key:`. With two or more products, a page goes with the `prod`
+    of every Feature in `docs/BA/dashboard.yaml` whose `clar.url` is its `url:` ("Both" = every product); a page
+    no Feature links goes with the first product in `tools.portal.products`, with a warning. Links match as the
+    Portal matches them (trimmed, a trailing `/` dropped; `ba-dashboard`'s map does the same now). A page linked
+    only by Features with an unknown `prod`, a YAML that is not UTF-8, or a YAML with no readable `slug:` line
+    (or, read line by line, a `slug:` that is not its file name) stop the run (a page left off the list would be
+    removed). `<slug>.yaml` beside `<slug>-decisions.yaml` with one slug: `-decisions` is used, with a warning. A
+    slug that breaks the slug rule is skipped with a warning.
+  - **`dashboard plan`:** each product's `dashboard/2` payload now carries `clarification_pages` (its pages'
+    slugs, sorted). The dry-run list ends with `These pages will be removed from the Portal project "<name>":
+    <title> (<slug>), …` when the Portal would hide any (`pages_removed`); `dashboard send` reports them. A
+    product with no pages gets a warning: the send would remove every page in its project.
+  - **`page <slug>`:** one dry run per Portal project of the page's products, each with that product's key; the
+    view starts with `<product> → Portal project "<name>"`; one payload file and one yes/no per project; a
+    refusal from any project stops the whole plan and keeps no payload. `--product "<name>"` limits it to one
+    product. The payload file names the product and its `.env` variable (never the key); `page send` reads the
+    key from that variable, stops if it is gone or no longer that product's, and with two or more products asks
+    the Portal again which project the key opens. Two keys opening one project stop a "Both" page. The old
+    "every page goes to the first product's Portal project" warning is gone.
+  - **`fetch-portal`:** fetches from every product's project, in `tools.portal.products` order, one key at a
+    time, after `GET /status` names each key's project (two keys opening one project stop the run). One
+    product's failure does not stop the others; the result has `products` and is `ok: false` if any failed. The
+    `.complete` marker also names the `.env` variable, so a leftover is acked in its own project (an older marker
+    uses `PORTAL_PUBLISH_KEY` if `.env` has it, else its files are left alone). With two or more products each intake file has a
+    `product: '<name>'` header line, and the summary names the product.
+  - **One settings module:** `portal-publish/targets.py` turns the profile and `.env` into
+    `[(product, .env variable, key)]`; `publish.py` imports it, `fetch-portal` and `ba-setup check` load it.
+    `ba-setup check` shows one row per Portal product key (in `.env`, or missing). One product works as before,
+    plus the page list.
+
 - **`portal-publish` contract 1.3.0** (tag `portal-contract-1.3.0`, Story 4.9). `dashboard/2` gains an optional
   **`clarification_pages`**: the slugs of every Clarification page now in the repo that belongs to this Portal
   project (at most 1,000, each following the page `slug` rule, `portal`). The Portal hides the project's other
