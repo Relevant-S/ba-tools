@@ -1,6 +1,6 @@
 ---
 name: fetch-portal
-description: Bring the Client's Answers from the Relevant Clients Portal into the repo — one intake file per Clarification page at docs/BA/intake/YYYY-MM-DD-HHMM-portal-<slug>.md, for the /intake-and-triage skill to process. Each sent Answer comes once. Use when the BA says "fetch portal answers", "get the answers from the portal", "fetch-portal", when the Portal's Publishing tab shows Answers waiting to be fetched, or when a clarification page's answers come back on a project whose profile has tools.portal. Companion to /fetch-fireflies, /fetch-gmail and /fetch-slack — same target folder, same intake-file shape, different source (`source: portal`).
+description: Bring the Client's Answers from the Relevant Clients Portal into the repo — one intake file per Clarification page at docs/BA/intake/YYYY-MM-DD-HHMM-portal-<slug>.md, for the /intake-and-triage skill to process — and the Client's notes and Resolved ticks on dashboard items, as docs/BA/portal-updates/YYYY-MM-DD-HHMM-<product>.json for ba-dashboard's "sync the mind map". Each sent Answer and each update comes once. Use when the BA says "fetch portal answers", "get the answers from the portal", "fetch-portal", when the Portal's Publishing tab shows Answers waiting to be fetched, or when a clarification page's answers come back on a project whose profile has tools.portal. Companion to /fetch-fireflies, /fetch-gmail and /fetch-slack — same target folder, same intake-file shape, different source (`source: portal`).
 ---
 
 # fetch-portal
@@ -8,6 +8,13 @@ description: Bring the Client's Answers from the Relevant Clients Portal into th
 **What it does.** Clients answer Clarification pages in the Relevant Clients Portal. This skill pulls the sent
 Answers into `docs/BA/intake/`, one file per page, so `/intake-and-triage` can turn them into spec changes like
 email and Slack. The Portal hands each sent Answer out once. The Answers stay in the Portal afterwards.
+
+**Client updates on dashboard items.** On the Portal's Map and Board, a client person can open a Waiting or
+agenda item, write a note and tick "Resolved", the same Update box as on the BA's own dashboard page. fetch-portal
+brings these in with the Answers, in the same reserve and ack, as one file per product in
+`docs/BA/portal-updates/`. The BA then runs `ba-dashboard`'s **"sync the mind map"** with that file, so the notes
+land in `dashboard.yaml` like the BA's own notes. fetch-portal asks the Portal for `answers/2` (Answers plus
+updates); an older Portal answers with `answers/1` (Answers only), and that still works.
 
 **How the hand-out works (two steps, so nothing is lost).** The script first asks the Portal to *reserve* the
 new Answers (it holds them for 10 minutes). It writes the files under a `.tmp` name. Only when every file is on
@@ -71,6 +78,15 @@ products are done. …". A repo with one product works as before.
    ```
 
    or "No new answers since 2026-10-27 11:00 UTC." (or "No new answers. None have been fetched yet.").
+   When the Portal hands out the Client's updates too, `message` adds:
+
+   ```
+   Wrote the Client's updates on dashboard items (1 file):
+     - docs/BA/portal-updates/2026-10-27-1100-acme.json (3 updates on 2 items)
+   To put them in docs/BA/dashboard.yaml, run "sync the mind map" with this file.
+   ```
+
+   and "No new answers or updates since …" when there is nothing.
    With two or more products, `message` has one block per product, and each file names its product:
 
    ```
@@ -88,10 +104,19 @@ products are done. …". A repo with one product works as before.
    ```
 
    On `Y`: invoke `/intake-and-triage`. On `n`: stop.
+
+   If `files` holds a `docs/BA/portal-updates/*.json` file, ask:
+
+   ```
+   Put the Client's updates into the dashboard now ("sync the mind map")? [Y/n]
+   ```
+
+   On `Y`: run `ba-dashboard`'s "sync the mind map" with that file (`map/sync.py <file>`; skip its store
+   steps — this file is not the map's store), then publish the dashboard as that skill says.
 4. **`ok: false`** → show `error` as it is and stop. Do not retry in a loop. With two or more products, the
    other products' files are written (`files`): ask the step 3 question for them too.
 
-Never commit a `.tmp` or `.complete` file in `docs/BA/intake/`. They belong to a fetch that is not finished yet;
+Never commit a `.tmp` or `.complete` file in `docs/BA/intake/` or `docs/BA/portal-updates/`. They belong to a fetch that is not finished yet;
 the next run finishes it. Triage lists only `*.md`, so it never reads them. A `portal-<batch>.complete` marker is
 written only once every page of a batch is on disk; a batch without it was cut off mid-write and is deleted,
 never confirmed, so its Answers come again after the hold (about 10 minutes). The marker also names the `.env`
@@ -159,6 +184,26 @@ Replaces the answer sent 2026-10-22 09:12 UTC by Sample Client:
 - "Replaces the answer sent …" appears when the person changed an earlier Answer. The earlier option and note
   follow. Treat the new Answer as the one that counts.
 
+## The updates file
+
+One file per product per fetch, `docs/BA/portal-updates/YYYY-MM-DD-HHMM-<product>.json` (UTC; `-2`, `-3` … if
+the name is taken). It is in the shape of the BA page's own `resolutions` store, one entry per item:
+
+```json
+[
+ {"key": "229cd4b6d021", "kind": "waiting", "title": "Send the employer list for the pilot",
+  "resolved": true,
+  "notes": [{"at": "2026-10-26T15:00:00.000Z", "text": "We sent the list by email.", "by": "Sample Client"}],
+  "updatedAt": "2026-10-26T17:45:00.000Z"}
+]
+```
+
+- `key` is the BA page's item key: the first 12 characters of sha1("<kind>|<title>").
+- `resolved` comes from the item's latest save. Notes are oldest first; `by` is the client person who wrote it.
+- "Sync the mind map" puts each note in front of the item's `s` as "UPDATE 26 OCT — Sample Client: …", and
+  gives a resolved item `done: true`. An item it cannot find (the BA renamed or removed it) is listed under
+  `not_found`.
+
 ## When it stops
 
 Show `error` as it is; it says what to do. In every case the Answers are safe in the Portal.
@@ -186,4 +231,6 @@ acks that earlier batch: if the Portal confirms, the files get their real names 
 fetched); if the Portal no longer holds that batch, they are deleted and those Answers come again. If the Portal
 does not answer, the files are kept and the run stops. If earlier files were renamed and then the new fetch
 stops, the JSON line has `ok: false` but `files` still lists the files written; show them. Files named
-`portal-*.md.tmp` that fetch-portal does not recognise are named in `message`, left alone, for the BA to delete.
+`portal-*.md.tmp` (or `portal-*.json.tmp` in `docs/BA/portal-updates/`) that fetch-portal does not recognise
+are named in `message`, left alone, for the BA to delete. An updates file of an unfinished fetch waits as
+`docs/BA/portal-updates/portal-<batch>-<product>.json.tmp` and is finished or deleted with its batch.

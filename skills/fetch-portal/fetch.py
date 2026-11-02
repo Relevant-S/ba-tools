@@ -1,28 +1,40 @@
-"""fetch-portal — bring the Client's Answers from the Relevant Clients Portal into docs/BA/intake/. Prints one JSON line.
+"""fetch-portal — bring the Client's Answers from the Relevant Clients Portal into docs/BA/intake/, and the Client's
+updates on dashboard items into docs/BA/portal-updates/. Prints one JSON line.
 
     uv run --project <skills>/fetch-portal python <skills>/fetch-portal/fetch.py [--root <project>]
 
 Run from the project root, or pass --root. What it does, in order:
-  1. Leftover .tmp files from an earlier run (docs/BA/intake/portal-<batch_id>-<slug>.md.tmp): ack that batch.
+  1. Leftover .tmp files from an earlier run (docs/BA/intake/portal-<batch_id>-<slug>.md.tmp, and
+     docs/BA/portal-updates/portal-<batch_id>-<product>.json.tmp): ack that batch.
      200 → rename to the real name; batch_expired or batch_unknown → delete; no reply → keep them and stop.
-  2. Reserve a batch: POST /api/v1/answers/reserve. Nothing new → say so, write nothing.
-  3. Write one file per Clarification page under a .tmp name, then a marker portal-<batch_id>.complete once every
-     page is on disk, then ack: POST /api/v1/answers/ack (3 tries). A leftover batch with no marker was cut off
-     mid-write: its .tmp files are deleted, never acked, and its Answers come again after the hold.
-  4. On 200, rename each to docs/BA/intake/YYYY-MM-DD-HHMM-portal-<slug>.md (-2, -3 … if taken).
+  2. Reserve a batch: POST /api/v1/answers/reserve with {"accept": ["answers/1", "answers/2"]}. The Portal replies
+     answers/2 (Answers plus the Client's updates: notes and Resolved ticks on Waiting and agenda items), or
+     answers/1 (an older Portal: Answers only). Nothing new → say so, write nothing.
+  3. Write one file per Clarification page under a .tmp name, and one updates file per product when there are
+     updates, then a marker portal-<batch_id>.complete once every file is on disk, then ack:
+     POST /api/v1/answers/ack (3 tries). A leftover batch with no marker was cut off mid-write: its .tmp files are
+     deleted, never acked, and its Answers and updates come again after the hold.
+  4. On 200, rename each to docs/BA/intake/YYYY-MM-DD-HHMM-portal-<slug>.md, and the updates file to
+     docs/BA/portal-updates/YYYY-MM-DD-HHMM-<product>.json (-2, -3 … if taken).
+
+The updates file is in the shape of the BA page's own `resolutions` store, one entry per item:
+{key, kind, title, resolved, notes: [{at, text, by}], updatedAt}, notes oldest first. ba-dashboard's
+"sync the mind map" (map/sync.py) takes it as it is.
 
 Settings: tools.portal.url in docs/BA/specs/.ba-profile.yml; the Publish key in .env at the repo root, which git
 must ignore: PORTAL_PUBLISH_KEY in a repo with one product. A repo with two or more products has one Portal project
 per product: tools.portal.products names each product's .env variable, and the steps above run for every product, in
 that order, each with its own key. One product's failure does not stop the others. Keys are never printed. The
 settings are read by portal-publish's targets.py (one copy for both skills). Every reply is checked against the
-portal-publish contract (answers/1, ack/1); a reply that fails stops that product's run: nothing written, no ack.
+portal-publish contract (answers/1 or answers/2, ack/1); a reply that fails stops that product's run: nothing
+written, no ack.
 """
 from __future__ import annotations
 
 import datetime as dt
 import importlib.util
 import json
+import os
 import re
 import sys
 import time
@@ -38,6 +50,8 @@ TARGETS_PY = SKILLS / "portal-publish" / "targets.py"
 
 PROFILE = "docs/BA/specs/.ba-profile.yml"
 INTAKE = "docs/BA/intake"
+UPDATES = "docs/BA/portal-updates"
+ACCEPT = ["answers/1", "answers/2"]   # the batch versions this fetcher reads (reserve-request/1)
 RESERVE = "/api/v1/answers/reserve"
 ACK = "/api/v1/answers/ack"
 STATUS = "/api/v1/status"
@@ -51,7 +65,9 @@ KEY_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 key_name = DEFAULT_KEY            # the .env variable of the product being fetched; run() sets it, messages name it
 TMP_NAME = re.compile(r"^portal-([0-9a-fA-F-]{36})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md\.tmp$")
 DONE_NAME = re.compile(r"^portal-([0-9a-fA-F-]{36})\.complete$")
+UPD_TMP_NAME = re.compile(r"^portal-([0-9a-fA-F-]{36})-([a-z0-9]+(?:-[a-z0-9]+)*)\.json\.tmp$")
 HOLD = "about 10 minutes"
+update_counts: dict[Path, int] = {}   # an updates file -> how many Client saves it holds (for the summary)
 
 
 class Stop(Exception):
@@ -195,16 +211,24 @@ def call(url: str, key: str, path: str, body: bytes | None):
 
 
 def reserve(url: str, key: str) -> dict:
+    """Reserve a batch, saying this fetcher reads answers/1 and answers/2. An older Portal replies answers/1: its
+    batch gets an empty `updates` list here, so the rest of the run treats both the same."""
+    body = {"accept": ACCEPT}
+    if checks.check_reply(body, "reserve-request/1"):
+        raise Stop("fetch-portal's reserve request does not match the portal-publish contract (reserve-request/1). "
+                   "Install ba-tools again. Nothing was written.")
     try:
-        r, doc = call(url, key, RESERVE, None)
+        r, doc = call(url, key, RESERVE, json.dumps(body).encode("utf-8"))
     except NoReply as e:
         raise Stop(f"{e} Nothing was written. If the Portal had already set Answers aside for this fetch, they "
                    f"come again after the hold ({HOLD}).") from None
     if r.status_code != 200:
         raise refused(url, r, doc, "reserve")
-    if not isinstance(doc, dict) or checks.check_reply(doc, "answers/1"):
+    contract = doc.get("contract") if isinstance(doc, dict) else None
+    if contract not in ACCEPT or checks.check_reply(doc, contract):
         raise Stop(f"The Portal's reply was not understood (HTTP {r.status_code}). It may be an older Portal. "
                    "Nothing was written and nothing was confirmed.")
+    doc.setdefault("updates", [])
     return doc
 
 
@@ -324,6 +348,47 @@ def by_page(answers: list[dict]) -> list[tuple[str, list[dict]]]:
     return list(groups.items())
 
 
+# ---------------------------------------------------------------- the updates file
+
+def resolutions(updates: list[dict]) -> list[dict]:
+    """The Client's saves in the shape of the BA page's `resolutions` store (map/template.html saveUpdate), one entry
+    per item key in the order the items were first saved. `resolved` comes from the item's latest save; notes stay
+    oldest first, as the BA page stores them, each with `by`, the person who saved it. `at` is the save time (UTC);
+    `updatedAt` the latest save, which sync.py uses as the closing date of an item resolved with no note."""
+    entries: dict[str, dict] = {}
+    for u in sorted(updates, key=lambda u: (u["sent_at"], u["id"])):
+        it = u["item"]
+        e = entries.setdefault(it["key"], {"key": it["key"], "kind": it["kind"], "title": it["title"],
+                                           "resolved": False, "notes": [], "updatedAt": u["sent_at"]})
+        e.update(kind=it["kind"], title=it["title"], resolved=bool(u["resolved"]), updatedAt=u["sent_at"])
+        if u["note"]:
+            e["notes"].append({"at": u["sent_at"], "text": u["note"], "by": u["person"]["name"]})
+    return list(entries.values())
+
+
+def name_slug(s: str) -> str:
+    """A product (or project) name as a file-name part: 'Bond Portal' → 'bond-portal'."""
+    return re.sub(r"[^a-z0-9]+", "-", str(s).lower()).strip("-")[:60].strip("-")
+
+
+def updates_tmp_path(root: Path, batch_id: str, label: str) -> Path:
+    return root / UPDATES / f"portal-{batch_id}-{label}.json.tmp"
+
+
+def updates_final_name(root: Path, label: str, fetched: dt.datetime) -> Path:
+    base = f"{fetched.strftime('%Y-%m-%d-%H%M')}-{label}"
+    folder = root / UPDATES
+    target, n = folder / f"{base}.json", 1
+    while target.exists():
+        n += 1
+        target = folder / f"{base}-{n}.json"
+    return target
+
+
+def is_updates(path: Path) -> bool:
+    return path.name.endswith(".json.tmp") or path.suffix == ".json"
+
+
 def tmp_path(root: Path, batch_id: str, slug: str) -> Path:
     return root / INTAKE / f"portal-{batch_id}-{slug}.md.tmp"
 
@@ -351,19 +416,34 @@ def final_name(root: Path, slug: str, fetched: dt.datetime) -> Path:
 
 
 def rename_all(root: Path, tmps: list[tuple[Path, str]]) -> list[Path]:
+    """Give each .tmp file its real name. An updates file is renamed in docs/BA/portal-updates/ (its slug is the
+    product), an intake file in docs/BA/intake/."""
     done = []
     for tmp, slug in tmps:
-        target = final_name(root, slug, fetched_of(tmp))
+        name = updates_final_name if is_updates(tmp) else final_name
+        target = name(root, slug, fetched_of(tmp))
         tmp.rename(target)
+        if tmp in update_counts:
+            update_counts[target] = update_counts.pop(tmp)
         done.append(target)
     return done
 
 
 def done_marker(root: Path, batch_id: str) -> Path:
-    """Written only after every page of the batch is on disk: only a marked batch is ever acked. It holds the
+    """Written only after every file of the batch is on disk: only a marked batch is ever acked. It holds the
     number of files, then the .env variable whose key reserved the batch, so a leftover is acked in its own
-    Portal project."""
+    Portal project, then (since answers/2) the number of the Client's updates in the batch."""
     return root / INTAKE / f"portal-{batch_id}.complete"
+
+
+def marker_updates(marker: Path) -> int | None:
+    """The number of updates a marker names (its third line); None for an older marker or none written."""
+    try:
+        lines = marker.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return None
+    n = lines[2].strip() if len(lines) > 2 else ""
+    return int(n) if n.isdigit() else None
 
 
 def marker_key(marker: Path) -> str | None:
@@ -383,17 +463,22 @@ def rel(root: Path, p: Path) -> str:
 # ---------------------------------------------------------------- the run
 
 def leftovers(root: Path) -> tuple[dict[str, list[tuple[Path, str]]], list[Path]]:
-    """Leftover .tmp files by batch (a marker alone counts too), and portal-*.md.tmp files with a name not ours."""
+    """Leftover .tmp files by batch (a marker alone counts too) — intake files and updates files — and
+    portal-*.md.tmp / portal-*.json.tmp files with a name not ours."""
     folder = root / INTAKE
     batches: dict[str, list[tuple[Path, str]]] = {}
     strays: list[Path] = []
-    if folder.is_dir():
-        for p in sorted(folder.glob("portal-*.md.tmp")):
-            m = TMP_NAME.match(p.name)
+    for where, pattern, name in ((folder, "portal-*.md.tmp", TMP_NAME),
+                                 (root / UPDATES, "portal-*.json.tmp", UPD_TMP_NAME)):
+        if not where.is_dir():
+            continue
+        for p in sorted(where.glob(pattern)):
+            m = name.match(p.name)
             if m:
                 batches.setdefault(m[1].lower(), []).append((p, m[2]))
             else:
                 strays.append(p)
+    if folder.is_dir():
         for p in sorted(folder.glob("portal-*.complete")):
             m = DONE_NAME.match(p.name)
             if m:
@@ -446,9 +531,10 @@ def finish_leftovers(root: Path, url: str, key: str, first: bool = True, known: 
                          f"with the key in {owner}, which tools.portal.products no longer names, so they are left "
                          "alone. Put that key back in the profile to finish them, or delete them.")
     if strays and first:
-        notes.append("These files in " + INTAKE + "/ look like unfinished fetch-portal files, but fetch-portal does "
-                     "not write names like these, so it leaves them alone. Delete them if you do not need them: "
-                     + ", ".join(rel(root, p) for p in strays))
+        notes.append("These files in " + (INTAKE if all(p.parent == root / INTAKE for p in strays) else
+                                          f"{INTAKE}/ and {UPDATES}") + "/ look like unfinished fetch-portal files, "
+                     "but fetch-portal does not write names like these, so it leaves them alone. Delete them if you "
+                     "do not need them: " + ", ".join(rel(root, p) for p in strays))
     mine_name = key_name
     try:
         for batch_id, (tmps, batch_key, batch_var) in mine.items():
@@ -462,6 +548,9 @@ def finish_leftovers(root: Path, url: str, key: str, first: bool = True, known: 
             if not tmps:
                 drop([marker])
                 continue
+            for p, _ in tmps:                            # the summary counts an updates file's saves
+                if is_updates(p) and marker_updates(marker) is not None:
+                    update_counts[p] = marker_updates(marker)
             key_name = batch_var                         # messages name the variable this batch is acked with
             try:
                 result, _ = ack(url, batch_key, batch_id)
@@ -486,33 +575,63 @@ def finish_leftovers(root: Path, url: str, key: str, first: bool = True, known: 
     return written, notes
 
 
-def write_batch(root: Path, project: str, batch: dict, product: str = "") -> list[tuple[Path, str]]:
-    """Write one .tmp file per page. On any write error delete what this batch wrote, ack nothing."""
+def write_batch(root: Path, project: str, batch: dict, product: str = "", label: str = "") -> list[tuple[Path, str]]:
+    """Write one .tmp file per page, and one updates .tmp file (named by `label`, the product) when the batch has
+    updates. On any write error delete what this batch wrote, ack nothing."""
     fetched = now()
     written: list[tuple[Path, str]] = []
+    updates = batch.get("updates") or []
+    label = name_slug(label) or "portal"
     try:
         (root / INTAKE).mkdir(parents=True, exist_ok=True)
         for slug, answers in by_page(batch["answers"]):
             path = tmp_path(root, batch["batch_id"], slug)
             path.write_text(render(project, slug, answers, fetched, product), encoding="utf-8", newline="\n")
             written.append((path, slug))
-        done_marker(root, batch["batch_id"]).write_text(f"{len(written)}\n{key_name}\n", encoding="utf-8",
-                                                        newline="\n")
+        if updates:
+            (root / UPDATES).mkdir(parents=True, exist_ok=True)
+            path = updates_tmp_path(root, batch["batch_id"], label)
+            path.write_text(json.dumps(resolutions(updates), ensure_ascii=False, indent=1) + "\n",
+                            encoding="utf-8", newline="\n")
+            stamp = fetched.timestamp()
+            os.utime(path, (stamp, stamp))                # a leftover renames to the fetch time, as intake files do
+            written.append((path, label))
+            update_counts[path] = len(updates)
+        done_marker(root, batch["batch_id"]).write_text(
+            f"{len(written)}\n{key_name}\n" + (f"{len(updates)}\n" if updates else ""), encoding="utf-8", newline="\n")
     except (OSError, ValueError) as e:
-        folder = root / INTAKE
-        partial = [p for p, _ in written] + (list(folder.glob(f"portal-{batch['batch_id']}-*.md.tmp"))
-                                             if folder.is_dir() else [])
+        partial = [p for p, _ in written]
+        for folder, pattern in ((root / INTAKE, "*.md.tmp"), (root / UPDATES, "*.json.tmp")):
+            if folder.is_dir():
+                partial += folder.glob(f"portal-{batch['batch_id']}-{pattern}")
         drop([*partial, done_marker(root, batch["batch_id"])])   # a half-written file too: never ack this batch
         why = getattr(e, "strerror", None) or e
         raise Stop(f"Could not write the intake files ({why}). Nothing was written and nothing was "
-                   f"confirmed: the Answers wait in the Portal and come again in a fetch after "
-                   f"{utc(batch['reserved_until'])}.") from None
+                   f"confirmed: the Answers{' and updates' if updates else ''} wait in the Portal and come again "
+                   f"in a fetch after {utc(batch['reserved_until'])}.") from None
     return written
 
 
+def updates_line(root: Path, f: Path) -> str:
+    """'  - docs/BA/portal-updates/<file>.json (N updates on M items)'. N is left out when it is not known (a file
+    from an earlier fetch whose marker did not say)."""
+    try:
+        items = len(json.loads(f.read_text(encoding="utf-8")))
+    except (OSError, ValueError):
+        return f"  - {rel(root, f)}"
+    n = update_counts.get(f)
+    saves = f"{n} update{'' if n == 1 else 's'} on " if n is not None else ""
+    return f"  - {rel(root, f)} ({saves}{items} item{'' if items == 1 else 's'})"
+
+
 def summary(root: Path, files: list[Path]) -> str:
-    lines = [f"Wrote {len(files)} intake file{'s' if len(files) != 1 else ''}:"]
-    for f in files:
+    """The intake files, then the updates files with what to do next. Only the parts that have files."""
+    intake = [f for f in files if not is_updates(f)]
+    upd = [f for f in files if is_updates(f)]
+    lines = []
+    if intake or not upd:
+        lines.append(f"Wrote {len(intake)} intake file{'s' if len(intake) != 1 else ''}:")
+    for f in intake:
         try:
             head = f.read_text(encoding="utf-8")
             n = re.search(r"^answer_count: (\d+)$", head, flags=re.M)
@@ -523,6 +642,11 @@ def summary(root: Path, files: list[Path]) -> str:
         except OSError:
             extra = ""
         lines.append(f"  - {rel(root, f)}{extra}")
+    if upd:
+        lines += [f"Wrote the Client's updates on dashboard items ({len(upd)} file{'s' if len(upd) != 1 else ''}):",
+                  *(updates_line(root, f) for f in upd),
+                  'To put them in docs/BA/dashboard.yaml, run "sync the mind map" with '
+                  + ("this file." if len(upd) == 1 else "each file.")]
     return "\n".join(lines)
 
 
@@ -578,7 +702,8 @@ def run(root: Path) -> dict:
     old_key = (DEFAULT_KEY, old) if old else None
     if len(goes) == 1:
         key_name = goes[0].key_name
-        return run_one(root, url, goes[0].key, project, known=(key_name,), old_key=old_key)
+        return run_one(root, url, goes[0].key, project, known=(key_name,), old_key=old_key,
+                       label=goes[0].product or project)
     known = tuple(t.key_name for t in goes)
     names: dict[str, str] = {}                     # product -> its Portal project
     early: dict[str, str] = {}                     # product -> why its project could not be named
@@ -608,7 +733,8 @@ def run(root: Path) -> dict:
             ok, msg = False, early[t.product]
         else:
             try:
-                res = run_one(root, url, t.key, project, t.product, first=n == 0, known=known, old_key=old_key)
+                res = run_one(root, url, t.key, project, t.product, first=n == 0, known=known, old_key=old_key,
+                              label=t.product)
                 ok, got, msg = True, res["files"], res["message"]
             except Stop as e:
                 ok, got, msg = False, list(e.files), str(e)
@@ -632,11 +758,12 @@ def run(root: Path) -> dict:
 
 
 def run_one(root: Path, url: str, key: str, project: str, product: str = "", first: bool = True,
-            known: tuple[str, ...] = (), old_key: tuple[str, str] | None = None) -> dict:
-    """One Portal project: leftovers, then reserve, write and ack, with that project's key."""
+            known: tuple[str, ...] = (), old_key: tuple[str, str] | None = None, label: str = "") -> dict:
+    """One Portal project: leftovers, then reserve, write and ack, with that project's key. `label`: the product
+    name the updates file is named by (product is "" in a repo with one product, where intake files carry none)."""
     files, notes = finish_leftovers(root, url, key, first, known, old_key)
     try:
-        return fetch_new(root, url, key, project, files, notes, product)
+        return fetch_new(root, url, key, project, files, notes, product, label or product)
     except Stop as e:
         if not files and not notes:
             raise
@@ -649,20 +776,22 @@ def run_one(root: Path, url: str, key: str, project: str, product: str = "", fir
 
 
 def fetch_new(root: Path, url: str, key: str, project: str, files: list[Path], notes: list[str],
-              product: str = "") -> dict:
+              product: str = "", label: str = "") -> dict:
     batch = reserve(url, key)
     if batch["batch_id"] is None:
         last = batch["last_fetched_at"]
-        nothing = (f"No new answers since {utc(last)}." if last else "No new answers. None have been fetched yet.")
+        what = "answers or updates" if batch["contract"] == "answers/2" else "answers"
+        nothing = (f"No new {what} since {utc(last)}." if last else f"No new {what}. None have been fetched yet.")
         msg = "\n".join([*notes, *([summary(root, files)] if files else []), nothing])
         return {"ok": True, "files": [rel(root, f) for f in files], "message": msg}
 
-    tmps = write_batch(root, project, batch, product)
+    tmps = write_batch(root, project, batch, product, label or project)
     try:
         result, _ = ack(url, key, batch["batch_id"])
     except NoReply as e:
+        where = f"{INTAKE}/" + (f" and {UPDATES}/" if any(is_updates(p) for p, _ in tmps) else "")
         raise Stop(f"{e} The {len(tmps)} file(s) were written but the Portal has not confirmed them, so they stay in "
-                   f"{INTAKE}/ as .tmp (triage skips them). The next fetch-portal run finishes them — run it again "
+                   f"{where} as .tmp (triage skips them). The next fetch-portal run finishes them — run it again "
                    "soon. Do not commit the .tmp files.") from None
     marker = done_marker(root, batch["batch_id"])
     if result != "ok":

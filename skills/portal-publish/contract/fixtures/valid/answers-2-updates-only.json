@@ -1,0 +1,24 @@
+{
+  "contract": "answers/2",
+  "batch_id": "019a2c45-2c3d-7d4e-8f50-b1c2d3e4f5a6",
+  "reserved_until": "2026-10-27T11:10:00.000Z",
+  "last_fetched_at": "2026-10-24T16:42:05.120Z",
+  "answers": [],
+  "updates": [
+    {
+      "id": "019a2b95-0a00-7c00-8a00-000000000002",
+      "sent_at": "2026-10-26T16:30:00.000Z",
+      "person": {
+        "name": "Second Person",
+        "email": "second.person@example.com"
+      },
+      "item": {
+        "key": "0cbce405e12a",
+        "kind": "agenda",
+        "title": "Agree the fee for early repayment"
+      },
+      "note": "Our board agreed: the fee stays at 50.\nWe can talk about it on the call.",
+      "resolved": false
+    }
+  ]
+}

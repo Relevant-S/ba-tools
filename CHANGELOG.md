@@ -2,6 +2,37 @@
 
 ## Unreleased
 
+- **`portal-publish` contract 1.4.0** (tag `portal-contract-1.4.0`, Stories 3.11 and 4.11).
+  - `dashboard/2` gains five optional fields, so the Portal can copy the BA page: an Item's **`hot`** (yes/no;
+    missing = no), a Feature's **`stage_why`** (≤ 400, the BA page's "why this stage" line, word for word) and
+    **`area_how`** (≤ 200, how it was placed in its area), and an open ticket's **`updated`** (a date or a UTC
+    time; only for the order), and an area's Jira **`search`** link ("All its tickets in Jira ↗"). A send
+    without them still passes. `dashboard/1` is unchanged.
+  - New **`answers/2`** (`answers-2.schema.json`): `answers/1` plus a required `updates` list, the Client's saves
+    on Waiting and agenda Items (`id`, `sent_at`, `person`, `item {key, kind, title}`, `note` or null,
+    `resolved`). `item.key` is the BA page's key, sha1("<kind>|<title>"). A batch holds at least one Answer or
+    one update; with nothing to hand out both lists are empty. One ack confirms both.
+  - New **`reserve-request/1`** (`reserve-request-1.schema.json`): the optional body of
+    `POST /api/v1/answers/reserve`, `{ "accept": [...] }`. Without `answers/2` in it the Portal replies
+    `answers/1` as before and the updates wait.
+  - `index.json` lists both new schemas; `contract_folder` is `1.4.0`. New fixtures: `dashboard-2-with-1-4-fields`,
+    `answers-2-batch`, `answers-2-updates-only`, `answers-2-nothing-to-fetch`, `reserve-request-1`; invalid cases
+    `v2-hot-not-yes-no`, `v2-stage-why-too-long`, `v2-area-how-empty`, `v2-ticket-updated-not-utc`, nine
+    `answers2-…` cases and four `reserve-request-…` cases. No new named check.
+- **`portal-publish dashboard` sends the 1.4.0 fields** when the BA page's data has them: `hot` from the item's
+  `hot:`, `stage_why` built exactly as the page's `whyText(f)` (a test runs the page's own code in node to
+  compare), `area_how` from the bubble's `areaHow`, and `updated` on open tickets from `areas.json` (only a real
+  date or UTC time), and the area's Jira `search` link (only an `https://` link). Nothing is guessed: a page built by an older `build.py` sends none of them.
+- **`fetch-portal` brings in the Client's updates on dashboard items** (Story 4.11). It reserves with
+  `{"accept": ["answers/1", "answers/2"]}`. An `answers/2` batch with updates gives one file per product,
+  `docs/BA/portal-updates/YYYY-MM-DD-HHMM-<product>.json`, in the BA page's `resolutions` store shape (one entry
+  per item key; `resolved` from the latest save; notes oldest first with `by`, the client person; `updatedAt`).
+  It goes through the same `.tmp`, marker and ack steps as the intake files (the marker's third line counts the
+  updates). The summary says "N updates on M items" and tells the BA to run "sync the mind map" with the file.
+  An `answers/1` reply (an older Portal) works as before.
+- **`ba-dashboard` `map/sync.py`** takes that file as it is. A note with `by` reads
+  "UPDATE <date> — <by>: <note>." (and "CLOSED …" the same way). Syncing the same file twice adds nothing; an item unticked again (`resolved: false`) loses `done` and comes back. The BA page's own store files work as before.
+
 - **`portal-publish` and `fetch-portal` work per product; the Dashboard send lists its pages** (Story 4.10).
   - **Which pages:** a page is a `docs/BA/clarifications/*.yaml` whose `slug:` is its file name (`<slug>.yaml` or
     `<slug>-decisions.yaml`) and that has a `store_key:`. With two or more products, a page goes with the `prod`

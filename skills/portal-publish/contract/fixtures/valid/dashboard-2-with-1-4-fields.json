@@ -1,0 +1,582 @@
+{
+  "contract": "dashboard/2",
+  "sent_at": "2026-10-28T09:30:00.000Z",
+  "sent_by": "Sample BA",
+  "ba_tools_version": "0.9.0",
+  "source_commit": "4be1f0c9a2d7e3b5f6a8c1d0e9f7a6b5c4d3e2f1",
+  "jira_base": "https://example.atlassian.net",
+  "areas": [
+    {
+      "id": "ABC:Area 1",
+      "name": "Account Calendar 1",
+      "quiet": false,
+      "jira": {
+        "done": 10,
+        "in_progress": 0,
+        "open": 5,
+        "shipped": [],
+        "open_tickets": [
+          {
+            "key": "ABC-6010",
+            "summary": "Open account calendar import",
+            "status": "In Progress",
+            "stage": "dev",
+            "updated": "2026-10-20"
+          },
+          {
+            "key": "ABC-6011",
+            "summary": "Open invoice login profile",
+            "status": "In Progress",
+            "stage": "dev",
+            "updated": "2026-10-19T08:15:00.000Z"
+          },
+          {
+            "key": "ABC-6012",
+            "summary": "Open report schedule summary",
+            "status": "To Do",
+            "stage": "ready"
+          },
+          {
+            "key": "ABC-6013",
+            "summary": "Open template wallet batch",
+            "status": "To Do",
+            "stage": "ready",
+            "updated": "2026-10-17"
+          },
+          {
+            "key": "ABC-6014",
+            "summary": "Open billing export ledger",
+            "status": "To Do",
+            "stage": "ready",
+            "updated": "2026-10-16T08:15:00.000Z"
+          }
+        ],
+        "description": "The account calendar part of the product.",
+        "last_done": "2026-10-01",
+        "search": "https://example.atlassian.net/issues/?jql=component%20%3D%20%22ABC%3AArea%201%22"
+      }
+    },
+    {
+      "id": "ABC:Area 2",
+      "name": "Invoice Login 2",
+      "quiet": false,
+      "jira": {
+        "done": 11,
+        "in_progress": 1,
+        "open": 6,
+        "shipped": [
+          {
+            "key": "ABC-6040",
+            "summary": "Shipped invoice login profile",
+            "date": "2026-02-01"
+          }
+        ],
+        "open_tickets": [
+          {
+            "key": "ABC-6050",
+            "summary": "Open invoice login profile",
+            "status": "In Progress",
+            "stage": "dev",
+            "updated": "2026-10-20"
+          },
+          {
+            "key": "ABC-6051",
+            "summary": "Open report schedule summary",
+            "status": "In Progress",
+            "stage": "dev",
+            "updated": "2026-10-19T08:15:00.000Z"
+          },
+          {
+            "key": "ABC-6052",
+            "summary": "Open template wallet batch",
+            "status": "To Do",
+            "stage": "ready"
+          },
+          {
+            "key": "ABC-6053",
+            "summary": "Open billing export ledger",
+            "status": "To Do",
+            "stage": "ready",
+            "updated": "2026-10-17"
+          },
+          {
+            "key": "ABC-6054",
+            "summary": "Open limit payout reminder",
+            "status": "To Do",
+            "stage": "ready",
+            "updated": "2026-10-16T08:15:00.000Z"
+          }
+        ],
+        "last_done": "2026-10-02",
+        "search": "https://example.atlassian.net/issues/?jql=component%20%3D%20%22ABC%3AArea%202%22"
+      }
+    },
+    {
+      "id": "noarea",
+      "name": "No area",
+      "quiet": false,
+      "special": "no_area",
+      "jira": {
+        "done": 10,
+        "in_progress": 0,
+        "open": 5,
+        "shipped": [],
+        "open_tickets": [
+          {
+            "key": "ABC-6010",
+            "summary": "Open account calendar import",
+            "status": "In Progress",
+            "stage": "dev",
+            "updated": "2026-10-20"
+          },
+          {
+            "key": "ABC-6011",
+            "summary": "Open invoice login profile",
+            "status": "In Progress",
+            "stage": "dev",
+            "updated": "2026-10-19T08:15:00.000Z"
+          },
+          {
+            "key": "ABC-6012",
+            "summary": "Open report schedule summary",
+            "status": "To Do",
+            "stage": "ready"
+          },
+          {
+            "key": "ABC-6013",
+            "summary": "Open template wallet batch",
+            "status": "To Do",
+            "stage": "ready",
+            "updated": "2026-10-17"
+          },
+          {
+            "key": "ABC-6014",
+            "summary": "Open billing export ledger",
+            "status": "To Do",
+            "stage": "ready",
+            "updated": "2026-10-16T08:15:00.000Z"
+          }
+        ],
+        "description": "The account calendar part of the product.",
+        "last_done": "2026-10-01",
+        "search": "https://example.atlassian.net/issues/?jql=component%20%3D%20%22noarea%22"
+      }
+    },
+    {
+      "id": "notlinked",
+      "name": "Not linked",
+      "quiet": false,
+      "special": "not_linked",
+      "jira": {
+        "done": 10,
+        "in_progress": 0,
+        "open": 5,
+        "shipped": [],
+        "open_tickets": [
+          {
+            "key": "ABC-6010",
+            "summary": "Open account calendar import",
+            "status": "In Progress",
+            "stage": "dev",
+            "updated": "2026-10-20"
+          },
+          {
+            "key": "ABC-6011",
+            "summary": "Open invoice login profile",
+            "status": "In Progress",
+            "stage": "dev",
+            "updated": "2026-10-19T08:15:00.000Z"
+          },
+          {
+            "key": "ABC-6012",
+            "summary": "Open report schedule summary",
+            "status": "To Do",
+            "stage": "ready"
+          },
+          {
+            "key": "ABC-6013",
+            "summary": "Open template wallet batch",
+            "status": "To Do",
+            "stage": "ready",
+            "updated": "2026-10-17"
+          },
+          {
+            "key": "ABC-6014",
+            "summary": "Open billing export ledger",
+            "status": "To Do",
+            "stage": "ready",
+            "updated": "2026-10-16T08:15:00.000Z"
+          }
+        ],
+        "description": "The account calendar part of the product.",
+        "last_done": "2026-10-01",
+        "search": "https://example.atlassian.net/issues/?jql=component%20%3D%20%22notlinked%22"
+      }
+    }
+  ],
+  "features": [
+    {
+      "id": "sign-up-with-phone-number",
+      "area": "ABC:Area 1",
+      "title": "Sign-up with phone number",
+      "summary": "<p class=\"lead\">Sign-up with phone number — what it does for the employee.</p><p>Status: <strong>concept</strong>. Next step agreed on the last call.</p>",
+      "stage": "concept",
+      "tickets": [],
+      "short": "Sign-up",
+      "open": [
+        "Which employers get sign-up with phone number first?",
+        "Is the copy final in every language?"
+      ],
+      "answered": {
+        "done": 0,
+        "total": 5
+      },
+      "stage_why": "Concept: concept or idea, no spec yet, 40% of questions answered",
+      "area_how": "from its tickets"
+    },
+    {
+      "id": "identity-check",
+      "area": "ABC:Area 2",
+      "title": "Identity check",
+      "summary": "<p class=\"lead\">Identity check — what it does for the employee.</p><p>Status: <strong>spec</strong>. Next step agreed on the last call.</p>",
+      "stage": "spec",
+      "tickets": [
+        {
+          "key": "ABC-1000",
+          "summary": "Account calendar import limit (0)",
+          "status": "To Do",
+          "stage": "ready",
+          "assignee": "Sample Developer"
+        }
+      ],
+      "short": "ID check",
+      "clar_url": "https://pages.example.com/clarifications/identity-check/",
+      "stage_why": "Spec & design: spec is draft",
+      "area_how": "set on the dashboard"
+    },
+    {
+      "id": "employer-search",
+      "area": "noarea",
+      "title": "Employer search",
+      "summary": "<p class=\"lead\">Employer search — what it does for the employee.</p><p>Status: <strong>ready</strong>. Next step agreed on the last call.</p>",
+      "stage": "ready",
+      "tickets": [
+        {
+          "key": "ABC-1001",
+          "summary": "Invoice login profile review (1)",
+          "status": "In Progress",
+          "stage": "dev",
+          "assignee": "Sample Tester"
+        },
+        {
+          "key": "ABC-1002",
+          "summary": "Report schedule summary upload (2)",
+          "status": "In Review",
+          "stage": "qa"
+        }
+      ],
+      "answered": {
+        "done": 2,
+        "total": 5
+      },
+      "stage_why": "Ready for dev, its slowest open ticket. Tickets: 1 Ready for dev",
+      "area_how": "no tickets and no area set"
+    },
+    {
+      "id": "advance-request",
+      "area": "notlinked",
+      "title": "Advance request",
+      "summary": "<p class=\"lead\">Advance request — what it does for the employee.</p><p>Status: <strong>dev</strong>. Next step agreed on the last call.</p>",
+      "stage": "dev",
+      "tickets": [],
+      "short": "Advance",
+      "open": [
+        "Which employers get advance request first?",
+        "Is the copy final in every language?"
+      ],
+      "stage_why": "In dev, no tickets linked yet"
+    }
+  ],
+  "topics": [
+    {
+      "id": "topic-1",
+      "area": "ABC:Area 1",
+      "title": "Account calendar work",
+      "stage": "ready",
+      "tickets": [
+        {
+          "key": "ABC-1003",
+          "summary": "Template wallet batch consent (3)",
+          "status": "To Do",
+          "stage": "ready",
+          "assignee": "Sample Developer"
+        }
+      ]
+    },
+    {
+      "id": "topic-2",
+      "area": "ABC:Area 2",
+      "title": "Invoice login work",
+      "stage": "dev",
+      "tickets": [
+        {
+          "key": "ABC-1004",
+          "summary": "Billing export ledger message (4)",
+          "status": "In Progress",
+          "stage": "dev",
+          "assignee": "Sample Tester"
+        },
+        {
+          "key": "ABC-1005",
+          "summary": "Limit payout reminder search (5)",
+          "status": "In Review",
+          "stage": "qa"
+        }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "key": "dd7ca59c5907",
+      "kind": "agenda",
+      "parent": "sign-up-with-phone-number",
+      "who": "Maria Lopez then Dev team",
+      "since": "2026-09-01",
+      "title": "Confirm the wording for account calendar (#1)",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>",
+      "hot": true
+    },
+    {
+      "key": "d43e2fae9230",
+      "kind": "waiting",
+      "parent": "identity-check",
+      "who": "Tom Baker",
+      "since": "2026-10-02",
+      "title": "Send the sample file for invoice login (#2)",
+      "how_to_send": "Reply in the project Slack channel.",
+      "hot": false
+    },
+    {
+      "key": "b6920b15ea74",
+      "kind": "waiting",
+      "parent": "employer-search",
+      "who": "Priya Shah",
+      "since": "2026-09-03",
+      "title": "Approve the screen for report schedule (#3)",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>"
+    },
+    {
+      "key": "b87f47f8d068",
+      "kind": "agenda",
+      "parent": "advance-request",
+      "who": "Dev team",
+      "since": "2026-10-04",
+      "title": "Decide the limit for template wallet (#4)",
+      "hot": true
+    },
+    {
+      "key": "9437b8845b9d",
+      "kind": "waiting",
+      "parent": "topic-1",
+      "who": "Anna",
+      "since": "2026-09-05",
+      "title": "Share the test account for billing export (#5)",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>",
+      "hot": false
+    },
+    {
+      "key": "e7a77a83ddb0",
+      "kind": "waiting",
+      "parent": "topic-2",
+      "who": "Jonas Berg",
+      "since": "2026-10-06",
+      "title": "Review the flow for limit payout (#6)",
+      "how_to_send": "Reply in the project Slack channel."
+    },
+    {
+      "key": "5a5b55acbe97",
+      "kind": "agenda",
+      "parent": "sign-up-with-phone-number",
+      "who": "Maria Lopez",
+      "since": "2026-09-07",
+      "title": "Agree the copy for review status (#7)",
+      "text": "<p>We need this before the next build. <em>A short answer is fine.</em></p>",
+      "hot": true
+    },
+    {
+      "key": "1c494ab09933",
+      "kind": "waiting",
+      "parent": "identity-check",
+      "who": "Tom Baker then Dev team",
+      "since": "2026-10-08",
+      "title": "Check the numbers in upload account (#8)",
+      "hot": false
+    }
+  ],
+  "releases": [
+    {
+      "name": "Release 1.0 - account calendar import",
+      "released": true,
+      "overdue": false,
+      "date": "2026-01-01"
+    },
+    {
+      "name": "Release 1.1 - invoice login profile",
+      "released": true,
+      "overdue": false,
+      "date": "2026-02-02"
+    },
+    {
+      "name": "Release 1.2 - report schedule summary",
+      "released": false,
+      "overdue": true,
+      "date": "2026-03-03"
+    }
+  ],
+  "cards": [
+    {
+      "id": "c00000",
+      "kind": "feature",
+      "area": "ABC:Area 1",
+      "release": "Release 1.0 - account calendar import",
+      "title": "Sign-up with phone number",
+      "feature": "sign-up-with-phone-number",
+      "stage": "done",
+      "blocked": false,
+      "done_date": "2026-01-01",
+      "tickets": [
+        {
+          "key": "ABC-1006",
+          "summary": "Review status transfer widget (6)",
+          "status": "Done",
+          "stage": "done",
+          "assignee": "Sample Developer"
+        },
+        {
+          "key": "ABC-1007",
+          "summary": "Upload account calendar import (7)",
+          "status": "Done",
+          "stage": "done",
+          "assignee": "Sample Tester"
+        }
+      ]
+    },
+    {
+      "id": "c00001",
+      "kind": "feature",
+      "area": "ABC:Area 2",
+      "release": "Release 1.1 - invoice login profile",
+      "title": "Identity check",
+      "feature": "identity-check",
+      "stage": "spec",
+      "blocked": false,
+      "tickets": [
+        {
+          "key": "ABC-1008",
+          "summary": "Consent invoice login profile (8)",
+          "status": "In Review",
+          "stage": "qa"
+        }
+      ]
+    },
+    {
+      "id": "c00002",
+      "kind": "epic",
+      "area": "noarea",
+      "release": "Release 1.2 - report schedule summary",
+      "title": "Epic: report schedule summary (2)",
+      "epic": "ABC-91002",
+      "stage": "ready",
+      "blocked": false,
+      "tickets": [
+        {
+          "key": "ABC-1009",
+          "summary": "Message report schedule summary (9)",
+          "status": "To Do",
+          "stage": "ready",
+          "assignee": "Sample Developer"
+        },
+        {
+          "key": "ABC-1010",
+          "summary": "Search template wallet batch (10)",
+          "status": "In Progress",
+          "stage": "dev",
+          "assignee": "Sample Tester"
+        },
+        {
+          "key": "ABC-1011",
+          "summary": "Widget billing export ledger (11)",
+          "status": "In Review",
+          "stage": "qa"
+        }
+      ]
+    },
+    {
+      "id": "c00003",
+      "kind": "epic",
+      "area": "notlinked",
+      "release": "Release 1.0 - account calendar import",
+      "title": "Epic: template wallet batch (3)",
+      "epic": "ABC-91003",
+      "stage": "dev",
+      "blocked": true,
+      "tickets": [
+        {
+          "key": "ABC-1012",
+          "summary": "Import limit payout reminder (12)",
+          "status": "To Do",
+          "stage": "ready",
+          "assignee": "Sample Developer"
+        }
+      ]
+    },
+    {
+      "id": "c00004",
+      "kind": "other",
+      "area": "ABC:Area 1",
+      "release": "Release 1.1 - invoice login profile",
+      "title": "Other tickets",
+      "stage": "done",
+      "blocked": false,
+      "done_date": "2026-05-05",
+      "tickets": [
+        {
+          "key": "ABC-1013",
+          "summary": "Profile review status transfer (13)",
+          "status": "Done",
+          "stage": "done",
+          "assignee": "Sample Tester"
+        },
+        {
+          "key": "ABC-1014",
+          "summary": "Summary upload account calendar (14)",
+          "status": "Done",
+          "stage": "done"
+        }
+      ]
+    },
+    {
+      "id": "c00005",
+      "kind": "other",
+      "area": "ABC:Area 2",
+      "release": null,
+      "title": "Other tickets",
+      "stage": "concept",
+      "blocked": false,
+      "tickets": []
+    }
+  ],
+  "client_contacts": [
+    {
+      "name": "Maria Lopez",
+      "slack": "maria.lopez"
+    },
+    {
+      "name": "Tom Baker"
+    },
+    {
+      "name": "Priya Shah",
+      "slack": "U02ABCD1234"
+    }
+  ]
+}

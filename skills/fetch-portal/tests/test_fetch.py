@@ -11,6 +11,7 @@ import datetime as dt
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import httpx
@@ -198,7 +199,8 @@ def test_one_page_writes_one_file_after_the_ack(capsys, project, portal):
     assert "(Merchant payouts, 2 answers)" in res["message"]
     assert portal.paths() == [fetch.RESERVE, fetch.ACK]
     assert json.loads(portal.requests[1].content) == {"batch_id": BATCH["batch_id"]}
-    assert portal.requests[0].content == b""
+    assert json.loads(portal.requests[0].content) == {"accept": ["answers/1", "answers/2"]}   # reserve-request/1
+    assert portal.requests[0].headers["Content-Type"] == "application/json"
 
 
 def test_file_header_and_body(capsys, project, portal):
@@ -952,3 +954,229 @@ def test_one_product_has_no_product_line(capsys, project, portal):
 def test_settings_come_from_portal_publish_targets():
     assert fetch.TARGETS_PY == (HERE.parent.parent / "portal-publish" / "targets.py").resolve()
     assert fetch.tg().portal_targets.__module__ == "portal_publish_targets"
+
+
+# ---- answers/2: the Client's updates on dashboard items (contract 1.4.0, Story 4.11) -------------------
+
+BATCH2 = read(VALID / "answers-2-batch.json")
+UPDATES_ONLY = read(VALID / "answers-2-updates-only.json")
+NOTHING2 = read(VALID / "answers-2-nothing-to-fetch.json")
+UPD_NAME = "2026-10-27-1100-app.json"
+SYNC_PY = fetch.SKILLS / "ba-dashboard" / "map" / "sync.py"
+
+
+def updates_dir(root: Path) -> list[str]:
+    folder = root / fetch.UPDATES
+    return sorted(p.name for p in folder.iterdir()) if folder.exists() else []
+
+
+def test_answers2_writes_the_intake_file_and_one_updates_file(capsys, project, portal):
+    portal.batches = [copy.deepcopy(BATCH2)]
+    code, res = run(capsys, project)
+    assert code == 0 and res["ok"] is True, res
+    assert res["files"] == ["docs/BA/intake/2026-10-27-1100-portal-merchant-payouts.md",
+                            f"docs/BA/portal-updates/{UPD_NAME}"]
+    assert intake(project) == ["2026-10-27-1100-portal-merchant-payouts.md"]
+    assert updates_dir(project) == [UPD_NAME], "no .tmp left"
+    assert portal.acked == [BATCH2["batch_id"]], "one ack confirms the Answers and the updates"
+    msg = res["message"]
+    assert msg.startswith("Wrote 1 intake file:\n  - docs/BA/intake/2026-10-27-1100-portal-merchant-payouts.md")
+    assert (f"Wrote the Client's updates on dashboard items (1 file):\n  - docs/BA/portal-updates/{UPD_NAME} "
+            "(3 updates on 2 items)\n") in msg
+    assert msg.endswith('To put them in docs/BA/dashboard.yaml, run "sync the mind map" with this file.')
+
+
+def test_updates_file_has_the_ba_pages_store_shape(capsys, project, portal):
+    portal.batches = [copy.deepcopy(BATCH2)]
+    run(capsys, project)
+    doc = read(project / fetch.UPDATES / UPD_NAME)
+    wait, agenda = (u["item"] for u in BATCH2["updates"][:2])
+    assert doc == [
+        {"key": wait["key"], "kind": "waiting", "title": wait["title"], "resolved": True,
+         "notes": [{"at": "2026-10-26T15:00:00.000Z", "text": "We sent the list to Sample BA by email.",
+                    "by": "Sample Client"}],
+         "updatedAt": "2026-10-26T17:45:00.000Z"},
+        {"key": agenda["key"], "kind": "agenda", "title": agenda["title"], "resolved": False,
+         "notes": [{"at": "2026-10-26T16:30:00.000Z",
+                    "text": "Our board agreed: the fee stays at 50.\nWe can talk about it on the call.",
+                    "by": "Second Person"}],
+         "updatedAt": "2026-10-26T16:30:00.000Z"},
+    ]
+
+
+def test_latest_save_wins_and_notes_stay_oldest_first():
+    first, second, third = (copy.deepcopy(u) for u in BATCH2["updates"])
+    second["item"] = copy.deepcopy(first["item"])
+    second["resolved"] = True
+    third["note"] = "Sorry, not done yet."
+    third["resolved"] = False
+    # Given out of order: sorted by sent_at, then id.
+    entries = fetch.resolutions([third, first, second])
+    assert len(entries) == 1
+    e = entries[0]
+    assert e["resolved"] is False and e["updatedAt"] == third["sent_at"]
+    assert [n["text"] for n in e["notes"]] == [first["note"], second["note"], "Sorry, not done yet."]
+    assert [n["by"] for n in e["notes"]] == ["Sample Client", "Second Person", "Sample Client"]
+
+
+def test_updates_only_writes_no_intake_file(capsys, project, portal):
+    portal.batches = [copy.deepcopy(UPDATES_ONLY)]
+    code, res = run(capsys, project)
+    assert code == 0, res
+    assert intake(project) == [] and updates_dir(project) == [UPD_NAME]
+    assert res["message"].startswith("Wrote the Client's updates on dashboard items (1 file):")
+    assert "(1 update on 1 item)" in res["message"]
+
+
+def test_nothing_new_on_answers2_names_updates_too(capsys, project, portal):
+    portal.batches = [copy.deepcopy(NOTHING2)]
+    code, res = run(capsys, project)
+    assert code == 0 and res["message"] == "No new answers or updates since 2026-10-27 11:00 UTC."
+    assert updates_dir(project) == [] and intake(project) == []
+
+
+def test_older_portal_reply_answers1_still_works(capsys, project, portal):
+    """An older Portal ignores the accept list and replies answers/1: Answers only, as before."""
+    code, res = run(capsys, project)
+    assert code == 0 and res["files"] == ["docs/BA/intake/2026-10-27-1100-portal-merchant-payouts.md"]
+    assert not (project / fetch.UPDATES).exists()
+
+
+@pytest.mark.parametrize("reply", ["broken-update", "answers3"])
+def test_answers2_reply_that_fails_the_contract_writes_nothing(capsys, project, portal, reply):
+    b = copy.deepcopy(BATCH2)
+    if reply == "broken-update":
+        b["updates"][0]["item"]["kind"] = "todo"
+    else:
+        b["contract"] = "answers/3"
+    portal.batches = [b]
+    code, res = run(capsys, project)
+    assert code == 1 and "not understood" in res["error"]
+    assert portal.paths() == [fetch.RESERVE] and intake(project) == [] and updates_dir(project) == []
+
+
+def test_ack_no_reply_keeps_the_updates_tmp_then_the_next_run_finishes_it(capsys, project, portal):
+    portal.batches = [copy.deepcopy(BATCH2)]
+    portal.ack_mode = "noreply"
+    code, res = run(capsys, project)
+    assert code == 1 and "docs/BA/intake/ and docs/BA/portal-updates/ as .tmp" in res["error"]
+    assert updates_dir(project) == [f"portal-{BATCH2['batch_id']}-app.json.tmp"]
+    marker = project / fetch.INTAKE / f"portal-{BATCH2['batch_id']}.complete"
+    assert marker.read_text(encoding="utf-8") == "2\nPORTAL_PUBLISH_KEY\n3\n"
+    fetch.update_counts.clear()                                       # a new run: nothing kept in memory
+    portal.ack_mode = "ok"
+    code, res = run(capsys, project)
+    assert code == 0, res
+    assert portal.acked == [BATCH2["batch_id"]]
+    assert updates_dir(project) == [UPD_NAME] and not marker.exists()
+    assert "Finished an earlier fetch: 2 file(s) confirmed by the Portal." in res["message"]
+    assert "(3 updates on 2 items)" in res["message"], "the count comes from the marker"
+
+
+def test_ack_expired_deletes_the_updates_file_too(capsys, project, portal):
+    portal.batches = [copy.deepcopy(BATCH2)]
+    portal.ack_mode = "expired"
+    code, res = run(capsys, project)
+    assert code == 1 and intake(project) == [] and updates_dir(project) == []
+
+
+def test_cut_off_updates_tmp_without_marker_is_deleted(capsys, project, portal):
+    (project / fetch.UPDATES).mkdir(parents=True)
+    tmp = project / fetch.UPDATES / f"portal-{OTHER_BATCH}-app.json.tmp"
+    tmp.write_text("[]\n", encoding="utf-8")
+    code, res = run(capsys, project)
+    assert code == 0 and not tmp.exists()
+    assert "cut off while writing" in res["message"]
+    assert OTHER_BATCH not in portal.acked
+
+
+def test_stray_updates_tmp_is_reported(capsys, project, portal):
+    (project / fetch.UPDATES).mkdir(parents=True)
+    stray = project / fetch.UPDATES / "portal-notes.json.tmp"
+    stray.write_text("[]\n", encoding="utf-8")
+    code, res = run(capsys, project)
+    assert code == 0 and stray.exists()
+    assert "docs/BA/portal-updates/portal-notes.json.tmp" in res["message"]
+
+
+def test_write_fails_on_the_updates_file_deletes_everything_and_acks_nothing(capsys, project, portal,
+                                                                             monkeypatch):
+    portal.batches = [copy.deepcopy(BATCH2)]
+    real = Path.write_text
+
+    def flaky(self, *a, **kw):
+        if self.name.endswith(".json.tmp"):
+            real(self, "[", encoding="utf-8")
+            raise OSError(28, "No space left on device")
+        return real(self, *a, **kw)
+    monkeypatch.setattr(Path, "write_text", flaky)
+    code, res = run(capsys, project)
+    assert code == 1 and "the Answers and updates wait in the Portal" in res["error"]
+    assert intake(project) == [] and updates_dir(project) == []
+    assert fetch.ACK not in portal.paths()
+
+
+def test_two_products_write_one_updates_file_each(capsys, project, two):
+    app, admin = two
+    per_product_keys(project)
+    app.batches = [copy.deepcopy(UPDATES_ONLY)]
+    b = copy.deepcopy(BATCH2)
+    b["batch_id"] = ADMIN_BATCH
+    admin.batches = [b]
+    code, res = run_two(capsys, project)
+    assert code == 0, res
+    assert updates_dir(project) == ["2026-10-27-1100-admin.json", "2026-10-27-1100-app.json"]
+    msg = res["message"]
+    assert "(1 update on 1 item)" in msg and "(3 updates on 2 items)" in msg
+
+
+def dashboard_yaml(root: Path) -> None:
+    wait, agenda = (u["item"] for u in BATCH2["updates"][:2])
+    (root / "docs/BA/dashboard.yaml").write_text(yaml.safe_dump({
+        "title": "Sample", "updated": "2026-10-20", "features": [],
+        "awaiting": [{"prod": "App", "who": "Sample Client", "since": "2026-10-01", "t": wait["title"],
+                      "s": "Asked on the last call."}],
+        "todos": [],
+        "agenda": [{"prod": "App", "who": "Second Person", "since": "2026-10-05", "t": agenda["title"]}],
+    }, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+
+def test_sync_the_mind_map_takes_the_file_as_it_is(capsys, project, portal):
+    """ba-dashboard's map/sync.py, run as the BA runs it (from the project root), on the file fetch-portal wrote."""
+    portal.batches = [copy.deepcopy(BATCH2)]
+    run(capsys, project)
+    dashboard_yaml(project)
+    r = subprocess.run([sys.executable, str(SYNC_PY), f"{fetch.UPDATES}/{UPD_NAME}"], cwd=project,
+                       capture_output=True, text=True, encoding="utf-8")
+    assert r.returncode == 0, r.stderr
+    result = json.loads(r.stdout)
+    assert [a["resolved"] for a in result["applied"]] == [True, False] and result["not_found"] == []
+    d = yaml.safe_load((project / "docs/BA/dashboard.yaml").read_text(encoding="utf-8"))
+    wait, agenda = d["awaiting"][0], d["agenda"][0]
+    assert wait["done"] is True
+    assert wait["s"] == ("CLOSED 26 OCT — Sample Client: We sent the list to Sample BA by email. "
+                         "Asked on the last call.")
+    assert "done" not in agenda
+    assert agenda["s"].startswith("UPDATE 26 OCT — Second Person: Our board agreed: the fee stays at 50.")
+
+
+def test_sync_twice_adds_nothing_and_an_untick_reopens(capsys, project, portal):
+    """The same file synced again changes nothing; a later file with the tick off brings the item back."""
+    portal.batches = [copy.deepcopy(BATCH2)]
+    run(capsys, project)
+    dashboard_yaml(project)
+    path = project / fetch.UPDATES / UPD_NAME
+
+    def sync(file):
+        r = subprocess.run([sys.executable, str(SYNC_PY), str(file)], cwd=project,
+                           capture_output=True, text=True, encoding="utf-8")
+        assert r.returncode == 0, r.stderr
+        return yaml.safe_load((project / "docs/BA/dashboard.yaml").read_text(encoding="utf-8"))
+
+    once = sync(path)
+    assert sync(path) == once
+    unticked = [{**doc, "resolved": False, "notes": []} for doc in json.loads(path.read_text(encoding="utf-8"))]
+    later = project / fetch.UPDATES / "later.json"
+    later.write_text(json.dumps(unticked), encoding="utf-8")
+    wait = sync(later)["awaiting"][0]
+    assert "done" not in wait and wait["s"] == once["awaiting"][0]["s"]

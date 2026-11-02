@@ -1,0 +1,54 @@
+{
+  "contract": "answers/2",
+  "batch_id": null,
+  "reserved_until": null,
+  "last_fetched_at": "2026-10-27T11:00:31.007Z",
+  "answers": [],
+  "updates": [
+    {
+      "id": "019a2b95-0a00-7c00-8a00-000000000001",
+      "sent_at": "2026-10-26T15:00:00.000Z",
+      "person": {
+        "name": "Sample Client",
+        "email": "sample.client@example.com"
+      },
+      "item": {
+        "key": "229cd4b6d021",
+        "kind": "waiting",
+        "title": "Send the employer list for the pilot"
+      },
+      "note": "We sent the list to Sample BA by email.",
+      "resolved": false
+    },
+    {
+      "id": "019a2b95-0a00-7c00-8a00-000000000002",
+      "sent_at": "2026-10-26T16:30:00.000Z",
+      "person": {
+        "name": "Second Person",
+        "email": "second.person@example.com"
+      },
+      "item": {
+        "key": "0cbce405e12a",
+        "kind": "agenda",
+        "title": "Agree the fee for early repayment"
+      },
+      "note": "Our board agreed: the fee stays at 50.\nWe can talk about it on the call.",
+      "resolved": false
+    },
+    {
+      "id": "019a2b95-0a00-7c00-8a00-000000000003",
+      "sent_at": "2026-10-26T17:45:00.000Z",
+      "person": {
+        "name": "Sample Client",
+        "email": "sample.client@example.com"
+      },
+      "item": {
+        "key": "229cd4b6d021",
+        "kind": "waiting",
+        "title": "Send the employer list for the pilot"
+      },
+      "note": null,
+      "resolved": true
+    }
+  ]
+}

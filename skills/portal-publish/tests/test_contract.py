@@ -17,7 +17,7 @@ SCHEMAS = sorted(checks.CONTRACT_DIR.glob("*.schema.json"))
 
 
 # Valid files with no contract field are matched to a schema by file-name prefix.
-SCHEMA_BY_PREFIX = {"ack-request-1": "ack-request/1"}
+SCHEMA_BY_PREFIX = {"ack-request-1": "ack-request/1", "reserve-request-1": "reserve-request/1"}
 
 
 def read(path: Path):
@@ -104,6 +104,8 @@ DASHBOARD_CASES = {
     "v2-other-card-with-epic", "v2-answered-over-total", "v2-jira-base-javascript", "v2-jira-base-http",
     # clarification_pages (contract 1.3.0)
     "v2-duplicate-page-slug", "v2-bad-page-slug", "v2-too-many-pages",
+    # the optional 1.4.0 fields
+    "v2-hot-not-yes-no", "v2-stage-why-too-long", "v2-area-how-empty", "v2-ticket-updated-not-utc",
 }
 PAGE_CASES = {
     "page-too-many-questions", "page-too-many-screenshots", "question-no-options",
@@ -139,6 +141,20 @@ REPLY_CASES = {
     "ack-request-with-contract": "ack-request/1",
     "ack-request-bad-batch-id": "ack-request/1",
     "ack-request-empty": "ack-request/1",
+    # answers/2 and reserve-request/1 (contract 1.4.0)
+    "answers2-missing-updates": "answers/2",
+    "answers2-no-batch-with-updates": "answers/2",
+    "answers2-batch-with-nothing": "answers/2",
+    "answers2-update-bad-item-key": "answers/2",
+    "answers2-update-todo-item": "answers/2",
+    "answers2-update-note-too-long": "answers/2",
+    "answers2-update-empty-note": "answers/2",
+    "answers2-update-missing-resolved": "answers/2",
+    "answers2-sent-as-answers1": "answers/1",
+    "reserve-request-empty": "reserve-request/1",
+    "reserve-request-empty-accept": "reserve-request/1",
+    "reserve-request-accept-twice": "reserve-request/1",
+    "reserve-request-with-contract": "reserve-request/1",
 }
 
 
@@ -605,15 +621,15 @@ def test_limits_match_the_spec():
 
 def test_index_names_existing_schemas():
     idx = checks.index()
-    assert idx["contract_folder"] == "1.3.0"
+    assert idx["contract_folder"] == "1.4.0"
     assert idx["accepted"] == ["dashboard/1", "dashboard/2", "clarification/1"]
     assert set(idx["schemas"]) == {"dashboard/1", "dashboard/2", "clarification/1", "publish-reply/1", "status/1",
-                                   "answers/1", "ack-request/1", "ack/1"}
+                                   "answers/1", "answers/2", "reserve-request/1", "ack-request/1", "ack/1"}
     assert {p.name for p in SCHEMAS} == set(idx["schemas"].values())
     for contract, name in idx["schemas"].items():
         assert (checks.CONTRACT_DIR / name).is_file(), contract
         schema = read(checks.CONTRACT_DIR / name)
-        if contract == "ack-request/1":  # the ack request carries no contract field (AD-12)
+        if contract in ("ack-request/1", "reserve-request/1"):  # requests carry no contract field (AD-12)
             assert "contract" not in schema["properties"]
         elif contract == "publish-reply/1":
             for form in schema["$defs"]["dashboard"], schema["$defs"]["page"]:
@@ -910,3 +926,85 @@ def test_pages_removed_is_on_dashboard_replies_only():
         assert checks.check_reply({**reply, "pages_removed": []}, "publish-reply/1") == []
     page = read(FIXTURES / "valid" / "publish-reply-1-page-sent.json")
     assert checks.check_reply({**page, "pages_removed": []}, "publish-reply/1") != []
+
+
+# ---- contract 1.4.0: hot, stage_why, area_how, ticket updated; answers/2; reserve-request/1 -----------
+
+NEW_FIELDS = {"hot", "stage_why", "area_how", "updated"}
+
+
+def test_older_dashboard2_sends_without_the_new_fields_still_pass():
+    for name in ("dashboard-2-small.json", "dashboard-2-real-size.json", "dashboard-2-with-pages.json"):
+        doc = read(FIXTURES / "valid" / name)
+        assert NEW_FIELDS.isdisjoint(re_keys(doc)), name
+        assert checks.check_publish(doc) is None, name
+
+
+def re_keys(value) -> set[str]:
+    """Every field name anywhere in a document."""
+    if isinstance(value, dict):
+        return set(value) | {k for v in value.values() for k in re_keys(v)}
+    if isinstance(value, list):
+        return {k for v in value for k in re_keys(v)}
+    return set()
+
+
+def test_the_new_fields_fixture_holds_every_new_field():
+    doc = read(FIXTURES / "valid" / "dashboard-2-with-1-4-fields.json")
+    assert NEW_FIELDS <= re_keys(doc)
+    updated = [t["updated"] for a in doc["areas"] for t in a["jira"].get("open_tickets", []) if "updated" in t]
+    assert {len(u) for u in updated} == {10, 24}                      # a date and a UTC time both pass
+    assert {it.get("hot") for it in doc["items"]} == {True, False, None}
+    assert checks.check_publish(doc) is None
+
+
+def test_new_fields_are_client_and_optional():
+    schema = dashboard2_schema()["properties"]
+    feature = schema["features"]["items"]
+    item = schema["items"]["items"]
+    ticket = schema["areas"]["items"]["properties"]["jira"]["properties"]["open_tickets"]["items"]
+    for obj, field in ((feature, "stage_why"), (feature, "area_how"), (item, "hot"), (ticket, "updated")):
+        assert field not in obj["required"], field
+        assert obj["properties"][field]["x-visibility"] == "client", field
+    assert feature["properties"]["stage_why"]["maxLength"] == 400
+    assert feature["properties"]["area_how"]["maxLength"] == 200
+
+
+def test_new_fields_are_refused_in_dashboard1():
+    doc = read(FIXTURES / "valid" / "dashboard-1-small.json")
+    doc["items"][0]["hot"] = True
+    result = checks.check_publish(doc)
+    assert ("schema", "/items/0/hot") in {(d["check"], d["path"]) for d in result["details"]}
+
+
+def test_answers2_update_keys_are_the_ba_page_keys():
+    """item.key = sha1("<kind>|<title>"), the key sync.py matches on (not the dashboard/2 key)."""
+    import hashlib
+    batch = read(FIXTURES / "valid" / "answers-2-batch.json")
+    assert batch["answers"] and batch["updates"]
+    for u in batch["updates"]:
+        it = u["item"]
+        assert it["key"] == hashlib.sha1(f'{it["kind"]}|{it["title"].strip()}'.encode("utf-8")).hexdigest()[:12]
+    order = [(u["sent_at"], u["id"]) for u in batch["updates"]]
+    assert order == sorted(order)
+
+
+def test_answers2_batch_may_hold_only_updates_or_only_answers():
+    batch = read(FIXTURES / "valid" / "answers-2-batch.json")
+    assert checks.check_reply(read(FIXTURES / "valid" / "answers-2-updates-only.json"), "answers/2") == []
+    assert checks.check_reply({**batch, "updates": []}, "answers/2") == []
+    nothing = read(FIXTURES / "valid" / "answers-2-nothing-to-fetch.json")
+    assert nothing["batch_id"] is None and nothing["answers"] == [] and nothing["updates"] == []
+
+
+def test_answers2_answers_are_the_answers1_answers():
+    one = read(checks.CONTRACT_DIR / "answers-1.schema.json")
+    two = read(checks.CONTRACT_DIR / "answers-2.schema.json")
+    assert one["properties"]["answers"] == two["properties"]["answers"]
+    assert set(two["required"]) == set(one["required"]) | {"updates"}
+
+
+def test_reserve_request_says_which_versions_it_reads():
+    assert checks.check_reply({"accept": ["answers/1", "answers/2"]}, "reserve-request/1") == []
+    assert checks.check_reply({"accept": ["answers/1"]}, "reserve-request/1") == []
+    assert checks.check_reply({"accept": [f"answers/{n}" for n in range(6)]}, "reserve-request/1") != []

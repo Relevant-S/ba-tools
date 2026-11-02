@@ -9,6 +9,9 @@ send — 48 areas (5 open tickets each), 18 Features, 10 topics, 70 Items, 60 re
 is made up: no client text and no email address. Its invalid cases (named `v2-…`) break the small file.
 Contract 1.3.0 adds a small file with the optional `clarification_pages` list, three `v2-…` cases that break
 it, and Dashboard replies that carry `pages_removed`.
+Contract 1.4.0 adds a small file with the optional 1.4.0 fields (Item `hot`, Feature `stage_why` and `area_how`,
+open ticket `updated`) and `v2-…` cases that break them; `answers/2` batches (Answers plus the Client's updates on
+Items) and the `reserve-request/1` body, with broken cases of both.
 
 Pages: the clarification-page skill's example-probate-decisions.yaml converted to clarification/1, and a
 synthetic page of Merchants V7 size (6 Questions, 18 options, 4 screens). A page's invalid case is the
@@ -24,6 +27,7 @@ import hashlib
 import json
 import shutil
 from pathlib import Path, PurePosixPath
+from urllib.parse import quote as url_quote
 
 FIXTURES = Path(__file__).resolve().parent.parent / "contract" / "fixtures"
 PROBATE = (Path(__file__).resolve().parents[2] / "clarification-page" / "assets"
@@ -394,6 +398,33 @@ def with_pages() -> dict:
     return d
 
 
+WHY = ["Concept: concept or idea, no spec yet, 40% of questions answered", "Spec & design: spec is draft",
+       "Ready for dev, its slowest open ticket. Tickets: 1 Ready for dev", "In dev, no tickets linked yet"]
+HOW = ["from its tickets", "set on the dashboard", "no tickets and no area set"]
+
+
+def with_1_4_fields() -> dict:
+    """The small dashboard/2 with the optional 1.4.0 fields: Item hot, Feature stage_why and area_how, open ticket
+    updated (a date, or a UTC time), area Jira search link."""
+    d = small2()
+    for i, it in enumerate(d["items"]):
+        if i % 3 != 2:
+            it["hot"] = i % 3 == 0
+    for i, f in enumerate(d["features"]):
+        f["stage_why"] = WHY[i % len(WHY)]
+        if i % 4 != 3:
+            f["area_how"] = HOW[i % len(HOW)]
+    for a in d["areas"]:
+        if "jira" in a:
+            a["jira"]["search"] = "https://example.atlassian.net/issues/?jql=" + url_quote(f'component = "{a["id"]}"', safe="")
+        for j, t in enumerate(a.get("jira", {}).get("open_tickets", [])):
+            if j % 3 == 0:
+                t["updated"] = f"2026-10-{20 - j:02d}"
+            elif j % 3 == 1:
+                t["updated"] = f"2026-10-{20 - j:02d}T08:15:00.000Z"
+    return d
+
+
 def v2_invalid_cases() -> dict[str, tuple[dict, dict]]:
     cases: dict[str, tuple[dict, dict]] = {}
 
@@ -494,6 +525,15 @@ def v2_invalid_cases() -> dict[str, tuple[dict, dict]]:
     case("v2-bad-page-slug", d, "contract_invalid", "schema", "/clarification_pages/1")
     d = with_pages(); d["clarification_pages"] = [f"page-{i}" for i in range(1001)]
     case("v2-too-many-pages", d, "contract_invalid", "schema", "/clarification_pages")
+    # the optional 1.4.0 fields
+    d = with_1_4_fields(); d["items"][0]["hot"] = "yes"
+    case("v2-hot-not-yes-no", d, "contract_invalid", "schema", "/items/0/hot")
+    d = with_1_4_fields(); d["features"][0]["stage_why"] = "W" * 401
+    case("v2-stage-why-too-long", d, "contract_invalid", "schema", "/features/0/stage_why")
+    d = with_1_4_fields(); d["features"][1]["area_how"] = ""
+    case("v2-area-how-empty", d, "contract_invalid", "schema", "/features/1/area_how")
+    d = with_1_4_fields(); d["areas"][0]["jira"]["open_tickets"][0]["updated"] = "2026-10-20T08:15:00+0000"
+    case("v2-ticket-updated-not-utc", d, "contract_invalid", "schema", "/areas/0/jira/open_tickets/0/updated")
     return cases
 
 
@@ -837,6 +877,27 @@ def reply_invalid_cases() -> dict[str, tuple[str, dict, str]]:
     case("ack-request-bad-batch-id", "ack-request/1",
          {"batch_id": "not-a-uuid-not-a-uuid-not-a-uuid-xxxx"}, "/batch_id")
     case("ack-request-empty", "ack-request/1", {}, "/batch_id")
+    # answers/2 and reserve-request/1 (contract 1.4.0)
+    b2, e2 = r["answers-2-batch.json"], r["answers-2-nothing-to-fetch.json"]
+    case("answers2-missing-updates", "answers/2", {k: v for k, v in b2.items() if k != "updates"}, "/updates")
+    case("answers2-no-batch-with-updates", "answers/2", {**e2, "updates": b2["updates"]}, "/updates")
+    case("answers2-batch-with-nothing", "answers/2", {**b2, "answers": [], "updates": []}, "")
+    a = copy.deepcopy(b2); a["updates"][0]["item"]["key"] = "ABCDEF012345"
+    case("answers2-update-bad-item-key", "answers/2", a, "/updates/0/item/key")
+    a = copy.deepcopy(b2); a["updates"][0]["item"]["kind"] = "todo"
+    case("answers2-update-todo-item", "answers/2", a, "/updates/0/item/kind")
+    a = copy.deepcopy(b2); a["updates"][1]["note"] = "n" * 2001
+    case("answers2-update-note-too-long", "answers/2", a, "/updates/1/note")
+    a = copy.deepcopy(b2); a["updates"][1]["note"] = ""
+    case("answers2-update-empty-note", "answers/2", a, "/updates/1/note")
+    a = copy.deepcopy(b2); del a["updates"][0]["resolved"]
+    case("answers2-update-missing-resolved", "answers/2", a, "/updates/0/resolved")
+    case("answers2-sent-as-answers1", "answers/1", b2, "/contract")
+    req = r["reserve-request-1.json"]
+    case("reserve-request-empty", "reserve-request/1", {}, "/accept")
+    case("reserve-request-empty-accept", "reserve-request/1", {"accept": []}, "/accept")
+    case("reserve-request-accept-twice", "reserve-request/1", {"accept": ["answers/2", "answers/2"]}, "/accept")
+    case("reserve-request-with-contract", "reserve-request/1", {**req, "contract": "reserve-request/1"}, "/contract")
     return cases
 
 
@@ -912,6 +973,7 @@ def main() -> None:
     dump(FIXTURES / "valid" / "dashboard-2-small.json", small2())
     dump(FIXTURES / "valid" / "dashboard-2-real-size.json", real_size2())
     dump(FIXTURES / "valid" / "dashboard-2-with-pages.json", with_pages())
+    dump(FIXTURES / "valid" / "dashboard-2-with-1-4-fields.json", with_1_4_fields())
     for name, (doc, stated) in v2_invalid_cases().items():
         dump(FIXTURES / "invalid" / name / "input.json", doc)
         dump(FIXTURES / "invalid" / name / "expected.json", expected_result(name, doc, stated))
@@ -1017,6 +1079,23 @@ def replies() -> dict[str, dict]:
         "contract": "ack/1", "batch_id": answers["batch_id"], "handed_out": 2,
         "confirmed_at": "2026-10-27T11:00:31.007Z",
     }
+    # answers/2: the Client's saves on Items. Keys are the BA page's: sha1("<kind>|<title>").
+    other = {"name": "Second Person", "email": "second.person@example.com"}
+    wait_t, agenda_t = "Send the employer list for the pilot", "Agree the fee for early repayment"
+    updates = [
+        {"id": "019a2b95-0a00-7c00-8a00-000000000001", "sent_at": "2026-10-26T15:00:00.000Z", "person": person,
+         "item": {"key": item_key("waiting", wait_t), "kind": "waiting", "title": wait_t},
+         "note": "We sent the list to Sample BA by email.", "resolved": False},
+        {"id": "019a2b95-0a00-7c00-8a00-000000000002", "sent_at": "2026-10-26T16:30:00.000Z", "person": other,
+         "item": {"key": item_key("agenda", agenda_t), "kind": "agenda", "title": agenda_t},
+         "note": "Our board agreed: the fee stays at 50.\nWe can talk about it on the call.", "resolved": False},
+        {"id": "019a2b95-0a00-7c00-8a00-000000000003", "sent_at": "2026-10-26T17:45:00.000Z", "person": person,
+         "item": {"key": item_key("waiting", wait_t), "kind": "waiting", "title": wait_t},
+         "note": None, "resolved": True},
+    ]
+    answers2 = {**answers, "contract": "answers/2", "updates": updates}
+    updates_only = {**answers2, "batch_id": "019a2c45-2c3d-7d4e-8f50-b1c2d3e4f5a6", "answers": [],
+                    "updates": updates[1:2]}
     doc2 = small2()
     dry2 = {**base, "publish_id": None, "dry_run": True, "counts": {
         "features": len(doc2["features"]), "items": len(doc2["items"]),
@@ -1039,6 +1118,10 @@ def replies() -> dict[str, dict]:
         "publish-reply-1-page-dry-run.json": page_dry,
         "answers-1-batch.json": answers,
         "answers-1-nothing-to-fetch.json": answers_empty,
+        "answers-2-batch.json": answers2,
+        "answers-2-updates-only.json": updates_only,
+        "answers-2-nothing-to-fetch.json": {**answers_empty, "contract": "answers/2", "updates": []},
+        "reserve-request-1.json": {"accept": ["answers/1", "answers/2"]},
         "ack-request-1.json": {"batch_id": answers["batch_id"]},
         "ack-1.json": ack,
     }

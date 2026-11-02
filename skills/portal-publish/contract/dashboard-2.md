@@ -14,8 +14,11 @@ unknown field.
 One Dashboard Publish is one JSON object: the envelope at the top level, plus `jira_base`, `areas`, `features`,
 `topics`, `items`, `releases`, `cards`, `client_contacts` and, since 1.3.0, the optional
 `clarification_pages`. A field not listed here is refused
-(`contract_invalid`, naming it). Never sent: BA to-dos, notes, "Resolved" ticks, the "why this stage" text and
-the BA page's title.
+(`contract_invalid`, naming it). Never sent: BA to-dos, notes, "Resolved" ticks and the BA page's title.
+
+**Since 1.4.0** four optional fields copy more of the BA page: an Item's `hot`, a Feature's `stage_why` and
+`area_how`, and an open ticket's `updated`. A send without them (an older ba-tools) is still valid: the Portal
+leaves those parts out and never guesses them.
 
 ## Who sees a field
 
@@ -66,11 +69,14 @@ Ticket keys and "In Jira" link to this site, whether or not the Client has Jira 
 | `description` | text ≤ 5,000 | no |
 | `done`, `in_progress`, `open` | whole numbers ≥ 0 | yes |
 | `last_done` | date `YYYY-MM-DD` | no |
+| `search` | `https://` link ≤ 2,000 to all the area's tickets in Jira ("All its tickets in Jira ↗"), since 1.4.0 | no |
 | `shipped` | at most 20 of `{ key, summary ≤ 255, date }`, a key at most once (check `unique_ticket_in_list`) | no |
-| `open_tickets` | at most 20 of `{ key, summary ≤ 255, status ≤ 100, stage }`, sent already ordered, a key at most once | no |
+| `open_tickets` | at most 20 of `{ key, summary ≤ 255, status ≤ 100, stage, updated }` (`updated` optional, since 1.4.0), sent already ordered, a key at most once | no |
 
 `open_tickets` come in the BA page's order: being built or tested first (Jira category `indeterminate`), then
-newest updated. `stage` is `dev` for `indeterminate`, else `ready`, as on the BA page.
+newest updated. `stage` is `dev` for `indeterminate`, else `ready`, as on the BA page. `updated` (since 1.4.0,
+optional) is when Jira last updated the ticket: a date `YYYY-MM-DD` or a UTC time `YYYY-MM-DDTHH:MM:SS.sssZ`.
+It is only for sorting, the same way.
 
 `open` counts every ticket that is not done, so it includes the tickets counted in `in_progress` (being
 built or tested).
@@ -87,6 +93,8 @@ built or tested).
 | `open` | at most 200, each text ≤ 2,000 | no | client |
 | `answered` | `{ done, total }`, whole numbers ≥ 0, `done` ≤ `total` (check `answered_in_range`) | no | client |
 | `stage` | one of `concept`, `spec`, `ready`, `dev`, `qa`, `done` | yes | client |
+| `stage_why` | text ≤ 400 (since 1.4.0): why the Feature is at its stage, the finished line the BA page shows, e.g. "In dev, its slowest open ticket. Tickets: 1 Done, 2 In dev" | no | client |
+| `area_how` | text ≤ 200 (since 1.4.0): how the Feature was placed in its area, as the BA page says it: "from its tickets", "set on the dashboard" or "no tickets and no area set" | no | client |
 | `done_date` | date `YYYY-MM-DD` ("Hide done > 2 weeks") | no | client |
 | `clar_url` | link (URI) ≤ 2,000 | no | portal |
 | `tickets` | at most 5,000 tickets (below), a key at most once (check `unique_ticket_in_list`) | yes (may be empty) | client |
@@ -117,6 +125,7 @@ Waiting and next-call agenda Items. Never to-dos, `done: true` or `client: false
 | `title` | text ≤ 500 | yes | client |
 | `text` | light HTML ≤ 10,000 | no | client |
 | `how_to_send` | text ≤ 2,000 | no | client |
+| `hot` | yes/no (since 1.4.0): the BA marked it hot. Missing means no | no | client |
 
 Every waiting and agenda Item is sent, so two Items under different parents may share a title. That is why the
 key holds the parent too. (`dashboard/1` keeps `sha1("<kind>|<title>")`.)

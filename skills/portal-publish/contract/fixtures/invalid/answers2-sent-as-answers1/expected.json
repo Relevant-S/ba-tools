@@ -1,0 +1,13 @@
+{
+  "contract": "answers/1",
+  "details": [
+    {
+      "check": "schema",
+      "path": "/contract"
+    },
+    {
+      "check": "schema",
+      "path": "/updates"
+    }
+  ]
+}

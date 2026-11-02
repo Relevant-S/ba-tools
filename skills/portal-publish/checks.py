@@ -32,6 +32,7 @@ ENTITY_SKIP = {
         # descriptions, and the card titles and release names taken from it) is skipped too: the BA does not
         # write it and cannot fix it, and the Portal shows it as plain, escaped text.
         "/jira_base",
+        "/areas/*/jira/search",
         "/areas/*/name",
         "/areas/*/jira/description",
         "/areas/*/jira/shipped/*/summary",

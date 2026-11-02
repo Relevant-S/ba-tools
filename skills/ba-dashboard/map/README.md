@@ -10,7 +10,7 @@ this file says what each one does.
 | `jira-tickets.mjs` | Reads every ticket the dashboard mentions: status, component, parent, finish date. |
 | `jira-areas.mjs` | Reads every component (area) in the projects, with its open tickets and last finished ones. |
 | `jira-releases.mjs` | Reads every release, every ticket in a release, and every open ticket with no release (for the Board). |
-| `sync.py` | Writes the notes and "Resolved" ticks saved on the map back into `dashboard.yaml`. |
+| `sync.py` | Writes the notes and "Resolved" ticks saved on the map back into `dashboard.yaml`; also the Client's ones that `fetch-portal` brings from the Portal (`docs/BA/portal-updates/*.json`). |
 
 The Jira scripts only read. They need `node` and `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`.
 `build.py --refresh` runs them with the projects from the profile.

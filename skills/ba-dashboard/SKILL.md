@@ -129,6 +129,12 @@ page cannot change the repo, so to make them stick:
    `not_found` (title changed, item gone) stay for a look.
 4. Publish (above).
 
+**The Client's notes from the Portal.** Client people can use the same Update box on the Portal's Map and
+Board. `fetch-portal` brings their notes and ticks in as `docs/BA/portal-updates/YYYY-MM-DD-HHMM-<product>.json`,
+in the same shape as the store. To sync one, skip steps 1 and 3: run step 2 with that file, then publish. Its
+notes say who wrote them, so they read "UPDATE <date> — <client name>: …". Tell the BA about any `not_found`
+item: the client wrote on an item whose title has changed since.
+
 Item links: the copy icon in an item's panel copies `<Kind>: "<title>" <map>#i-<key>`. When the BA pastes
 one, find the item by its title; the key is the first 12 characters of sha1("<kind>|<title>") over the
 YAML items (kind `waiting` = awaiting, `todo` = todos, `agenda` = agenda).

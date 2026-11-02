@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/reserve-request-1.schema.json",
+  "title": "reserve-request/1",
+  "description": "Since 1.4.0. The optional body of POST /api/v1/answers/reserve: which batch versions the fetcher reads. It has no contract field, like ack-request/1. No body, an empty body, or an accept list without answers/2: the Portal replies answers/1 as before and the Client's updates wait. An accept list with answers/2: the reply is answers/2.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["accept"],
+  "properties": {
+    "accept": {
+      "description": "The batch versions the fetcher reads, e.g. [\"answers/1\", \"answers/2\"].",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 40 }
+    }
+  }
+}

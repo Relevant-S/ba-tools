@@ -86,6 +86,8 @@ PAYLOAD_MAX_AGE = 24 * 3600
 SETUP_HINT = targets.SETUP_HINT
 STAGE_NAME = {"concept": "Concept", "spec": "Spec & design", "ready": "Ready for dev", "dev": "In dev",
               "qa": "In QA", "done": "Done"}
+STAGE_ORDER = ["done", "qa", "dev", "ready", "spec", "concept"]   # the BA page's ORDER: its "mix" counts in this order
+STAGE_WHY_MAX, AREA_HOW_MAX = 400, 200                           # dashboard/2 limits (contract 1.4.0)
 
 def invalid_key_step(key_name: str) -> str:
     return (f"The key in .env ({key_name}) is not this Project's key. Ask an Admin for the key "
@@ -372,19 +374,73 @@ def ticket(t: dict) -> dict:
     return out
 
 
+def jira_time(v) -> str:
+    """Jira's updated time as dashboard/2 takes it (since 1.4.0): a real date YYYY-MM-DD, or a UTC time
+    YYYY-MM-DDTHH:MM:SS.sssZ. Anything else gives "" (not sent): never guessed."""
+    s = text(v)
+    try:
+        if len(s) == 10 and re.fullmatch(r"\d{4}-\d{2}-\d{2}", s):
+            dt.date.fromisoformat(s)
+            return s
+        if len(s) == 24 and re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z", s):
+            dt.datetime.fromisoformat(s[:-1])
+            return s
+    except ValueError:
+        pass
+    return ""
+
+
 def open_tickets(opens: list) -> list[dict]:
     """An area's open tickets as the BA page shows them: being built or tested first (Jira category
-    `indeterminate`), then newest updated; the first 5. Rows with no key (an older areas.json) are not sent."""
+    `indeterminate`), then newest updated; the first 5. Rows with no key (an older areas.json) are not sent.
+    Each carries `updated` when areas.json has it (contract 1.4.0), so the Portal can sort them the same way."""
     keyed = [o for o in opens if isinstance(o, dict) and text(o.get("key"))]
     keyed.sort(key=lambda o: text(o.get("updated")), reverse=True)        # stable: ties keep Jira's order
     keyed.sort(key=lambda o: o.get("category") != "indeterminate")
-    return [{"key": text(o["key"]), "summary": jira_text(o.get("summary")), "status": jira_text(o.get("status")),
-             "stage": "dev" if o.get("category") == "indeterminate" else "ready"}
-            for o in keyed[:OPEN_TICKETS_SHOWN]]
+    out = []
+    for o in keyed[:OPEN_TICKETS_SHOWN]:
+        row = {"key": text(o["key"]), "summary": jira_text(o.get("summary")), "status": jira_text(o.get("status")),
+               "stage": "dev" if o.get("category") == "indeterminate" else "ready"}
+        put(row, "updated", jira_time(o.get("updated")))
+        out.append(row)
+    return out
+
+
+def plural(n: int, word: str) -> str:
+    return f"{n} {word}{'' if n == 1 else 's'}"
+
+
+def stage_why(b: dict) -> str:
+    """The "why this stage" line of a Feature, exactly as the BA page's whyText(f) builds it (map/template.html),
+    from the same bubble data build.py writes: stageKey, tickets (with their stage), answered and specStatus.
+    "" (not sent) when the bubble lacks any of them (a page built by an older build.py), or the line is too long."""
+    key = b.get("stageKey")
+    tk = b.get("tickets")
+    if key not in STAGE_NAME or not isinstance(tk, list) or "answered" not in b or "specStatus" not in b:
+        return ""
+    stages = [t.get("stage") for t in tk if isinstance(t, dict)]
+    done = stages.count("done")
+    answered = b.get("answered")
+    # JavaScript's Math.round rounds halves up; Python's round() would round them to even.
+    qs = "" if answered is None else f"{int(answered * 100 + 0.5)}% of questions answered"
+    by_stage = ", ".join(f"{stages.count(k)} {STAGE_NAME[k]}" for k in STAGE_ORDER if stages.count(k))
+    spec = text(b.get("specStatus"))
+    if key == "done":
+        line = f"{STAGE_NAME['done']}: all {plural(len(tk), 'ticket')} Done"
+    elif key in ("qa", "dev", "ready"):
+        line = (f"{STAGE_NAME[key]}, its slowest open ticket. Tickets: {by_stage}" if tk else
+                f"{STAGE_NAME[key]}, no tickets linked yet")
+    elif key == "spec":
+        parts = [qs, f"spec is {spec}" if spec else "", "earlier tickets all Done" if done and done == len(tk) else ""]
+        line = f"{STAGE_NAME['spec']}: " + (", ".join(x for x in parts if x) or "not approved yet")
+    else:
+        line = f"{STAGE_NAME['concept']}: " + (", ".join(x for x in ["concept or idea, no spec yet", qs] if x)
+                                               if b.get("feature") else "only a name so far")
+    return line if len(line) <= STAGE_WHY_MAX else ""
 
 
 def area_jira(j: dict) -> dict:
-    """An area's Jira facts. The search link is not sent (jira_base is)."""
+    """An area's Jira facts, with the link to all its tickets when it is a real https link."""
     opens = [o for o in j.get("open") or [] if isinstance(o, dict)]
     out: dict = {}
     put(out, "description", jira_text(j.get("description")))
@@ -392,6 +448,9 @@ def area_jira(j: dict) -> dict:
     out["in_progress"] = sum(1 for o in opens if o.get("category") == "indeterminate")
     out["open"] = len(opens)
     put(out, "last_done", text(j.get("lastDone"))[:10])
+    search = text(j.get("search"))
+    if search.startswith("https://") and len(search) <= 2000:
+        out["search"] = search
     put(out, "shipped", [{"key": text(s.get("key")), "summary": jira_text(s.get("summary")),
                           "date": text(s.get("date"))[:10]}
                          for s in j.get("shipped") or [] if isinstance(s, dict) and text(s.get("date"))])
@@ -460,6 +519,9 @@ def build_payload(root: Path, prof: dict, product: str | None = None, data: dict
         if isinstance(settled, int) and settled + len(feat.get("open", [])):
             feat["answered"] = {"done": settled, "total": settled + len(feat.get("open", []))}
         put(feat, "stage", text(b.get("stageKey")))
+        put(feat, "stage_why", stage_why(b))
+        area_how = text(b.get("areaHow"))
+        put(feat, "area_how", area_how if len(area_how) <= AREA_HOW_MAX else "")
         put(feat, "done_date", text(b.get("doneDate"))[:10])
         clar = f.get("clar")
         put(feat, "clar_url", text(clar.get("url") if isinstance(clar, dict) else clar))
@@ -469,6 +531,7 @@ def build_payload(root: Path, prof: dict, product: str | None = None, data: dict
             "id": "id", "title": "area", "short": "short", "summary": summary_from, "open": "open",
             "clar_url": "clar.url", "stage": f"stage {map_field}", "area": f"area {map_field}",
             "answered": f"answered questions {map_field}", "done_date": f"done date {map_field}",
+            "stage_why": f"why this stage {map_field}", "area_how": f"how it was placed in its area {map_field}",
             "tickets": f"Jira tickets {map_field}"})
         features.append(feat)
     sent_features = {f["id"]: f for f in features}
@@ -508,10 +571,11 @@ def build_payload(root: Path, prof: dict, product: str | None = None, data: dict
             put(item, "title", title)
             put(item, "text", text(it.get(text_from)))
             put(item, "how_to_send", text(it.get("l")))
+            item["hot"] = bool(it.get("hot"))            # as build.py reads it: the BA page's "Hot" status
             sources[f"/items/{len(items)}"] = (DASHBOARD, f"{listname} '{title or '?'}'", {
                 "key": "t (the item key is made from its kind, parent and title)", "kind": listname,
                 "parent": "feature", "who": "who", "since": "since", "title": "t", "text": text_from,
-                "how_to_send": "l"})
+                "how_to_send": "l", "hot": "hot"})
             items.append(item)
     left_out["items"] += sum(1 for t in d.get("todos") or [] if in_product(t, product))
 

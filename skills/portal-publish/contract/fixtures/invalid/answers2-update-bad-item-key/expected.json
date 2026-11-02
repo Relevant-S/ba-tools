@@ -1,0 +1,9 @@
+{
+  "contract": "answers/2",
+  "details": [
+    {
+      "check": "schema",
+      "path": "/updates/0/item/key"
+    }
+  ]
+}

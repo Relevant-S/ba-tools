@@ -361,7 +361,7 @@ def test_areas(project):
     onboarding = areas["APP:Onboarding"]
     assert onboarding["name"] == "Onboarding" and onboarding["quiet"] is False and "special" not in onboarding
     jira = onboarding["jira"]
-    assert "search" not in jira
+    assert jira["search"] == "https://example.atlassian.net/issues/?jql=project%20%3D%20APP"   # since 1.4.0
     assert jira["description"] == "Sign-up & first steps."                         # entity unescaped
     assert (jira["done"], jira["in_progress"], jira["open"], jira["last_done"]) == (12, 2, 9, "2026-10-12")
     assert jira["shipped"] == [{"key": "APP-30", "summary": "Phone check & retry", "date": "2026-10-12"}]
@@ -378,7 +378,7 @@ def test_open_tickets_in_progress_first_then_newest_five(project):
     assert [t["key"] for t in jira["open_tickets"]] == ["APP-44", "APP-42", "APP-41", "APP-48", "APP-46"]
     assert [t["stage"] for t in jira["open_tickets"]] == ["dev", "dev", "ready", "ready", "ready"]
     assert jira["open_tickets"][0] == {"key": "APP-44", "summary": "Open four", "status": "In Review",
-                                       "stage": "dev"}
+                                       "stage": "dev", "updated": "2026-10-10"}
 
 
 def test_features_topics_and_items(project):
@@ -1404,3 +1404,131 @@ def test_real_project_dashboard_plan_lists_15_and_6_pages(capsys, tmp_path, port
         assert unlinked.count("-decisions") == 3
     finally:
         cleanup(plan)
+
+
+# ---- Contract 1.4.0: hot, stage_why, area_how, open ticket updated (Stories 3.11, 4.11) ----------------
+
+TEMPLATE = publish.SKILLS / "ba-dashboard" / "map" / "template.html"
+
+
+def why_bubbles() -> list[dict]:
+    """Bubbles that walk every branch of the BA page's whyText(f)."""
+    def t(*stages):
+        return [{"key": f"APP-{i}", "stage": s} for i, s in enumerate(stages)]
+    feature = {"settled": 2, "open": []}
+    return [
+        {"stageKey": "done", "tickets": t("done", "done", "done"), "answered": None, "specStatus": None},
+        {"stageKey": "done", "tickets": t("done"), "answered": 1, "specStatus": "filed"},
+        {"stageKey": "dev", "tickets": t("dev", "done", "dev", "qa"), "answered": None, "specStatus": None},
+        {"stageKey": "qa", "tickets": t("qa"), "answered": 0.5, "specStatus": None},
+        {"stageKey": "ready", "tickets": [], "answered": None, "specStatus": None},
+        {"stageKey": "dev", "tickets": [], "answered": None, "specStatus": None, "feature": feature},
+        {"stageKey": "spec", "tickets": [], "answered": None, "specStatus": None},
+        {"stageKey": "spec", "tickets": t("done", "done"), "answered": 2 / 3, "specStatus": "draft"},
+        {"stageKey": "spec", "tickets": t("ready"), "answered": 0.125, "specStatus": None},
+        {"stageKey": "spec", "tickets": t("done", "ready"), "answered": 0.005, "specStatus": "in-review"},
+        {"stageKey": "concept", "tickets": [], "answered": None, "specStatus": None},
+        {"stageKey": "concept", "tickets": [], "answered": None, "specStatus": None, "feature": feature},
+        {"stageKey": "concept", "tickets": [], "answered": 0.335, "specStatus": None, "feature": feature},
+    ]
+
+
+def test_stage_why_lines():
+    lines = [publish.stage_why(b) for b in why_bubbles()]
+    assert lines == [
+        "Done: all 3 tickets Done",
+        "Done: all 1 ticket Done",
+        "In dev, its slowest open ticket. Tickets: 1 Done, 1 In QA, 2 In dev",
+        "In QA, its slowest open ticket. Tickets: 1 In QA",
+        "Ready for dev, no tickets linked yet",
+        "In dev, no tickets linked yet",
+        "Spec & design: not approved yet",
+        "Spec & design: 67% of questions answered, spec is draft, earlier tickets all Done",
+        "Spec & design: 13% of questions answered",
+        "Spec & design: 1% of questions answered, spec is in-review",
+        "Concept: only a name so far",
+        "Concept: concept or idea, no spec yet",
+        "Concept: concept or idea, no spec yet, 34% of questions answered",
+    ]
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
+def test_stage_why_matches_the_ba_pages_own_code(tmp_path):
+    """Runs whyText(f) from map/template.html in node on the same bubbles: the Portal gets the BA page's line."""
+    html_text = TEMPLATE.read_text(encoding="utf-8")
+
+    def grab(start: str, end: str) -> str:
+        at = html_text.index(start)
+        return html_text[at:html_text.index(end, at) + len(end)]
+
+    js = "\n".join([
+        grab("const STATUS = {", "};"), grab("const ORDER = [", "];"),
+        grab("function mix(stages)", "}"), grab("const plural = (n, w) =>", ";"),
+        grab("function whyText(f) {", "\n}"),
+        f"const bubbles = {json.dumps(why_bubbles())};",
+        "process.stdout.write(JSON.stringify(bubbles.map(whyText)));",
+    ])
+    script = tmp_path / "why.js"
+    script.write_text(js, encoding="utf-8")
+    r = subprocess.run(["node", str(script)], capture_output=True, text=True, encoding="utf-8", check=True)
+    assert json.loads(r.stdout) == [publish.stage_why(b) for b in why_bubbles()]
+
+
+def test_stage_why_is_left_out_when_the_page_lacks_its_data():
+    b = why_bubbles()[2]
+    for field in ("answered", "specStatus", "tickets", "stageKey"):
+        assert publish.stage_why({k: v for k, v in b.items() if k != field}) == "", field
+    assert publish.stage_why({**b, "stageKey": "blocked"}) == ""
+
+
+def test_feature_sends_stage_why_and_area_how_when_the_page_has_them(project):
+    def add(data):
+        sign_up = data["epics"][0]["features"][0]
+        sign_up.update(answered=2 / 3, specStatus="draft", areaHow="from its tickets")
+        data["epics"][4]["features"][0].update(areaHow="x" * 201)               # identity-check: too long
+    change_map(project, add)
+    app = {f["id"]: f for f in payload_of(project, "App")["features"]}
+    assert app["sign-up"]["stage_why"] == "Spec & design: 67% of questions answered, spec is draft"
+    assert app["sign-up"]["area_how"] == "from its tickets"
+    assert "stage_why" not in app["identity-check"] and "area_how" not in app["identity-check"]
+    assert "stage_why" not in app["audit-log"] and "area_how" not in app["audit-log"]   # an older page: left out
+    assert checks.check_publish(payload_of(project, "App")) is None
+
+
+def test_items_send_hot(project):
+    def mark(d):
+        d["awaiting"][4]["hot"] = True                                           # Refund rules
+    edit_yaml(project / publish.DASHBOARD, mark)
+    hot = {i["title"]: i["hot"] for i in payload_of(project, "App")["items"]}
+    assert hot["Refund rules"] is True
+    assert {t for t, h in hot.items() if h} == {"Refund rules"}
+    assert checks.check_publish(payload_of(project, "App")) is None
+
+
+def test_open_tickets_send_updated_only_when_it_is_a_real_date(project):
+    def odd(data):
+        opens = data["epics"][0]["jira"]["open"]
+        opens[3]["updated"] = "2026-02-30"                                       # APP-44: no such day
+        opens[1]["updated"] = "2026-09-01T10:00:00.000+0000"                     # APP-42: not UTC Z
+        opens[0]["updated"] = "2026-10-19T08:15:00.000Z"                         # APP-41: a UTC time
+        del opens[7]["updated"]                                                  # APP-48: none
+    change_map(project, odd)
+    tickets = {t["key"]: t for t in payload_of(project, "App")["areas"][0]["jira"]["open_tickets"]}
+    assert "updated" not in tickets["APP-44"] and "updated" not in tickets["APP-42"]
+    assert tickets["APP-41"]["updated"] == "2026-10-19T08:15:00.000Z"
+    assert tickets["APP-46"]["updated"] == "2026-10-15"
+    assert checks.check_publish(payload_of(project, "App")) is None
+
+
+def test_real_build_sends_stage_why_and_area_how(project):
+    """build.py writes answered, specStatus and areaHow on every bubble, so every Feature gets both lines."""
+    (project / publish.MAP_PAGE).unlink()
+    publish.run_build(project, False)
+    prof = yaml.safe_load((project / publish.PROFILE).read_text(encoding="utf-8"))
+    data = publish.read_map(project)
+    app = publish.build_payload(project, prof, "App", data)[0]
+    assert checks.check_publish(app) is None
+    by_id = {f["id"]: f for f in app["features"]}
+    assert all(f["stage_why"] and f["area_how"] for f in app["features"])
+    assert by_id["sign-up"]["area_how"] == "no tickets and no area set"
+    assert by_id["identity-check"]["stage_why"] == "In dev, no tickets linked yet"

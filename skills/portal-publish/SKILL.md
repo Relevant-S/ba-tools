@@ -80,6 +80,10 @@ Dashboard send removes it from the old project, and the next page send adds it t
      areas (with each area's Jira facts and its first 5 open tickets, in the BA page's order), Features, Map
      topics, Waiting and agenda Items (an Item on no Feature goes under its topic, or under "Not linked yet"),
      releases, and Board cards with their tickets. No payload holds a product field;
+   - since contract 1.4.0, also copies four things the BA page shows: an Item's `hot` (the BA's `hot: true`), a
+     Feature's "why this stage" line (`stage_why`, word for word as the BA page writes it) and how it was placed
+     in its area (`area_how`), and each open ticket's last Jira update (`updated`, for the order). Each is sent
+     only when the BA page's data has it; nothing is guessed;
    - lists, in each payload, the slugs of the Clarification pages that go with that product
      (`clarification_pages`). **The Portal removes from that project every page not on the list** (the Client
      stops seeing it; its data is deleted once its Answers are fetched). So a YAML that cannot be read, or two

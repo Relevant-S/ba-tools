@@ -144,7 +144,7 @@ characters), so two Items with one title under two parents do not clash. `dashbo
 - **Fields:** every string in the document, list entries included, except exactly these. Light-HTML fields may
   hold entities, and the Portal cleans them; the others have a format that may hold `&`.
   - `dashboard`: `features[].summary`, `items[].text` (light HTML), `features[].clar_url` and
-    `client_contacts[].email`. In `dashboard/2` also `jira_base` (a link) and every text copied from Jira,
+    `client_contacts[].email`. In `dashboard/2` also `jira_base` and `areas[].jira.search` (links) and every text copied from Jira,
     because the BA does not write it and cannot fix it, and the Portal shows it as escaped plain text, so an
     entity there shows as its letters and never as markup: `areas[].name`, `areas[].jira.description`, the
     `summary` of `jira.shipped[]` and the `summary` and `status` of `jira.open_tickets[]`, `releases[].name`,
@@ -235,7 +235,8 @@ characters), so two Items with one title under two parents do not clash. `dashbo
 - `fixtures/valid/*.json` must pass. A file whose `contract` is in `index.json` → `accepted` is a Publish:
   it is checked as that contract type, and a page uses its own file names as the parts. Any other file is a
   reply or request, checked with the schema its `contract` names. A file with no `contract` field (the ack
-  request) is matched by its file-name prefix: `ack-request-1…` → `ack-request/1`.
+  and reserve requests) is matched by its file-name prefix: `ack-request-1…` → `ack-request/1`,
+  `reserve-request-1…` → `reserve-request/1`.
 - `fixtures/invalid/<case>/input.json` must fail. `expected.json` gives the code and every (check, path) pair;
   both sides compare that exact set. It may say `"kind": "clarification"` (no `kind` means `dashboard`). A page
   case may hold `parts.json`, the list of part names sent with it; without it the page's own file names are the
@@ -255,6 +256,11 @@ characters), so two Items with one title under two parents do not clash. `dashbo
 - A `dashboard/2` send may carry `clarification_pages` (since 1.3.0): the slugs of every Clarification page of
   this Portal project that is still in the repo. The Portal hides the project's other pages and lists them in
   the reply's `pages_removed` (`{ slug, title }`), on a dry run too. Without the field no page is touched.
+- Since 1.4.0 a `dashboard/2` send may carry Item `hot`, Feature `stage_why` and `area_how`, and open ticket
+  `updated`. All are optional; no named check is added. `stage_why` and `area_how` follow the plain-text
+  rule (no HTML entities, check `no_html_entities`). `answers/2` (and its `updates`) is checked by its schema
+  only; its "a batch holds at least one Answer or one update" rule is a `not`, so every checker reports it at
+  one path: `""` (the whole reply).
 - The reply to a `dashboard/2` send counts `areas`, `topics`, `cards` and `tickets` too. `tickets` counts the
   tickets on Board cards only (all `cards[].tickets` together), not the Feature, topic or area ticket lists.
 - Python: `Draft202012Validator(schema, format_checker=FormatChecker())` from `jsonschema[format-nongpl]`.
