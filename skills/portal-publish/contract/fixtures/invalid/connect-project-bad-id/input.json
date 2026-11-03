@@ -1,0 +1,9 @@
+{
+  "contract": "connect/1",
+  "project": {
+    "id": "not-a-uuid-not-a-uuid-not-a-uuid-xxxx",
+    "name": "Sample Project"
+  },
+  "key": "sample-connect-key-not-real-0123456789abcde",
+  "key_last4": "bcde"
+}

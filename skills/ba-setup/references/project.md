@@ -43,24 +43,30 @@ Show each list as numbered lines; the BA answers with numbers.
    Client "Waiting on you"; it shows the names to nobody.
 5. **Client Portal** (only when the project publishes to the Relevant Clients Portal) — ask for the
    Portal's address → `tools.portal.url` (for example `http://localhost:3000` while it runs locally; any
-   other host must use `https://`). Then
-   tell the BA where the key goes, and **never ask them to paste it into the chat**:
-   - an Admin gets the Project's Publish key in the Portal at Admin → Projects → the Project → Publishing
-     (it is shown in full once — "Regenerate key" makes a new one);
-   - **one product** in the profile: the BA puts the key in a file `.env` at the repo root, as
-     `PORTAL_PUBLISH_KEY=<key>`;
+   other host must use `https://`). Then connect the repo with a **one-time code**. **Never ask for a key**,
+   and never tell the BA to copy one into `.env`:
+   - **one product** in the profile: the key goes in `.env` at the repo root as `PORTAL_PUBLISH_KEY`;
    - **two or more products** (each `products[]` entry with a `jira_project`, or
      `tools.dashboard.map.products`): each product is its own Portal project, with its own key. Ask, per
-     product, which Portal project it goes to, and have an Admin get that project's key. Write one entry
-     per product in `tools.portal.products`, naming the `.env` variable that will hold its key — the product
-     name exactly as the dashboard writes it (`prod:`), for example
+     product, which Portal project it goes to. Write one entry per product in `tools.portal.products`,
+     naming the `.env` variable that will hold its key — the product name exactly as the dashboard writes
+     it (`prod:`), for example
      `products: {AcmeLending: PORTAL_PUBLISH_KEY_ACME, Bond Portal: PORTAL_PUBLISH_KEY_BOND}`.
-     The BA puts each key in `.env` under that name. The Dashboard send, Clarification page sends and
-     `fetch-portal` all use these keys: each product's Dashboard and pages go to its own Portal project, and
-     `fetch-portal` fetches the Answers from every product's project. `check` shows one row per product key
-     (in `.env`, or missing);
-   - `.gitignore` must list `.env`. Check with `git check-ignore -q .env` (exit 0 = ignored); if it is not,
-     add `.env` to `.gitignore`. Never commit `.env`.
+     The Dashboard send, Clarification page sends and `fetch-portal` all use these keys: each product's
+     Dashboard and pages go to its own Portal project, and `fetch-portal` fetches the Answers from every
+     product's project. `check` shows one row per product key (in `.env`, or missing);
+   - write the profile first, then, for each product with no key, ask the BA for a **connect code** from an
+     Admin: Admin → Projects → the project → Publishing → **Connect a repo**. The code looks like `K7P-4XM`
+     and works once, for 10 minutes, so it is safe in the chat. One code per product: each product's Portal
+     project makes its own. Run
+     `connect <project root> --product "<product>" --code <code>` (`--product ""` with one product). It
+     swaps the code for a new key and writes it into `.env` under the right name. It prints only the Portal
+     project's name, the variable and the key's last 4 characters. Each connect adds a new key; keys other
+     repos use keep working;
+   - if `.env` already has that variable, `connect` stops before using the code. Ask the BA whether to
+     replace it; only on yes, run it again with `--replace`;
+   - `.gitignore` must list `.env`. `connect` warns when it does not; add `.env` to `.gitignore` then
+     (check with `git check-ignore -q .env`, exit 0 = ignored). Never commit `.env`.
 
    Not using the Portal: leave `tools.portal` out.
 6. **Figma** — ask for the link of each file the BA works in: the design file(s) and the design system.

@@ -17,7 +17,8 @@ SCHEMAS = sorted(checks.CONTRACT_DIR.glob("*.schema.json"))
 
 
 # Valid files with no contract field are matched to a schema by file-name prefix.
-SCHEMA_BY_PREFIX = {"ack-request-1": "ack-request/1", "reserve-request-1": "reserve-request/1"}
+SCHEMA_BY_PREFIX = {"ack-request-1": "ack-request/1", "reserve-request-1": "reserve-request/1",
+                    "connect-request-1": "connect-request/1"}
 
 
 def read(path: Path):
@@ -155,6 +156,22 @@ REPLY_CASES = {
     "reserve-request-empty-accept": "reserve-request/1",
     "reserve-request-accept-twice": "reserve-request/1",
     "reserve-request-with-contract": "reserve-request/1",
+    # connect-request/1 and connect/1 (contract 1.5.0)
+    "connect-request-with-contract": "connect-request/1",
+    "connect-request-missing-code": "connect-request/1",
+    "connect-request-code-look-alike": "connect-request/1",
+    "connect-request-code-too-long": "connect-request/1",
+    "connect-request-code-dash-in-wrong-place": "connect-request/1",
+    "connect-request-code-trailing-newline": "connect-request/1",
+    "connect-request-empty-label": "connect-request/1",
+    "connect-request-label-too-long": "connect-request/1",
+    "connect-missing-key": "connect/1",
+    "connect-key-too-short": "connect/1",
+    "connect-key-not-base64url": "connect/1",
+    "connect-last4-too-long": "connect/1",
+    "connect-project-bad-id": "connect/1",
+    "connect-project-empty-name": "connect/1",
+    "connect-unknown-field": "connect/1",
 }
 
 
@@ -434,10 +451,10 @@ def test_missing_contract_is_a_schema_error():
 def test_errors_json_matches_the_spine_table():
     errors = checks.load_json("errors.json")
     assert {k: v["status"] for k, v in errors.items()} == {
-        "bad_request": 400, "invalid_key": 401, "batch_unknown": 404, "project_archived": 409,
+        "bad_request": 400, "connect_code_invalid": 400, "invalid_key": 401, "batch_unknown": 404, "project_archived": 409,
         "round_has_answers": 409, "batch_expired": 409, "payload_too_large": 413,
         "contract_version_not_accepted": 422, "contract_invalid": 422, "screenshot_mismatch": 422,
-        "server_error": 500,
+        "too_many_tries": 429, "server_error": 500,
     }
     assert all(v["message"] for v in errors.values())
 
@@ -621,15 +638,16 @@ def test_limits_match_the_spec():
 
 def test_index_names_existing_schemas():
     idx = checks.index()
-    assert idx["contract_folder"] == "1.4.0"
+    assert idx["contract_folder"] == "1.5.0"
     assert idx["accepted"] == ["dashboard/1", "dashboard/2", "clarification/1"]
     assert set(idx["schemas"]) == {"dashboard/1", "dashboard/2", "clarification/1", "publish-reply/1", "status/1",
-                                   "answers/1", "answers/2", "reserve-request/1", "ack-request/1", "ack/1"}
+                                   "answers/1", "answers/2", "reserve-request/1", "ack-request/1", "ack/1",
+                                   "connect-request/1", "connect/1"}
     assert {p.name for p in SCHEMAS} == set(idx["schemas"].values())
     for contract, name in idx["schemas"].items():
         assert (checks.CONTRACT_DIR / name).is_file(), contract
         schema = read(checks.CONTRACT_DIR / name)
-        if contract in ("ack-request/1", "reserve-request/1"):  # requests carry no contract field (AD-12)
+        if contract in ("ack-request/1", "reserve-request/1", "connect-request/1"):  # requests carry no contract field (AD-12)
             assert "contract" not in schema["properties"]
         elif contract == "publish-reply/1":
             for form in schema["$defs"]["dashboard"], schema["$defs"]["page"]:
@@ -1008,3 +1026,58 @@ def test_reserve_request_says_which_versions_it_reads():
     assert checks.check_reply({"accept": ["answers/1", "answers/2"]}, "reserve-request/1") == []
     assert checks.check_reply({"accept": ["answers/1"]}, "reserve-request/1") == []
     assert checks.check_reply({"accept": [f"answers/{n}" for n in range(6)]}, "reserve-request/1") != []
+
+
+# ---- contract 1.5.0: connect a repo with a one-time code -----------------------------------------------
+
+CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
+
+
+def connect_request(code: str, label: str = "acme-docs · Sample BA") -> list[dict]:
+    return checks.check_reply({"code": code, "label": label}, "connect-request/1")
+
+
+@pytest.mark.parametrize("code", ["K7P4XM", "K7P-4XM", "k7p-4xm", "k7P4xM", "222-ZZZ", "ABCDEF"])
+def test_connect_code_with_or_without_the_dash_in_any_case_passes(code):
+    assert connect_request(code) == []
+
+
+@pytest.mark.parametrize("code", ["K7P 4XM", "K7P--4XM", "-K7P4XM", "K7P4X", "K7P4XMA", "K7P-4X", " K7P4XM",
+                                  "0OI1L2", "K7P-4XO", "K7P-4XL", "K7P-4X1", "K7P‐4XM"])
+def test_connect_code_outside_the_rule_fails(code):
+    assert ("schema", "/code") in {(d["check"], d["path"]) for d in connect_request(code)}
+
+
+def test_connect_code_alphabet_has_no_look_alikes():
+    for ch in CODE_ALPHABET:
+        assert connect_request(ch * 6) == [], ch
+        assert connect_request(ch.lower() * 6) == [], ch
+    for ch in "01ILO":
+        assert connect_request(ch * 6) != [], ch
+        assert connect_request(ch.lower() * 6) != [], ch
+
+
+def test_connect_label_limits():
+    assert connect_request("K7P4XM", "x" * 100) == []
+    assert connect_request("K7P4XM", "x") == []
+    assert connect_request("K7P4XM", "x" * 101) != []
+
+
+def test_connect_reply_last4_is_the_keys_last4():
+    reply = read(FIXTURES / "valid" / "connect-1.json")
+    assert reply["key_last4"] == reply["key"][-4:]
+    assert len(reply["key"]) == 43
+
+
+def test_connect_reply_needs_every_field():
+    reply = read(FIXTURES / "valid" / "connect-1.json")
+    for field in ("contract", "project", "key", "key_last4"):
+        doc = {k: v for k, v in reply.items() if k != field}
+        assert ("schema", f"/{field}") in {(d["check"], d["path"]) for d in checks.check_reply(doc, "connect/1")}
+
+
+def test_connect_errors_are_in_errors_json():
+    errors = checks.load_json("errors.json")
+    assert errors["connect_code_invalid"] == {
+        "status": 400, "message": "This code does not work. Ask an Admin for a new one."}
+    assert errors["too_many_tries"]["status"] == 429

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/connect-1.schema.json",
+  "title": "connect/1",
+  "description": "Since 1.5.0. The 200 reply to POST /api/v1/connect: the project the code was made for, and a new key for it. Each connect makes a new key; keys already in use keep working. The key is shown here once: the Portal keeps only its hash. ba-setup writes it into .env and never prints it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "project", "key", "key_last4"],
+  "properties": {
+    "contract": { "type": "string", "const": "connect/1" },
+    "project": {
+      "description": "The Portal project the new key opens.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": {
+          "description": "The project's id (UUID v7).",
+          "type": "string",
+          "format": "uuid",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 }
+      }
+    },
+    "key": {
+      "description": "The new key: 43 characters of base64url (32 random bytes). It opens the project for publish, fetch and status, like the project's own key.",
+      "type": "string",
+      "minLength": 43,
+      "maxLength": 43,
+      "pattern": "^[A-Za-z0-9_-]{43}$"
+    },
+    "key_last4": {
+      "description": "The key's last 4 characters, as the Admin sees them under Connected repos.",
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 4,
+      "pattern": "^[A-Za-z0-9_-]{4}$"
+    }
+  }
+}

@@ -12,12 +12,20 @@ Commands
   defaults-apply               add the starter defaults (backs up both files first)
   stamp                        record that setup passed for this ba-tools version
   stamp-status                 is there a passing stamp for this version?
+  connect <root> --product <name or ""> --code <code> [--replace]
+                               swap an Admin's one-time connect code for a Portal key and write it into the
+                               repo's .env. Needs `--with httpx --with jsonschema` as well. Prints the Portal
+                               project's name, the .env variable and the key's last 4 characters, never the key.
 """
+import argparse
 import base64
 import datetime as dt
 import json
+import math
 import os
+import re
 import shutil
+import socket
 import subprocess
 import sys
 import urllib.error
@@ -207,25 +215,35 @@ def cmd_check_me():
 
 # ---------------------------------------------------------------- check-project
 
-PORTAL_TARGETS = SKILL.parent / "portal-publish" / "targets.py"
+PORTAL_SKILL = SKILL.parent / "portal-publish"
+PORTAL_TARGETS = PORTAL_SKILL / "targets.py"
+PORTAL_CHECKS = PORTAL_SKILL / "checks.py"
+CONNECT_PLACE = "Admin → Projects → the project → Publishing → Connect a repo"
+
+
+def load_portal_module(path, name):
+    """A portal-publish file (targets.py, checks.py), loaded as fetch-portal loads it: one copy of each rule."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def portal_key_rows(root, prof):
     """One row per Portal product key: in .env, or missing. Reads which .env variable each product uses with
     portal-publish's targets.py (the same rule page sends, Dashboard sends and fetch-portal use). Only the names
     in .env are looked at; a key is never shown."""
-    fix = "ba-setup project, step 5 (Client Portal)"
+    fix = (f"ask an Admin for a connect code ({CONNECT_PLACE}), one per product, then run ba-setup project: "
+           "it puts the key in .env")
     if not PORTAL_TARGETS.exists():
         return [row("Portal keys", "broken", "the portal-publish skill is not installed next to ba-setup",
                     "install ba-tools again")]
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("portal_publish_targets", PORTAL_TARGETS)
-    targets = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(targets)
+    targets = load_portal_module(PORTAL_TARGETS, "portal_publish_targets")
     try:
         names = targets.portal_names(prof)
     except targets.TargetError as e:
-        return [row("Portal keys", "broken", str(e), fix)]
+        return [row("Portal keys", "broken", str(e), "ba-setup project, step 5 (Client Portal)")]
     env_file = root / ".env"
     env = targets.read_env_file(env_file) if env_file.exists() else {}
     rows = []
@@ -433,7 +451,265 @@ def cmd_stamp_status():
     out({"current": s.get("ba_tools_version") == tools_version(), "stamp": s, "installed": tools_version()})
 
 
+# ---------------------------------------------------------------- connect (a one-time code → a key in .env)
+#
+# The key is in memory only between the Portal's reply and the write to .env. It is never printed, logged, put on
+# a command line or put in an error message: errors name the variable and, for a reply that does not match
+# connect/1, only the paths of the wrong fields (a schema message would quote the value).
+
+CODE = re.compile(r"[2-9A-HJKMNP-Za-hjkmnp-z]{3}-?[2-9A-HJKMNP-Za-hjkmnp-z]{3}")
+LABEL_MAX = 100
+NOTHING = "Nothing was written."
+
+
+class ConnectStop(Exception):
+    """The run stops. The message is shown to the BA as it is."""
+
+
+def env_line_name(line, name):
+    """True when the .env line sets `name` (NAME=…, or export NAME=…)."""
+    return re.match(rf"\s*(export\s+)?{re.escape(name)}\s*=", line) is not None
+
+
+def check_env_writable(path):
+    """Raise when .env cannot be read as UTF-8 or written, or its folder cannot take write_env_key's temporary file."""
+    if path.exists():
+        raw = path.read_bytes()
+        (raw[3:] if raw.startswith(b"\xef\xbb\xbf") else raw).decode("utf-8")
+        with open(path, "ab"):
+            pass
+    probe = path.with_name(".env.connect-probe")
+    os.close(os.open(probe, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600))
+    probe.unlink()
+
+
+def write_env_key(path, name, value):
+    """Set `name` in .env, keeping every other line, the line endings and a BOM as they are. A new line uses the
+    file's own line ending (\\n for a new file). Written to a temporary file next to it, then moved over it."""
+    raw = path.read_bytes() if path.exists() else b""
+    bom = raw.startswith(b"\xef\xbb\xbf")
+    text = raw[3:].decode("utf-8") if bom else raw.decode("utf-8")
+    nl = "\r\n" if "\r\n" in text else "\n"
+    lines = text.splitlines(keepends=True)
+    hits = [i for i, line in enumerate(lines) if env_line_name(line, name)]
+    if hits:
+        first = lines[hits[0]]
+        ending = first[len(first.rstrip("\r\n")):]
+        lines[hits[0]] = f"{name}={value}{ending}"
+        lines = [line for i, line in enumerate(lines) if i not in hits[1:]]
+    else:
+        if lines and not lines[-1].endswith(("\n", "\r")):
+            lines[-1] += nl
+        lines.append(f"{name}={value}{nl}")
+    if path.is_symlink():   # write through a link, so it stays a link
+        path = path.resolve()
+    tmp = path.with_name(".env.connect-tmp")
+    try:
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)   # never readable by others, even briefly
+        with os.fdopen(fd, "wb") as f:
+            f.write((b"\xef\xbb\xbf" if bom else b"") + "".join(lines).encode("utf-8"))
+        if path.exists():
+            shutil.copymode(path, tmp)   # keep the old file's permissions
+        os.replace(tmp, path)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
+
+
+def repo_label(root):
+    """The name the Admin sees under Connected repos: "<repo folder> · <git user.name>", or the folder alone."""
+    try:
+        r = subprocess.run(["git", "config", "user.name"], cwd=root, capture_output=True, timeout=20)
+        who = r.stdout.decode("utf-8", "replace").strip() if r.returncode == 0 else ""
+    except (OSError, subprocess.SubprocessError):
+        who = ""
+    label = f"{root.name} · {who}" if who else root.name
+    label = re.sub(r"\s+", " ", "".join(ch for ch in label if ch.isprintable() or ch.isspace())).strip()
+    return (label or "repo")[:LABEL_MAX].strip()
+
+
+def pick_target(targets, prof, product):
+    """(product, .env variable) by targets.py's own rule: the variable portal-publish and fetch-portal read."""
+    try:
+        names = targets.portal_names(prof)
+    except targets.TargetError as e:
+        raise ConnectStop(f"{e} Nothing was sent.") from None
+    if product:
+        if product not in names:
+            known = ", ".join(n for n in names if n) or "(the profile names none)"
+            raise ConnectStop(f"There is no product called '{product}' with a Portal project. This repo's "
+                              f"products: {known}. Nothing was sent.")
+        return product, names[product]
+    if len(names) > 1:
+        raise ConnectStop(f"This repo has {len(names)} products ({', '.join(names)}), each with its own Portal "
+                          "project. Say which one this code is for with --product. Nothing was sent.")
+    return next(iter(names.items()))
+
+
+def portal_error(status, body, headers):
+    """(code, message, seconds to wait) from the error envelope; code is "" when the reply is not one."""
+    try:
+        doc = json.loads(body or b"{}")
+    except ValueError:
+        doc = None
+    err = doc.get("error") if isinstance(doc, dict) else None
+    if not isinstance(err, dict) or not err.get("code"):
+        return "", "", None
+    wait = err.get("retry_after_s")
+    if not isinstance(wait, int) or isinstance(wait, bool):
+        header = (headers or {}).get("Retry-After", "")
+        wait = int(header) if str(header).strip().isdigit() else None
+    return str(err["code"]), str(err.get("message") or "").strip(), wait
+
+
+def refused(url, status, body, headers):
+    code, msg, wait = portal_error(status, body, headers)
+    if code == "connect_code_invalid":
+        return ConnectStop(f"This code does not work. Ask an Admin for a new one ({CONNECT_PLACE}). {NOTHING}")
+    if code == "too_many_tries":
+        minutes = max(1, math.ceil(wait / 60)) if wait else 0
+        when = f"in {minutes} minute{'s' if minutes > 1 else ''}" if minutes else "in a few minutes"
+        return ConnectStop(f"Too many wrong codes were tried on the Portal. Try again {when}. {NOTHING}")
+    if code:
+        return ConnectStop(f"The Portal refused the connect ({code}): {msg or 'no message'}. {NOTHING}")
+    if status in (404, 405):
+        return ConnectStop(f"The Portal at {url} cannot connect a repo with a code yet (HTTP {status}). Ask an Admin "
+                           f"to update the Portal. {NOTHING}")
+    return ConnectStop(f"The Portal's reply was not understood (HTTP {status}). {NOTHING}")
+
+
+def post_connect(url, body):
+    """POST connect-request/1. Returns (status, body bytes, headers). No Authorization header: the code is the
+    proof."""
+    req = urllib.request.Request(f"{url}/api/v1/connect", data=json.dumps(body).encode("utf-8"), method="POST",
+                                 headers={"Content-Type": "application/json", "Accept": "application/json"})
+    lost = (f"The Portal at {url} did not answer in time. The code may now be used up: if it does not work next "
+            f"time, ask an Admin for a new one. {NOTHING}")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status, r.read(), r.headers
+    except urllib.error.HTTPError as e:
+        return e.code, e.read(), e.headers
+    except urllib.error.URLError as e:
+        if isinstance(e.reason, (TimeoutError, socket.timeout)):
+            raise ConnectStop(lost) from None
+        raise ConnectStop(f"The Portal is not reachable at {url}. Check that it is running and that "
+                          f"tools.portal.url is right. {NOTHING}") from None
+    except (TimeoutError, socket.timeout, ConnectionError, OSError):
+        raise ConnectStop(lost) from None
+
+
+def connect(root, product, code, replace):
+    """Swap a one-time code for a key; write it into .env. Returns what may be shown (never the key)."""
+    if not PORTAL_TARGETS.exists() or not PORTAL_CHECKS.exists():
+        raise ConnectStop("The portal-publish skill is not installed next to ba-setup. Install ba-tools again.")
+    try:
+        targets = load_portal_module(PORTAL_TARGETS, "portal_publish_targets")
+        checks = load_portal_module(PORTAL_CHECKS, "portal_publish_checks")
+        import httpx  # noqa: F401  (targets.check_url needs it)
+    except ImportError as e:
+        raise ConnectStop(f"connect needs {e.name}: run it with `uv run --with pyyaml --with httpx --with "
+                          "jsonschema python setup.py connect …`. Nothing was sent.") from None
+
+    prof_path = root / targets.PROFILE
+    if not prof_path.exists():
+        raise ConnectStop(f"No project profile at {targets.PROFILE}. Run `ba-setup project` first. Nothing was sent.")
+    prof = yaml.safe_load(prof_path.read_text(encoding="utf-8")) or {}
+    portal = ((prof.get("tools") or {}).get("portal") or {}) if isinstance(prof, dict) else {}
+    url = targets.text(portal.get("url")).rstrip("/") if isinstance(portal, dict) else ""
+    if not url:
+        raise ConnectStop(f"The profile has no Portal address (tools.portal.url in {targets.PROFILE}). Add it "
+                          "first: ba-setup project, step 5 (Client Portal). Nothing was sent.")
+    try:
+        targets.check_url(url)
+    except targets.TargetError as e:
+        raise ConnectStop(f"{e} Nothing was sent.") from None
+    product, name = pick_target(targets, prof, product)
+
+    env_path = root / ".env"
+    try:   # find a .env or folder we cannot write before the code is used up
+        check_env_writable(env_path)
+        env = targets.read_env_file(env_path) if env_path.exists() else {}
+    except Exception as e:   # never the message: it could quote a line of .env
+        raise ConnectStop(f".env cannot be written ({type(e).__name__}). Fix that (is it open in another program, "
+                          "read-only, or not UTF-8?), then run again. Nothing was sent, so the code still "
+                          "works.") from None
+    had_key = bool(env.get(name, "").strip())
+    if had_key and not replace:
+        whose = f" (the Portal key for {product})" if product else ""
+        raise ConnectStop(f".env already has {name}{whose}. Ask the BA before replacing it: this repo would then "
+                          "use the new key (the old one may still work in the Portal until an Admin removes it "
+                          "under Connected repos). On yes, run again with --replace. Nothing was sent, so the code "
+                          "still works.")
+    code = code.strip()
+    if not CODE.fullmatch(code):
+        raise ConnectStop("This does not look like a connect code. A code has 6 letters and digits, like K7P-4XM. "
+                          "Nothing was sent.")
+    warnings = []
+    try:
+        ignored = targets.env_is_ignored(root)
+    except targets.TargetError as e:
+        warnings.append(str(e))
+        ignored = True
+    if not ignored:
+        raise ConnectStop(".env is not ignored by git, so the key could be committed. Add .env to .gitignore (and "
+                          "run `git rm --cached .env` if it was committed), then run again. Nothing was sent, so "
+                          "the code still works.")
+
+    request = {"code": code, "label": repo_label(root)}
+    if checks.check_reply(request, "connect-request/1"):
+        raise ConnectStop("The request does not match connect-request/1. Nothing was sent.")
+    status, body, headers = post_connect(url, request)
+    if status != 200:
+        raise refused(url, status, body, headers)
+    used_up = "The code may now be used up: ask an Admin for a new one."
+    try:
+        reply = json.loads(body)
+    except ValueError:
+        raise ConnectStop(f"The Portal's reply was not understood (HTTP 200, not JSON). {used_up} {NOTHING}") from None
+    wrong = sorted({d["path"] or "/" for d in checks.check_reply(reply, "connect/1")})
+    if not wrong and reply["key_last4"] != reply["key"][-4:]:
+        wrong = ["/key_last4"]
+    if wrong:   # paths only: a schema message would quote the key
+        raise ConnectStop(f"The Portal's reply does not match connect/1 (at {', '.join(wrong)}). {used_up} "
+                          f"{NOTHING}")
+    created = not env_path.exists()
+    try:
+        write_env_key(env_path, name, reply["key"])
+    except Exception as e:   # never the message: it could hold the line being written
+        raise ConnectStop(f"The key could not be written to .env ({type(e).__name__}). The Portal already made it: "
+                          f"ask an Admin to remove the repo whose key ends in {reply['key'][-4:]} (Admin → Projects "
+                          "→ the project → Publishing → Connected repos), then get a new code and run again.") from None
+    project_name = reply["project"]["name"]
+    last4 = reply["key"][-4:]
+    return {
+        "project": project_name, "product": product, "variable": name, "key_last4": last4,
+        "replaced": had_key, "env_created": created,
+        "message": f'Connected to Portal project "{project_name}". The key is in .env as {name} '
+                   f"(it ends in {last4}).",
+        "warnings": warnings,
+    }
+
+
+def cmd_connect(argv):
+    p = argparse.ArgumentParser(prog="setup.py connect", description="Swap a one-time connect code for a key.")
+    p.add_argument("root", help="the project root (where .env is)")
+    p.add_argument("--product", default="", help='the product the code is for; "" when the repo has one')
+    p.add_argument("--code", required=True, help="the connect code from the Admin, like K7P-4XM")
+    p.add_argument("--replace", action="store_true", help="replace a key already in .env (ask the BA first)")
+    a = p.parse_args(argv)
+    try:
+        result = connect(Path(a.root).resolve(), a.product.strip(), a.code, a.replace)
+    except ConnectStop as e:
+        out({"ok": False, "error": str(e)})
+        sys.exit(1)
+    out({"ok": True, **result})
+
+
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "connect":
+        cmd_connect(sys.argv[2:])
+        sys.exit(0)
     c = sys.argv[1] if len(sys.argv) > 1 else "help"
     arg = sys.argv[2] if len(sys.argv) > 2 else "."
     {"check-me": cmd_check_me, "check-project": lambda: cmd_check_project(arg),
