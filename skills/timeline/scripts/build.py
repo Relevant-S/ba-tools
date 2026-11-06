@@ -274,7 +274,7 @@ def main():
         if r:
             # stage dates written by hand in the data file win over the tracker
             out["stages"] = [{"stage": s["stage"], "from": iso(s["from"])} for s in r["stages"]]
-            out["basis"] = "recorded"
+            out["basis"], out["work"] = "recorded", tracker.feature_work(f)
             out["startedBefore"] = iso(r["started_before_start"]) if r.get("started_before_start") else None
             out["askedIn"], out["askedBy"] = ref_to_pin.get(r.get("asked_in")), r.get("asked_by")
             out["requests"] = [{
@@ -288,9 +288,9 @@ def main():
                 out["stage"] = r["stages"][-1]["stage"]
         else:
             starts = [x for x in (out["since"], item_first.get(fid)) if x]
-            tracker.feature(f, out, min(starts) if starts else None)
             if starts and not out["since"]:
                 out["since"] = min(starts)
+            tracker.feature(f, out, min(starts) if starts else None)
         if not out["since"] and out.get("stages"):
             out["since"] = out["stages"][0]["from"]
         # the dashboard's own items (waiting, to-do, next-call agenda), with the dashboard's keys, so a note

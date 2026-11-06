@@ -78,6 +78,15 @@ people, minutes, summary, the decisions taken that day and what the call left wa
 Counts **features** by stage — never commits or tickets (the client reads this page). Jira projects may add a
 "See all in Jira" link (`link` on the area).
 
+## The two trackers
+
+| `tracker:` | Reads | Data file blocks |
+|---|---|---|
+| `jira` | ticket status history and releases (JIRA_* login, else the caches next to the data file); stories created before `start` as rows of their own | `earlier_work: {epic_areas, fallback_area}`, `jira_project`, `product.work_link` |
+| `github-bmad` | BA spec status (git history), BMAD stories (`sprint-status.yaml` history on `docs_ref`), the app's `dev` / `main` branches, the QA bug list | `github: {docs_ref, repo_url, spec_branch, spec_prefix, spec_areas, titles, skip, aliases, mvp, changes, doc_subject}`, `code_repo`, `code_commits`; `bug-parents.yaml` next to the data file |
+
+Both are read only.
+
 ## Add a tracker
 
 A new module `scripts/trackers/<name>.py` with `class Tracker(Base)` — the hooks and what each returns are in

@@ -27,6 +27,10 @@ class Base:
         `basis` ("tracker" or "code"), `basisNote`, `work`, `tags`. `f` = the dashboard's built feature,
         `first` = the earliest day the dashboard knows of it. Not called for recorded features."""
 
+    def feature_work(self, f):
+        """The work items of a dashboard feature whose stage dates are recorded by hand (its tickets or stories)."""
+        return []
+
     def work_items(self, ids):
         """[{id, title, status, url, done}] for these work item ids (a recorded request's `jira:` list)."""
         return [{"id": i, "title": "", "status": "", "done": None} for i in ids or []]
