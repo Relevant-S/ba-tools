@@ -43,7 +43,7 @@ A failed check gives one error code and a list of details:
    - `timeline/1` (since 1.6.0), in this order: `unique_feature_id`, `unique_item_key`, `unique_pin_id`,
      `unique_page_slug`, `known_pin`, `known_page`, `no_html_entities`.
    - `clarification`: `unique_question_id`, `unique_option_v`, `one_rec_max`, `bare_file_names`,
-     `one_hero_max`, `max_screenshots`, `unique_decision_id`, `no_html_entities`.
+     `one_hero_max`, `max_screenshots`, `unique_decision_id`, `figma_link` (since 1.7.0), `no_html_entities`.
 4. **Parts** (`screens_match_parts`) — pages only. Only on a page that passed steps 1 to 3, and only when the
    caller has the screenshot parts: the Portal always (the multipart parts except `publish`; its page check
    cannot be called without them); the skill does not run it, because it builds the parts from the page
@@ -178,8 +178,9 @@ path is `/groups/<g>/areas/<a>/features/<i>`.
     (of rows and of their `requests`), `client_contacts[].email`, and the text copied from the tracker: every
     work item's `title` and `status`, and `releases[].name`. Everything else, BA-written, is checked.
   - `clarification`: `description`, `problem`, `solution`, `design.summary`, `design.detail`,
-    `questions[].body`, `questions[].body2`, `questions[].snag` (light HTML), `url`, and the screen file
-    names `design.screens[].file` and `questions[].screens[].file` (checked by `bare_file_names`).
+    `questions[].body`, `questions[].body2`, `questions[].snag` (light HTML), `url`, the screen file
+    names `design.screens[].file` and `questions[].screens[].file` (checked by `bare_file_names`), and since
+    1.7.0 the screen links `design.screens[].figma` and `questions[].screens[].figma` (checked by `figma_link`).
 - **Raises:** `contract_invalid`.
 - **One detail per field:** `path` is the field; the message names it and the entity, for example
   `/features/0/title holds an HTML entity (&mdash;). This field is plain text: use the character itself.`
@@ -232,13 +233,6 @@ path is `/groups/<g>/areas/<a>/features/<i>`.
 - **One detail per extra:** in page order, `path` is the second (third …) hero's `hero`; the message names
   the first one too.
 
-### `unique_decision_id` (pages)
-
-- **Rule:** no two decisions share an `id`.
-- **Raises:** `contract_invalid`.
-- **One detail per repeat:** `path` is the later decision's `id`; the message names both places, for example
-  `Decision id "bank-only" is used twice: /decisions/0/id and /decisions/1/id`.
-
 ### `max_screenshots` (pages)
 
 - **Rule:** at most 30 screens in the page, design and Questions together (data-contract §10 Limits). A schema
@@ -246,6 +240,28 @@ path is `/groups/<g>/areas/<a>/features/<i>`.
 - **Raises:** `contract_invalid`.
 - **One detail in all:** `path` is the 31st screen in page order (design first, then each Question in order),
   for example `/questions/4/screens/0`; the message gives the total and the limit.
+
+### `unique_decision_id` (pages)
+
+- **Rule:** no two decisions share an `id`.
+- **Raises:** `contract_invalid`.
+- **One detail per repeat:** `path` is the later decision's `id`; the message names both places, for example
+  `Decision id "bank-only" is used twice: /decisions/0/id and /decisions/1/id`.
+
+### `figma_link` (pages, since 1.7.0)
+
+- **Rule:** a screen's `figma` (in `design.screens[]` and every `questions[].screens[]`) starts with exactly
+  `https://www.figma.com/` (lower case, `https`, with `www.`), and holds:
+  - no control character or space of any kind. The list is explicit, so both sides agree: U+0000 to U+0020,
+    U+007F to U+00A0, U+1680, U+2000 to U+200A, U+2028, U+2029, U+202F, U+205F, U+3000, U+FEFF;
+  - no HTML entity (the `no_html_entities` pattern, as `&amp;` or `&#38;`). A plain `&` is fine:
+    `?node-id=1-2&t=x` passes. `no_html_entities` itself skips the link, so this check is the one that refuses it.
+
+  An empty value fails the schema first (`minLength` 1).
+- **Raises:** `contract_invalid`.
+- **One detail per screen:** in page order (design first, then each Question in order), `path` is the screen's
+  `figma`, for example `/questions/2/screens/0/figma is not a Figma link: it must start with
+  https://www.figma.com/ and hold no space or HTML entity.`
 
 ### `screens_match_parts` (pages, step 4)
 

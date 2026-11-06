@@ -17,6 +17,8 @@ reply (a new key for the code's project), with broken cases of both. The key is 
 Contract 1.6.0 adds `timeline/1` (the BA's Timeline data, sent to the Dashboard endpoint): a small file holding
 every field the real builds use, a real-size one shaped like Acme Lending's real build (made-up text), `tl1-…` cases
 that break the small one, the replies to a Timeline send, and an `answers/2` batch with an update on a `todo`.
+Contract 1.7.0 adds a screen's optional `figma` link (the Open in Figma button) to both pages, to the page replies'
+Client view, and `figma-…` cases that break it (check figma_link).
 
 Pages: the clarification-page skill's example-probate-decisions.yaml converted to clarification/1, and a
 synthetic page of Merchants V7 size (6 Questions, 18 options, 4 screens). A page's invalid case is the
@@ -843,7 +845,9 @@ def page_envelope() -> dict:
 
 def convert_page(cfg: dict) -> dict:
     """A clarification YAML as clarification/1, the way Story 4.3's skill will send it: never-sent fields
-    dropped (data-contract §10), description beats standfirst, name beats title, screen src → bare file."""
+    dropped (data-contract §10), description beats standfirst, name beats title, screen src → bare file.
+    Since 1.7.0 a screen carries its Figma link: a design screen's from design.figma_file and its node, a Question
+    screen's own figma value (as the clarification-page generator does)."""
     def text(value) -> str:
         return str(value).strip()
 
@@ -865,6 +869,7 @@ def convert_page(cfg: dict) -> dict:
     put(page, "solution", cfg.get("solution"))
 
     src = cfg.get("design") or {}
+    file_key = src.get("figma_file")
     design: dict = {}
     for key in ("label", "more_label", "summary", "detail"):
         put(design, key, src.get(key))
@@ -874,6 +879,8 @@ def convert_page(cfg: dict) -> dict:
         put(screen, "cap", s.get("cap"))
         if s.get("hero"):
             screen["hero"] = True
+        if s.get("node") and file_key:
+            screen["figma"] = f"https://www.figma.com/design/{file_key}/?node-id={str(s['node']).replace(':', '-')}"
         screens.append(screen)
     if screens:
         design["screens"] = screens
@@ -912,6 +919,7 @@ def convert_page(cfg: dict) -> dict:
         for s in q.get("screens") or []:
             screen = {"file": PurePosixPath(s["src"]).name}
             put(screen, "cap", s.get("cap"))
+            put(screen, "figma", s.get("figma"))
             qscreens.append(screen)
         if qscreens:
             out["screens"] = qscreens
@@ -967,7 +975,8 @@ def merchant_question(n: int, qid: str, section: str, title: str, options) -> di
         q["body2"] = "<p>Refunds today are handled by hand.</p>"
         q["snag"] = "<p><strong>The snag:</strong> an empty balance cannot fund a refund.</p>"
     if n == 2:
-        q["screens"] = [{"file": "failed-payout-banner.png", "cap": "The banner a merchant sees after a bounce."}]
+        q["screens"] = [{"file": "failed-payout-banner.png", "cap": "The banner a merchant sees after a bounce.",
+                         "figma": "https://www.figma.com/design/SaMpLeFiLeKey0001/?node-id=40-12"}]
     if n == 4:
         q["screens"] = [{"file": "statement-email.png", "cap": "The statement email."}]
     return q
@@ -991,7 +1000,8 @@ def merchants() -> dict:
             "summary": "<p>A payout schedule, a balance the merchant can see, and a statement with each payout.</p>",
             "detail": "<p>Four screens are drawn. The questions below are the only things still open.</p>",
             "screens": [
-                {"file": "payouts-overview.png", "cap": "The payouts page a merchant sees.", "hero": True},
+                {"file": "payouts-overview.png", "cap": "The payouts page a merchant sees.", "hero": True,
+                 "figma": "https://www.figma.com/design/SaMpLeFiLeKey0001/?node-id=12-345"},
                 {"file": "payout-schedule.png", "cap": "Choosing the payout day."},
             ],
         },
@@ -1053,8 +1063,8 @@ def page_invalid_cases() -> dict[str, tuple[dict, dict, list[str] | None]]:
     case("question-missing-body", d, "contract_invalid", "schema", "/questions/1/body")
     d = merchants(); d["spec"] = "docs/BA/specs/merchant-payouts.md"
     case("page-unknown-field", d, "contract_invalid", "schema", "/spec")
-    d = merchants(); d["design"]["screens"][0]["figma"] = "123:456"
-    case("screen-unknown-field", d, "contract_invalid", "schema", "/design/screens/0/figma")
+    d = merchants(); d["design"]["screens"][0]["node"] = "123:456"
+    case("screen-unknown-field", d, "contract_invalid", "schema", "/design/screens/0/node")
     d = merchants(); d["questions"][3]["id"] = d["questions"][1]["id"]
     case("duplicate-question-id", d, "contract_invalid", "unique_question_id", "/questions/3/id")
     d = merchants(); d["questions"][2]["options"][2]["v"] = d["questions"][2]["options"][0]["v"]
@@ -1094,6 +1104,28 @@ def page_invalid_cases() -> dict[str, tuple[dict, dict, list[str] | None]]:
     case("two-heroes", d, "contract_invalid", "one_hero_max", "/design/screens/1/hero")
     d = merchants(); d["decisions"][1]["id"] = d["decisions"][0]["id"]
     case("duplicate-decision-id", d, "contract_invalid", "unique_decision_id", "/decisions/1/id")
+    # a screen's Figma link (contract 1.7.0)
+    for name, where, value in [
+        ("figma-http", ("design", 0), "http://www.figma.com/design/SaMpLeFiLeKey0001/?node-id=12-345"),
+        ("figma-other-host", ("question", 2), "https://figma.example.com/design/SaMpLeFiLeKey0001/"),
+        ("figma-no-www", ("design", 0), "https://figma.com/design/SaMpLeFiLeKey0001/?node-id=12-345"),
+        ("figma-javascript", ("question", 2), "javascript:alert(1)//https://www.figma.com/"),
+        ("figma-with-space", ("design", 1), "https://www.figma.com/design/SaMpLe FiLe/"),
+        ("figma-html-entity", ("design", 0),
+         "https://www.figma.com/design/SaMpLeFiLeKey0001/?node-id=12-345&amp;t=x"),
+        ("figma-no-break-space", ("question", 2), "https://www.figma.com/design/SaMpLe\u00a0FiLe/"),
+        ("figma-ideographic-space", ("design", 1), "https://www.figma.com/design/SaMpLe\u3000FiLe/"),
+    ]:
+        d = merchants()
+        if where[0] == "design":
+            d["design"]["screens"][where[1]]["figma"] = value
+            path = f"/design/screens/{where[1]}/figma"
+        else:
+            d["questions"][where[1]]["screens"][0]["figma"] = value
+            path = f"/questions/{where[1]}/screens/0/figma"
+        case(name, d, "contract_invalid", "figma_link", path)
+    d = merchants(); d["design"]["screens"][0]["figma"] = ""
+    case("figma-empty", d, "contract_invalid", "schema", "/design/screens/0/figma")
     for name, value in [("slug-leading-hyphen", "-merchant-payouts"), ("slug-trailing-hyphen", "merchant-payouts-"),
                         ("slug-double-hyphen", "merchant--payouts"), ("slug-only-hyphens", "---")]:
         d = merchants(); d["slug"] = value
@@ -1133,6 +1165,9 @@ def reply_invalid_cases() -> dict[str, tuple[str, dict, str]]:
     view = copy.deepcopy(dry["client_view"]); view["design"]["screens"][0]["media"] = "/media/../../etc/passwd"
     case("reply-page-media-not-a-uuid", "publish-reply/1", {**dry, "client_view": view},
          "/client_view/design/screens/0/media")
+    view = copy.deepcopy(dry["client_view"]); view["design"]["screens"][0]["figma"] = "https://example.com/x"
+    case("reply-page-figma-not-figma", "publish-reply/1", {**dry, "client_view": view},
+         "/client_view/design/screens/0/figma")
     view = copy.deepcopy(dry["client_view"]); view["design"]["screens"][0]["media"] = "/media/" + "-" * 36
     case("reply-page-media-only-hyphens", "publish-reply/1", {**dry, "client_view": view},
          "/client_view/design/screens/0/media")
@@ -1209,11 +1244,12 @@ def reply_expected(name: str, contract: str, doc: dict, path: str) -> dict:
 
 def page_client_view(doc: dict, media: str | None = None) -> dict:
     """ClientRound (AD-4) as the Portal builds it on a dry run: client and id fields only, screens as
-    { media, cap } with the hero first. The Portal builds the real one; this only makes a sample reply."""
+    { media, cap, figma } with the hero first. The Portal builds the real one; this only makes a sample reply."""
     def screen(s):
         out = {"media": media}
-        if "cap" in s:
-            out["cap"] = s["cap"]
+        for key in ("cap", "figma"):
+            if key in s:
+                out[key] = s[key]
         return out
 
     design_src = doc["design"]

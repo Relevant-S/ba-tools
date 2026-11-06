@@ -21,7 +21,8 @@
       {
         "file": "payouts-overview.png",
         "cap": "The payouts page a merchant sees.",
-        "hero": true
+        "hero": true,
+        "figma": "https://www.figma.com/design/SaMpLeFiLeKey0001/?node-id=12-345"
       },
       {
         "file": "publish",
@@ -131,7 +132,8 @@
       "screens": [
         {
           "file": "failed-payout-banner.png",
-          "cap": "The banner a merchant sees after a bounce."
+          "cap": "The banner a merchant sees after a bounce.",
+          "figma": "https://www.figma.com/design/SaMpLeFiLeKey0001/?node-id=40-12"
         }
       ]
     },

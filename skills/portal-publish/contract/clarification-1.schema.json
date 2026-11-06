@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/clarification-1.schema.json",
   "title": "clarification/1",
-  "description": "One Clarification page Publish (one Round of the page): the envelope at the top level plus the page fields, design, decisions and questions. Readable twin: clarification-1.md. x-visibility says who may see each leaf field: client, id, portal or admin. Counts across lists (at most 30 screenshots in all) and uniqueness are named checks in checks.md.",
+  "description": "One Clarification page Publish (one Round of the page): the envelope at the top level plus the page fields, design, decisions and questions. Readable twin: clarification-1.md. x-visibility says who may see each leaf field: client, id, portal or admin. Counts across lists (at most 30 screenshots in all), uniqueness and the Figma links (since 1.7.0) are named checks in checks.md.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -172,6 +172,13 @@
                 "description": "Whether this is the screen shown first. Server only: the Client view puts the hero first.",
                 "type": "boolean",
                 "x-visibility": "portal"
+              },
+              "figma": {
+                "description": "Since 1.7.0. The screen's frame in Figma, for the Open in Figma button. Only a link that starts with https://www.figma.com/ and holds no space (check figma_link).",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000,
+                "x-visibility": "client"
               }
             }
           }
@@ -386,6 +393,13 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 300,
+                  "x-visibility": "client"
+                },
+                "figma": {
+                  "description": "Since 1.7.0. The screen's frame in Figma, for the Open in Figma button. Only a link that starts with https://www.figma.com/ and holds no space (check figma_link).",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000,
                   "x-visibility": "client"
                 }
               }

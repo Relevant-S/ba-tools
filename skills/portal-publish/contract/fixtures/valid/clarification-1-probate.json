@@ -21,15 +21,18 @@
       {
         "file": "probate-355-2271.png",
         "cap": "The release screen. Question 1 is about this form: it shows the transferee named at onboarding, and the executor's instruction may name four different people.",
-        "hero": true
+        "hero": true,
+        "figma": "https://www.figma.com/design/SampleFileKey02AbCdEfG/?node-id=355-2271"
       },
       {
         "file": "probate-356-4676.png",
-        "cap": "What a relative sees using the dead person's credentials — everything readable, nothing changeable, and no notice that a hold is on. Question 2 is about this screen."
+        "cap": "What a relative sees using the dead person's credentials — everything readable, nothing changeable, and no notice that a hold is on. Question 2 is about this screen.",
+        "figma": "https://www.figma.com/design/SampleFileKey02AbCdEfG/?node-id=356-4676"
       },
       {
         "file": "probate-356-5259.png",
-        "cap": "After release. No reinvestments and no new shares, ever. Question 3 asks who empties the wallet once the last certificate matures."
+        "cap": "After release. No reinvestments and no new shares, ever. Question 3 asks who empties the wallet once the last certificate matures.",
+        "figma": "https://www.figma.com/design/SampleFileKey02AbCdEfG/?node-id=356-5259"
       }
     ]
   },

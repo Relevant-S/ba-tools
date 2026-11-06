@@ -66,6 +66,9 @@ ENTITY_SKIP = {
         "/url",
         "/design/screens/*/file",
         "/questions/*/screens/*/file",
+        # Since 1.7.0: a screen's Figma link (checked by figma_link).
+        "/design/screens/*/figma",
+        "/questions/*/screens/*/figma",
     },
 }
 
@@ -76,6 +79,19 @@ MAX_SCREENSHOTS = 30
 BAD_NAME_CHARS = re.compile(r"[\x00-\x1f\x7f:]")
 # The multipart part that holds the page JSON; no screenshot may take its name.
 RESERVED_PART = "publish"
+
+# A screen's Figma link (since 1.7.0, check figma_link): it starts with exactly this, and holds no control
+# character or space of any kind (an explicit list, so Python and JavaScript agree: U+0000 to U+0020, U+007F to
+# U+00A0, U+1680, U+2000 to U+200A, U+2028, U+2029, U+202F, U+205F, U+3000, U+FEFF) and no HTML entity (ENTITY,
+# as `&amp;`; a plain `&t=x` is fine).
+FIGMA_PREFIX = "https://www.figma.com/"
+NOT_IN_LINK = re.compile(r"[\x00-\x20\x7f-\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]")
+
+
+def is_figma_link(value) -> bool:
+    """figma_link: a https://www.figma.com/ link with no space, control character or HTML entity in it."""
+    return (isinstance(value, str) and value.startswith(FIGMA_PREFIX) and not NOT_IN_LINK.search(value)
+            and not ENTITY.search(value))
 
 
 # The ajv-formats full-mode email regex (the Portal's check), so both sides judge an email the same way.
@@ -278,6 +294,18 @@ def check_screenshot_count(doc: dict) -> list[dict]:
     return [detail(where, "max_screenshots",
                    f"This page has {len(screens)} screenshots; at most {MAX_SCREENSHOTS} are allowed, design and "
                    f"Questions together. The first one over the limit is {where}.")]
+
+
+def check_figma_links(doc: dict) -> list[dict]:
+    """figma_link (since 1.7.0): a screen's figma is a https://www.figma.com/ link. One detail per screen."""
+    out: list[dict] = []
+    for where, screen in page_screens(doc):
+        if "figma" in screen and not is_figma_link(screen["figma"]):
+            here = where + "/figma"
+            out.append(detail(here, "figma_link",
+                              f"{here} is not a Figma link: it must start with {FIGMA_PREFIX} and hold no space "
+                              "or HTML entity."))
+    return out
 
 
 def screens_match_parts(doc: dict, parts) -> list[dict]:
@@ -498,6 +526,7 @@ def cross_field(doc: dict, kind: str = "dashboard") -> list[dict]:
                 + check_one_hero(doc)
                 + check_screenshot_count(doc)
                 + check_unique(doc, "decisions", "id", "unique_decision_id", "Decision id")
+                + check_figma_links(doc)
                 + check_entities(doc, kind))
     if doc.get("contract") == "dashboard/2":
         return dashboard_2_checks(doc)

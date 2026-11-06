@@ -201,9 +201,16 @@ uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.
      the BA's file. When it changed lines, the first warning says so: the BA commits the file with the page;
    - stops if the page has no `round:` line (the Round label the Client reads);
    - builds the page from the fields the contract names, and nothing else. Old `settled:` lines become
-     decisions with no date and no person. `spec`, `events`, `figma_file`, `node`, `frame`, `spec_ref` and every
+     decisions with no date and no person. `spec`, `events`, `figma_page`, `frame`, `spec_ref` and every
      other internal field stay in the repo and are listed in `left_out`. A placeholder `url` (like
      `https://claude.ai/artifact/<the page id>`) is left out with a warning; the page still sends;
+   - gives each screen its "Open in Figma" link (contract 1.7.0), the same one the claude.ai page shows: a design
+     screen's from `design.figma_file` and its `node`, a Question screen's own `figma`. A link that does not start
+     with `https://www.figma.com/` is left out with a warning; the screen still sends, without the button. A
+     `design.figma_file` that is not a bare key (letters and digits) warns once and gives no links; screens with a
+     node but no `figma_file` warn once; an unquoted node (YAML reads `12:34` as 754) warns "quote the node".
+     **The Portal must be on contract 1.7.0 first**: one on 1.6.0 refuses a page that carries `figma`. So deploy
+     the Portal, then update ba-tools in the BA repos;
    - collects every screenshot the page names (`src`, relative to the YAML's folder). Each goes as its bare
      file name; a second file with the same name goes as `name-2.png`, then `-3` …;
    - checks it all: the contract (at most 50 Questions, 30 screenshots), each screenshot there, PNG, JPEG or

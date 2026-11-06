@@ -1,0 +1,230 @@
+{
+  "contract": "clarification/1",
+  "sent_at": "2026-10-27T10:15:00.000Z",
+  "sent_by": "Sample BA",
+  "ba_tools_version": "0.9.0",
+  "source_commit": "9c1e7a3b5d2f4e6a8b0c1d3e5f7a9b2c4d6e8f01",
+  "slug": "merchant-payouts",
+  "store_key": "merchant-payouts-v7",
+  "url": "https://pages.example.com/clarifications/merchant-payouts/",
+  "name": "Merchant payouts",
+  "round": "Round V7 · sent 20 Oct 2026 by Sample BA · replaces V6",
+  "description": "<p>How and when merchants get their money. <strong>Six questions</strong> are left.</p>",
+  "problem": "<p>Merchants are paid by hand once a month, and they cannot see what is coming.</p>",
+  "solution": "<p>Payouts run on a schedule, and each one comes with a statement.</p>",
+  "design": {
+    "label": "What this feature is",
+    "more_label": "More screens and detail",
+    "summary": "<p>A payout schedule, a balance the merchant can see, and a statement with each payout.</p>",
+    "detail": "<p>Four screens are drawn. The questions below are the only things still open.</p>",
+    "screens": [
+      {
+        "file": "payouts-overview.png",
+        "cap": "The payouts page a merchant sees.",
+        "hero": true,
+        "figma": "https://www.figma.com/design/SaMpLeFiLeKey0001/?node-id=12-345"
+      },
+      {
+        "file": "payout-schedule.png",
+        "cap": "Choosing the payout day.",
+        "figma": "https://www.figma.com/design/SaMpLe FiLe/"
+      }
+    ]
+  },
+  "decisions": [
+    {
+      "id": "bank-only",
+      "date": "2026-10-13",
+      "who": "Sample Client",
+      "how": "on the client call",
+      "title": "Payouts go only to a bank account",
+      "detail": "No cards or wallets in the first release."
+    },
+    {
+      "id": "s2",
+      "title": "Merchants cannot change the payout day themselves"
+    }
+  ],
+  "questions": [
+    {
+      "id": "payout-day",
+      "section": "A — When money moves",
+      "title": "Which day of the week should merchants be paid?",
+      "meta": "Decides — what the payout screens show",
+      "body": "<p class=\"lead\">Question 1 of six.</p><p>We need one answer here before the next build. <strong>A short answer is fine.</strong></p>",
+      "options": [
+        {
+          "v": "monday",
+          "t": "Every Monday",
+          "d": "If you choose this, every monday.",
+          "rec": true
+        },
+        {
+          "v": "friday",
+          "t": "Every Friday",
+          "d": "If you choose this, every friday."
+        },
+        {
+          "v": "daily",
+          "t": "Every working day",
+          "d": "If you choose this, every working day."
+        }
+      ],
+      "note": "Anything else we should know?",
+      "note_placeholder": "Optional — a sentence is plenty"
+    },
+    {
+      "id": "minimum-payout",
+      "section": "A — When money moves",
+      "title": "Should small balances wait until they reach a minimum?",
+      "meta": "Decides — what the payout screens show",
+      "body": "<p class=\"lead\">Question 2 of six.</p><p>We need one answer here before the next build. <strong>A short answer is fine.</strong></p>",
+      "options": [
+        {
+          "v": "no-minimum",
+          "t": "No minimum, pay whatever is there",
+          "d": "If you choose this, no minimum, pay whatever is there.",
+          "rec": true
+        },
+        {
+          "v": "ten",
+          "t": "Wait until there is at least 10",
+          "d": "If you choose this, wait until there is at least 10."
+        },
+        {
+          "v": "fifty",
+          "t": "Wait until there is at least 50",
+          "d": "If you choose this, wait until there is at least 50."
+        }
+      ],
+      "note": "Anything else we should know?",
+      "note_placeholder": "Optional — a sentence is plenty",
+      "quote": {
+        "text": "Small merchants watch every payment, so a missing one feels like a lost one.",
+        "cite": "Sample merchant, on the October call"
+      }
+    },
+    {
+      "id": "failed-payout",
+      "section": "B — When something goes wrong",
+      "title": "What happens when a payout bounces?",
+      "meta": "Decides — what the payout screens show",
+      "body": "<p class=\"lead\">Question 3 of six.</p><p>We need one answer here before the next build. <strong>A short answer is fine.</strong></p>",
+      "options": [
+        {
+          "v": "retry",
+          "t": "Retry the next day, three times",
+          "d": "If you choose this, retry the next day, three times.",
+          "rec": true
+        },
+        {
+          "v": "hold",
+          "t": "Hold it and tell the merchant",
+          "d": "If you choose this, hold it and tell the merchant."
+        },
+        {
+          "v": "support",
+          "t": "Hand it to support straight away",
+          "d": "If you choose this, hand it to support straight away."
+        }
+      ],
+      "note": "Anything else we should know?",
+      "note_placeholder": "Optional — a sentence is plenty",
+      "screens": [
+        {
+          "file": "failed-payout-banner.png",
+          "cap": "The banner a merchant sees after a bounce.",
+          "figma": "https://www.figma.com/design/SaMpLeFiLeKey0001/?node-id=40-12"
+        }
+      ]
+    },
+    {
+      "id": "refund-source",
+      "section": "B — When something goes wrong",
+      "title": "Where does a refund come from when the balance is empty?",
+      "meta": "Decides — what the payout screens show",
+      "body": "<p class=\"lead\">Question 4 of six.</p><p>We need one answer here before the next build. <strong>A short answer is fine.</strong></p>",
+      "options": [
+        {
+          "v": "next-payout",
+          "t": "Take it from the next payout",
+          "d": "If you choose this, take it from the next payout.",
+          "rec": true
+        },
+        {
+          "v": "card",
+          "t": "Charge the merchant's card",
+          "d": "If you choose this, charge the merchant's card."
+        },
+        {
+          "v": "invoice",
+          "t": "Send the merchant an invoice",
+          "d": "If you choose this, send the merchant an invoice."
+        }
+      ],
+      "note": "Anything else we should know?",
+      "note_placeholder": "Optional — a sentence is plenty",
+      "body2": "<p>Refunds today are handled by hand.</p>",
+      "snag": "<p><strong>The snag:</strong> an empty balance cannot fund a refund.</p>"
+    },
+    {
+      "id": "statement",
+      "section": "C — What merchants see",
+      "title": "How often should merchants get a statement?",
+      "meta": "Decides — what the payout screens show",
+      "body": "<p class=\"lead\">Question 5 of six.</p><p>We need one answer here before the next build. <strong>A short answer is fine.</strong></p>",
+      "options": [
+        {
+          "v": "weekly",
+          "t": "Weekly, with each payout",
+          "d": "If you choose this, weekly, with each payout.",
+          "rec": true
+        },
+        {
+          "v": "monthly",
+          "t": "Monthly",
+          "d": "If you choose this, monthly."
+        },
+        {
+          "v": "on-request",
+          "t": "Only when they ask",
+          "d": "If you choose this, only when they ask."
+        }
+      ],
+      "note": "Anything else we should know?",
+      "note_placeholder": "Optional — a sentence is plenty",
+      "screens": [
+        {
+          "file": "statement-email.png",
+          "cap": "The statement email."
+        }
+      ]
+    },
+    {
+      "id": "currency",
+      "section": "C — What merchants see",
+      "title": "Which currency do statements show?",
+      "meta": "Decides — what the payout screens show",
+      "body": "<p class=\"lead\">Question 6 of six.</p><p>We need one answer here before the next build. <strong>A short answer is fine.</strong></p>",
+      "options": [
+        {
+          "v": "merchant",
+          "t": "The merchant's own currency",
+          "d": "If you choose this, the merchant's own currency."
+        },
+        {
+          "v": "customer",
+          "t": "The customer's currency, line by line",
+          "d": "If you choose this, the customer's currency, line by line."
+        },
+        {
+          "v": "both",
+          "t": "Both, side by side",
+          "d": "If you choose this, both, side by side."
+        }
+      ],
+      "note": "Anything else we should know?",
+      "note_placeholder": "Optional — a sentence is plenty"
+    }
+  ]
+}

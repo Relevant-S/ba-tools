@@ -35,9 +35,10 @@ PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
 JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 64
 WEBP = b"RIFF\x00\x00\x00\x00WEBPVP8 " + b"\x00" * 64
 GIF = b"GIF89a" + b"\x00" * 64
-# Fields the Portal must never get (contract clarification-1.md, "It never sends …").
+# Fields the Portal must never get (contract clarification-1.md, "It never sends …"). A screen's `figma` is sent
+# since contract 1.7.0; `figma_file` and `node` only make a design screen's link.
 NEVER_SENT = {"spec", "product", "doc_title", "eyebrow", "copy_header", "copy_noun", "stage", "events", "settled",
-              "figma_file", "figma_page", "node", "frame", "spec_ref", "figma", "src", "standfirst"}
+              "figma_file", "figma_page", "node", "frame", "spec_ref", "src", "standfirst"}
 
 
 def read(path: Path):
@@ -184,7 +185,8 @@ def test_happy_path_plan_then_send(capsys, project, portal):
     for words in ("What the Client will read", "Page: Merchant payouts", "Round label: Round V7",
                   "A new Round.", "Every Monday (recommended)", "Answered questions (2):",
                   "Payouts go only to a bank account (2026-10-13, Sample Client, on the client call)",
-                  "Counts: 6 Questions, 4 screenshots."):
+                  "Counts: 6 Questions, 4 screenshots.", "- The payouts page a merchant sees. · Open in Figma",
+                  "- Choosing the payout day.\n", "Screens: 1 (1 with Open in Figma)"):
         assert words in shown, words
     assert "<p" not in shown and "<strong" not in shown
     assert plan["round"]["new"] is True and plan["counts"] == {"questions": 6, "screenshots": 4}
@@ -242,9 +244,11 @@ def test_probate_converted_matches_the_contract_fixture(project):
         {k: v for k, v in fixture.items() if k not in envelope}
     assert not all_keys(page) & NEVER_SENT
     assert "url" not in page                                 # the example's url is a placeholder
-    for field in ("spec", "product", "events", "design.figma_file", "design.screens[].node",
+    for field in ("spec", "product", "events", "design.figma_page", "design.screens[].frame",
                   "questions[].spec_ref", "title", "standfirst", "url (a placeholder)"):
         assert field in left_out, field
+    for field in ("design.figma_file", "design.screens[].node"):      # read for the Figma links (1.7.0)
+        assert field not in left_out, field
 
 
 # ---- Unknown slug, slug mismatch, no round ---------------------------------------------------------------
@@ -304,10 +308,85 @@ def test_old_page_settled_lines_become_decisions(project):
     assert page["description"] == "<strong>Two questions</strong> are left &mdash; both small."
     assert not all_keys(page) & NEVER_SENT
     for field in ("spec", "product", "doc_title", "eyebrow", "stage", "copy_header", "copy_noun", "events",
-                  "design.figma_file", "design.figma_page", "design.screens[].node", "design.screens[].frame",
-                  "questions[].spec_ref", "questions[].screens[].figma"):
+                  "design.figma_page", "design.screens[].frame", "questions[].spec_ref"):
         assert field in left_out, field
+    for field in ("design.figma_file", "design.screens[].node", "questions[].screens[].figma"):
+        assert field not in left_out, field
     assert "settled" not in left_out and "title" not in left_out      # both were used
+
+
+# ---- Open in Figma (contract 1.7.0) ------------------------------------------------------------------------
+
+def test_design_screen_with_node_carries_its_figma_link(project):
+    page, parts, _, _, warnings = built(project)
+    assert checks.check_publish(page, "clarification", [p["name"] for p in parts]) is None
+    assert [s.get("figma") for s in page["design"]["screens"]] == [
+        "https://www.figma.com/design/SampleFileKey02AbCdEfG/?node-id=355-2271",
+        "https://www.figma.com/design/SampleFileKey02AbCdEfG/?node-id=356-4676",
+        "https://www.figma.com/design/SampleFileKey02AbCdEfG/?node-id=356-5259",
+    ]
+    assert not [w for w in warnings if "Figma" in w]
+
+
+def test_old_page_sends_both_kinds_of_figma_link(project):
+    page, *_ = built(project, "old-page-decisions.yaml")
+    assert page["design"]["screens"][0]["figma"] == "https://www.figma.com/design/AbCdEf123456/?node-id=12-34"
+    assert page["questions"][0]["screens"][0]["figma"] == "https://www.figma.com/design/AbCdEf123456?node-id=12-35"
+
+
+def test_screen_without_node_or_figma_has_no_link(project):
+    def change(d):
+        d["design"]["screens"][0].pop("node")
+        d["questions"][0]["screens"][0].pop("figma")
+    edit_yaml(project / CLAR / "old-page-decisions.yaml", change)
+    page, parts, _, _, warnings = built(project, "old-page-decisions.yaml")
+    assert "figma" not in page["design"]["screens"][0] and "figma" not in page["questions"][0]["screens"][0]
+    assert checks.check_publish(page, "clarification", [p["name"] for p in parts]) is None
+    assert not [w for w in warnings if "Figma" in w]
+
+
+def test_node_without_figma_file_has_no_link_and_one_warning(project):
+    edit_yaml(project / CLAR / "probate-decisions.yaml", lambda d: d["design"].pop("figma_file"))
+    page, _, _, _, warnings = built(project)
+    assert all("figma" not in s for s in page["design"]["screens"])
+    hints = [w for w in warnings if "no figma_file" in w]
+    assert len(hints) == 1 and "3 screen(s) have a Figma node" in hints[0], warnings
+
+
+def test_unquoted_node_read_as_a_number_gets_no_link(project):
+    # YAML 1.1 reads an unquoted 12:34 as 754 (base 60): that would link to the wrong frame.
+    edit_yaml(project / CLAR / "old-page-decisions.yaml", lambda d: d["design"]["screens"][0].update(node=754))
+    assert "node: 754" in (project / CLAR / "old-page-decisions.yaml").read_text(encoding="utf-8")
+    page, parts, _, left_out, warnings = built(project, "old-page-decisions.yaml")
+    assert "figma" not in page["design"]["screens"][0]
+    assert checks.check_publish(page, "clarification", [p["name"] for p in parts]) is None
+    assert any('design.screens[0] → node: 754' in w and 'node: "12:34"' in w for w in warnings), warnings
+    assert "design.screens[0] → figma (node is not quoted)" in left_out
+
+
+@pytest.mark.parametrize("bad", ["http://www.figma.com/design/AbCdEf123456?node-id=12-35",
+                                 "https://evil.example.com/design/AbCdEf123456",
+                                 "https://www.figma.com/design/Ab Cd/"])
+def test_bad_question_figma_link_is_left_out_with_a_warning(project, bad):
+    edit_yaml(project / CLAR / "old-page-decisions.yaml",
+              lambda d: d["questions"][0]["screens"][0].update(figma=bad))
+    page, parts, _, left_out, warnings = built(project, "old-page-decisions.yaml")
+    assert "figma" not in page["questions"][0]["screens"][0]
+    assert checks.check_publish(page, "clarification", [p["name"] for p in parts]) is None
+    assert any(bad in w and "Open in Figma" in w for w in warnings), warnings
+    assert any(f.endswith("→ figma (not a Figma link)") for f in left_out), left_out
+
+
+@pytest.mark.parametrize("bad", ["Ab Cd", "https://www.figma.com/design/SampleFileKey02AbCdEfG/Probate",
+                                 "C8mNAP7/x", "C8mNAP7?x=1", "C8mNAP7#top"])
+def test_bad_figma_file_key_builds_no_link_and_warns_once(project, bad):
+    edit_yaml(project / CLAR / "probate-decisions.yaml", lambda d: d["design"].update(figma_file=bad))
+    page, parts, _, left_out, warnings = built(project)
+    assert all("figma" not in s for s in page["design"]["screens"])
+    assert checks.check_publish(page, "clarification", [p["name"] for p in parts]) is None
+    named = [w for w in warnings if "figma" in w.lower()]
+    assert len(named) == 1 and "design.figma_file" in named[0] and bad in named[0], warnings
+    assert "design.figma_file (not a Figma file key)" in left_out
 
 
 # ---- Screens: missing, clash, type, size -----------------------------------------------------------------

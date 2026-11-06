@@ -1,0 +1,10 @@
+{
+  "kind": "clarification",
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "figma_link",
+      "path": "/questions/2/screens/0/figma"
+    }
+  ]
+}

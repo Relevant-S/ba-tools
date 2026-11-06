@@ -1480,17 +1480,18 @@ SLUG_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 
 # The fields the skill reads from the page YAML, per level. Anything else stays in the repo and is listed in
 # left_out. `src` is read to find the file; `title` and `standfirst` only stand in for `name` and `description`;
-# `settled` is read only when there is no `decisions` list.
+# `settled` is read only when there is no `decisions` list. `design.figma_file` and a design screen's `node` only
+# make the screen's `figma` link (since contract 1.7.0), the way the clarification-page generator does.
 PAGE_FIELDS = {"slug", "store_key", "url", "name", "title", "round", "description", "standfirst", "problem",
                "solution", "design", "decisions", "settled", "questions"}
-DESIGN_FIELDS = {"label", "more_label", "summary", "detail", "screens"}
-DESIGN_SCREEN_FIELDS = {"src", "cap", "hero"}
+DESIGN_FIELDS = {"label", "more_label", "summary", "detail", "screens", "figma_file"}
+DESIGN_SCREEN_FIELDS = {"src", "cap", "hero", "node"}
 DECISION_FIELDS = {"id", "date", "who", "how", "title", "detail"}
 QUESTION_FIELDS = {"id", "section", "title", "meta", "body", "body2", "snag", "quote", "note", "note_placeholder",
                    "options", "screens"}
 QUOTE_FIELDS = {"text", "cite"}
 OPTION_FIELDS = {"v", "t", "d", "rec"}
-QUESTION_SCREEN_FIELDS = {"src", "cap"}
+QUESTION_SCREEN_FIELDS = {"src", "cap", "figma"}
 
 PAGE_NEXT_STEP = {
     **NEXT_STEP,
@@ -1501,6 +1502,16 @@ PAGE_NEXT_STEP = {
     "screenshot_mismatch": "A screenshot the page names did not arrive, or one arrived that the page does not "
                            "name. Run `page plan <slug>` again; if it repeats, report it.",
 }
+
+
+# A Figma file key, as design.figma_file holds it: letters and digits only (the part after /design/ in its link).
+FIGMA_FILE_KEY_RE = re.compile(r"[A-Za-z0-9]+")
+
+
+def figma_url(file_key: str, node: str) -> str:
+    """A design screen's frame in Figma, exactly as clarification-page _generate.py figma_url builds it: a node id
+    in a Figma URL uses a hyphen, not the colon the API reports."""
+    return f"https://www.figma.com/design/{file_key}/?node-id={str(node).replace(':', '-')}"
 
 
 def find_page_yaml(root: Path, slug_arg: str) -> Path:
@@ -1881,6 +1892,19 @@ def build_page(root: Path, yaml_path: Path, cfg: dict, prof: dict, sent_at: str 
         parts.append({"name": name, "path": str(path), "type": kind, "data": data})
         return {"file": name}
 
+    def figma(out: dict, link: str, label: str, yaml_field: str) -> None:
+        """Since contract 1.7.0: the screen's Open in Figma link. Only a https://www.figma.com/ link is sent
+        (check figma_link); anything else is left out with a warning, and the screen goes without its button."""
+        if not link:
+            return
+        if checks.is_figma_link(link):
+            out["figma"] = link
+            return
+        warnings.append(f"{rel} → {label} → {yaml_field}: the Figma link {link} does not start with "
+                        f"{checks.FIGMA_PREFIX} (or holds a space), so it was left out. The screen is sent without "
+                        "its Open in Figma button. Fix the link and send the page again.")
+        left_out.append(f"{label} → figma (not a Figma link)")
+
     page: dict = {}
     put(page, "slug", text(cfg.get("slug")))
     put(page, "store_key", text(cfg.get("store_key")))
@@ -1899,6 +1923,19 @@ def build_page(root: Path, yaml_path: Path, cfg: dict, prof: dict, sent_at: str 
     put(page, "solution", text(cfg.get("solution")))
 
     src_design = as_dict(cfg.get("design"))
+    file_key = text(src_design.get("figma_file"))
+    with_node = sum(1 for s in as_list(src_design.get("screens")) if text(as_dict(s).get("node")))
+    if file_key and not FIGMA_FILE_KEY_RE.fullmatch(file_key):
+        # Checked once: a full link, or a key holding / ? # or a space, would build a link to the wrong place.
+        warnings.append(f"{rel} → design.figma_file: '{file_key}' is not a Figma file key (letters and digits only, "
+                        "the part after /design/ in the file's link), so no screen gets an Open in Figma button. "
+                        "Put only the key there and send the page again.")
+        left_out.append("design.figma_file (not a Figma file key)")
+        file_key = ""
+    elif not file_key and with_node:
+        warnings.append(f"{rel} → design: {with_node} screen(s) have a Figma node but the design has no figma_file, "
+                        "so they get no Open in Figma button. Add design.figma_file (the key from the file's link) "
+                        "to give them one.")
     design: dict = {}
     for k in ("label", "more_label", "summary", "detail"):
         put(design, k, text(src_design.get(k)))
@@ -1908,6 +1945,17 @@ def build_page(root: Path, yaml_path: Path, cfg: dict, prof: dict, sent_at: str 
         put(out, "cap", text(as_dict(s).get("cap")))
         if truthy(as_dict(s).get("hero")):
             out["hero"] = True
+        raw_node = as_dict(s).get("node")
+        if isinstance(raw_node, (int, float)) and not isinstance(raw_node, bool):
+            # YAML reads an unquoted 12:34 as the number 754 (base 60), which would link to the wrong frame.
+            warnings.append(f"{rel} → design.screens[{i}] → node: {raw_node} is a number, not a Figma node id, so "
+                            "this screen gets no Open in Figma button. Quote the node, e.g. node: \"12:34\", and "
+                            "send the page again.")
+            left_out.append(f"design.screens[{i}] → figma (node is not quoted)")
+        else:
+            node = text(raw_node)
+            if node and file_key:
+                figma(out, figma_url(file_key, node), f"design.screens[{i}]", "node")
         screens.append(out)
     put(design, "screens", screens)
     page["design"] = design
@@ -1965,6 +2013,7 @@ def build_page(root: Path, yaml_path: Path, cfg: dict, prof: dict, sent_at: str 
         for j, s in enumerate(as_list(q.get("screens"))):
             out = screen(s, f"/questions/{i}/screens/{j}", f"{label} → screens[{j}]")
             put(out, "cap", text(as_dict(s).get("cap")))
+            figma(out, text(as_dict(s).get("figma")), f"{label} → screens[{j}]", "figma")
             qscreens.append(out)
         put(qo, "screens", qscreens)
         questions.append(qo)
@@ -2067,7 +2116,8 @@ def page_view(reply: dict) -> str:
     lines += ["", f"{plain(design.get('label')) or 'What it looks like'}:", indent(plain(design.get("summary")), "    ")]
     if design.get("screens"):
         lines.append(f"    Screens ({len(design['screens'])}):")
-        lines += [f"    - {plain(s.get('cap')) or '(no caption)'}" for s in design["screens"]]
+        lines += [f"    - {plain(s.get('cap')) or '(no caption)'}" + (" · Open in Figma" if s.get("figma") else "")
+                  for s in design["screens"]]
     questions = view.get("questions") or []
     lines += ["", f"Questions ({len(questions)}):"]
     if not questions:
@@ -2080,7 +2130,8 @@ def page_view(reply: dict) -> str:
             if o.get("d"):
                 lines.append(indent(plain(o["d"]), "        "))
         if q.get("screens"):
-            lines.append(f"    Screens: {len(q['screens'])}")
+            linked = sum(1 for s in q["screens"] if s.get("figma"))
+            lines.append(f"    Screens: {len(q['screens'])}" + (f" ({linked} with Open in Figma)" if linked else ""))
     decisions = view.get("decisions") or []
     lines += ["", f"Answered questions ({len(decisions)}):"]
     if not decisions:

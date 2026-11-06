@@ -12,9 +12,9 @@ in `portal/contract/`, with a `SOURCE` file naming the ba-tools tag and each fil
 | `dashboard-2.md` | The same, readable |
 | `timeline-1.schema.json` | Since 1.6.0. The BA's Timeline page data for one product, sent to the Dashboard endpoint (it replaces Map and Board), JSON Schema draft 2020-12 |
 | `timeline-1.md` | The same, readable |
-| `clarification-1.schema.json` | The Clarification page Publish (one Round), JSON Schema draft 2020-12 |
+| `clarification-1.schema.json` | The Clarification page Publish (one Round), JSON Schema draft 2020-12; since 1.7.0 a screen may carry its `figma` link (the "Open in Figma" button) |
 | `clarification-1.md` | The same, readable |
-| `publish-reply-1.schema.json` | The Portal's reply to a Publish, Dashboard or page form by `kind` (and its dry run; since 1.6.0 also the view of a `timeline/1` send) |
+| `publish-reply-1.schema.json` | The Portal's reply to a Publish, Dashboard or page form by `kind` (and its dry run; since 1.6.0 also the view of a `timeline/1` send; since 1.7.0 a page screen's `figma` link in the Client view) |
 | `status-1.schema.json` | The Portal's reply to `GET /api/v1/status` |
 | `answers-1.schema.json` | The Portal's reply to `POST /api/v1/answers/reserve`: a batch of sent Answers |
 | `answers-2.schema.json` | Since 1.4.0. The reply to `POST /api/v1/answers/reserve` when the request accepts `answers/2`: `answers/1` plus `updates`, the Client's saves on Items (below); since 1.6.0 an item's `kind` may be `todo` |

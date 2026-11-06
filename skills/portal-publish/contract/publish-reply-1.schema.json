@@ -930,7 +930,7 @@
       }
     },
     "client_screen": {
-      "description": "A screen in the Client view: its media address and caption. Never its file name.",
+      "description": "A screen in the Client view: its media address, caption and (since 1.7.0) Figma link. Never its file name.",
       "type": "object",
       "additionalProperties": false,
       "required": ["media"],
@@ -942,7 +942,8 @@
             { "type": "null" }
           ]
         },
-        "cap": { "type": "string", "minLength": 1, "maxLength": 300 }
+        "cap": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "figma": { "description": "Since 1.7.0. The screen's Figma link, for the Open in Figma button.", "type": "string", "minLength": 22, "maxLength": 2000, "pattern": "^https://www\\.figma\\.com/[^\\x00-\\x20\\x7f]*(?![\\s\\S])" }
       }
     }
   }

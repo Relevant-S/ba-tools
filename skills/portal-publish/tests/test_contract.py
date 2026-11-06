@@ -125,6 +125,9 @@ PAGE_CASES = {
     "page-version-not-accepted", "part-sent-twice", "file-dot", "file-dotdot", "file-control-char",
     "file-colon", "file-named-publish", "file-case-duplicate", "two-heroes", "duplicate-decision-id",
     "slug-leading-hyphen", "slug-trailing-hyphen", "slug-double-hyphen", "slug-only-hyphens",
+    # a screen's Figma link (contract 1.7.0)
+    "figma-http", "figma-other-host", "figma-no-www", "figma-javascript", "figma-with-space", "figma-empty",
+    "figma-html-entity", "figma-no-break-space", "figma-ideographic-space",
 }
 REPLY_CASES = {
     "reply-page-sent-with-client-view": "publish-reply/1",
@@ -138,6 +141,7 @@ REPLY_CASES = {
     "reply-page-screen-file-name": "publish-reply/1",
     "reply-page-media-not-a-uuid": "publish-reply/1",
     "reply-page-media-only-hyphens": "publish-reply/1",
+    "reply-page-figma-not-figma": "publish-reply/1",
     "answers-no-batch-with-answers": "answers/1",
     "answers-no-batch-with-hold": "answers/1",
     "answers-batch-without-answers": "answers/1",
@@ -206,8 +210,40 @@ def test_every_page_check_has_a_fixture():
     assert checks_seen == {
         "schema", "contract_version", "unique_question_id", "unique_option_v", "one_rec_max",
         "bare_file_names", "max_screenshots", "screens_match_parts", "no_html_entities", "one_hero_max",
-        "unique_decision_id",
+        "unique_decision_id", "figma_link",
     }
+
+
+@pytest.mark.parametrize("value, ok", [
+    ("https://www.figma.com/design/AbC/?node-id=1-2", True),
+    ("https://www.figma.com/", True),
+    ("https://www.figma.com/design/AbC/?node-id=1-2&t=x", True),
+    ("http://www.figma.com/design/AbC/", False),
+    ("https://figma.com/design/AbC/", False),
+    ("https://www.figma.com.evil.example/", False),
+    ("https://www.figma.com/design/A bC/", False),
+    ("https://www.figma.com/design/AbC/\n", False),
+    ("HTTPS://WWW.FIGMA.COM/design/AbC/", False),
+    ("", False),
+    ("https://www.figma.com/design/AbC/?node-id=1-2&amp;t=x", False),
+    ("https://www.figma.com/design/AbC/?node-id=1-2&#38;t=x", False),
+    ("https://www.figma.com/design/AbC/?node-id=1-2&#x26;t=x", False),
+    ("https://www.figma.com/design/A\u00a0bC/", False),
+    ("https://www.figma.com/design/A\u2028bC/", False),
+    ("https://www.figma.com/design/A\u3000bC/", False),
+    ("https://www.figma.com/design/A\ufeffbC/", False),
+    ("https://www.figma.com/design/A\x85bC/", False),
+])
+def test_figma_link_rule(value, ok):
+    assert checks.is_figma_link(value) is ok
+
+
+def test_old_page_without_figma_still_passes():
+    """A page sent before 1.7.0 (no figma on any screen) passes as before."""
+    doc = read(FIXTURES / "valid" / "clarification-1-merchants-v7-size.json")
+    for _, screen in checks.page_screens(doc):
+        screen.pop("figma", None)
+    assert checks.check_publish(doc, "clarification", page_files(doc)) is None
 
 
 def test_merchants_v7_size():
@@ -227,7 +263,13 @@ def test_probate_is_converted():
                   "settled", "standfirst", "title"}
     assert never_sent.isdisjoint(doc)
     assert not {"figma_file", "figma_page"} & set(doc["design"])
-    assert all(set(s) <= {"file", "cap", "hero"} for s in doc["design"]["screens"])
+    assert all(set(s) <= {"file", "cap", "hero", "figma"} for s in doc["design"]["screens"])
+    # Since 1.7.0 each design screen with a node carries the link the claude.ai page shows (figma_file + node).
+    assert [s["figma"] for s in doc["design"]["screens"]] == [
+        "https://www.figma.com/design/SampleFileKey02AbCdEfG/?node-id=355-2271",
+        "https://www.figma.com/design/SampleFileKey02AbCdEfG/?node-id=356-4676",
+        "https://www.figma.com/design/SampleFileKey02AbCdEfG/?node-id=356-5259",
+    ]
     assert all("spec_ref" not in q for q in doc["questions"])
 
 
@@ -645,7 +687,7 @@ def test_limits_match_the_spec():
 
 def test_index_names_existing_schemas():
     idx = checks.index()
-    assert idx["contract_folder"] == "1.6.0"
+    assert idx["contract_folder"] == "1.7.0"
     assert idx["accepted"] == ["dashboard/1", "dashboard/2", "timeline/1", "clarification/1"]
     assert set(idx["schemas"]) == {"dashboard/1", "dashboard/2", "timeline/1", "clarification/1", "publish-reply/1",
                                    "status/1",

@@ -11,8 +11,9 @@ fields), and each screenshot is one more part, named by its `file` value. A fiel
 
 The skill builds the object from `docs/BA/clarifications/<slug>-decisions.yaml`. It never sends `spec`,
 `product`, `doc_title`, `eyebrow`, `copy_header`, `copy_noun`, `stage`, `events`, `settled` (sent as
-`decisions`), `design.figma_file`, `design.figma_page`, `screens[].node`, `screens[].frame`,
-`questions[].spec_ref` or `questions[].screens[].figma`.
+`decisions`), `design.figma_file`, `design.figma_page`, `screens[].node`, `screens[].frame` or
+`questions[].spec_ref`. Since 1.7.0 `design.figma_file` and a design screen's `node` make that screen's `figma`
+link, and a Question screen's own `figma` is sent as it is (below).
 
 ## Who sees a field
 
@@ -70,6 +71,7 @@ Each design screen:
 | `file` | bare file name ≤ 200 (no folders), unique in the page — also the name of its part | yes | portal |
 | `cap` | text ≤ 300 | no | client |
 | `hero` | yes/no — the screen shown first, at most one per page | no | portal |
+| `figma` | since 1.7.0: link ≤ 2,000 — the screen's frame in Figma, for the "Open in Figma" button | no | client |
 
 ## `decisions[]` — settled decisions, shown read-only
 
@@ -117,6 +119,22 @@ Each Question screen:
 |---|---|---|---|
 | `file` | bare file name ≤ 200 (no folders), unique in the page — also the name of its part | yes | portal |
 | `cap` | text ≤ 300 | no | client |
+| `figma` | since 1.7.0: link ≤ 2,000 — the screen's frame in Figma, for the "Open in Figma" button | no | client |
+
+### A screen's Figma link (since 1.7.0)
+
+The link is the one the BA's claude.ai page shows (clarification-page `_generate.py`, `figma_url`):
+
+- a design screen: `https://www.figma.com/design/<design.figma_file>/?node-id=<node, with ":" as "-">`, when the
+  screen has a `node` and the design has a `figma_file`. Node `3405:4138` gives `?node-id=3405-4138`;
+- a Question screen: its own `figma` value, as it is.
+
+Only a link that starts with exactly `https://www.figma.com/` and holds no space (of any kind), control
+character or HTML entity (`&amp;`; a plain `&t=x` is fine) is sent
+(check `figma_link`). The skill leaves any other value out with a warning, and the screen goes without its button.
+The Portal refuses one (`contract_invalid`, check `figma_link`). The field is optional: a page with no links, or
+one sent before 1.7.0, sends and shows as before. The Portal shows the button next to the screen's caption and
+opens the link in a new tab.
 
 ## Limits and named checks
 
@@ -130,8 +148,9 @@ say is in `checks.md`, as named checks:
 | `one_rec_max` | at most one option per Question has `rec: true` |
 | `bare_file_names` | a screen `file` is a usable bare name (no folder, not `.` or `..`, no control character or `:`, not `publish`) and no two match, letter case aside |
 | `one_hero_max` | at most one screen has `hero: true` |
-| `unique_decision_id` | no two decisions share an `id` |
 | `max_screenshots` | at most 30 screens in all, design and Questions together |
+| `unique_decision_id` | no two decisions share an `id` |
+| `figma_link` | since 1.7.0: a screen's `figma` starts with `https://www.figma.com/` and holds no space (of any kind), control character or HTML entity |
 | `no_html_entities` | no HTML entity in a plain-text field |
 | `screens_match_parts` | every named screen has a part, every part is named, and no part is sent twice (raises `screenshot_mismatch`) |
 

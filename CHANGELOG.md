@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- **`portal-publish` contract 1.7.0** (tag `portal-contract-1.7.0`): "Open in Figma" on each screen of a Portal
+  Clarification page, as on the claude.ai page (Vadim, 6 Nov 2026).
+  - **Deploy the Portal first, then update ba-tools in the BA repos.** A Portal still on 1.6.0 refuses a page that
+    carries `figma` (its screens take no unknown field), so a 1.7.0 ba-tools could not send pages to it.
+  - `clarification/1` gains an optional **`figma`** link on each design screen and each Question screen
+    (`x-visibility: client`, at most 2,000 characters). New named check **`figma_link`**: the link starts with
+    exactly `https://www.figma.com/` and holds no space of any kind, control character or HTML entity. A page without links passes as
+    before.
+  - `publish-reply/1`: a page screen in the Client view may carry `figma`.
+  - `index.json`: `contract_folder` `1.7.0`; `accepted` is unchanged. The page fixtures (Probate, Merchants V7 size)
+    now carry links; the case `screen-unknown-field` now uses `node` (still never sent); new cases `figma-http`,
+    `figma-other-host`, `figma-no-www`, `figma-javascript`, `figma-with-space`, `figma-empty`,
+    `figma-html-entity`, `figma-no-break-space`, `figma-ideographic-space` and
+    `reply-page-figma-not-figma`.
+- **`portal-publish page plan`** sends each screen's Figma link, built the way the clarification-page generator
+  builds it: a design screen's from `design.figma_file` and its `node`, a Question screen's own `figma`. A link
+  that is not a `https://www.figma.com/` link is left out with a warning. A `design.figma_file` that is not a bare
+  key (letters and digits) gives one warning and no links; screens with a node but no `figma_file` give one warning;
+  an unquoted node (YAML reads `12:34` as the number 754) gets no link and a warning to quote it. The dry-run view
+  marks the screens that carry the button.
+
 - **`portal-publish` contract 1.6.0** (tag `portal-contract-1.6.0`): the Timeline on the Portal, slice 1. The
   Timeline replaces Map and Board (Vadim, 6 Nov 2026).
   - New **`timeline/1`** (`timeline-1.schema.json`, `timeline-1.md`): the BA's Timeline page data for one product,

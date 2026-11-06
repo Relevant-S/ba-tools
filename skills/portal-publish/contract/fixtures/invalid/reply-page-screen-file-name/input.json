@@ -29,6 +29,7 @@
         {
           "media": null,
           "cap": "The payouts page a merchant sees.",
+          "figma": "https://www.figma.com/design/SaMpLeFiLeKey0001/?node-id=12-345",
           "file": "payouts-overview.png"
         },
         {
@@ -139,7 +140,8 @@
         "screens": [
           {
             "media": null,
-            "cap": "The banner a merchant sees after a bounce."
+            "cap": "The banner a merchant sees after a bounce.",
+            "figma": "https://www.figma.com/design/SaMpLeFiLeKey0001/?node-id=40-12"
           }
         ]
       },
