@@ -1,0 +1,901 @@
+<title>__PRODUCT__ Timeline</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one bordered card like the Relevant Client Portal — toolbar, legend, then a Gantt (names left, time right) with a side panel on click.
+   Look copied from the Portal (shadcn zinc, Figtree 400/600, radius 2/4/8). Light only, as the Portal is. */
+:root{
+  --page:#fafafa; --card:#ffffff; --fg:#09090b; --fg2:#52525b; --muted:#f4f4f5; --muted-fg:#71717a; --border:#e4e4e7; --primary:#18181b; --on-primary:#fafafa;
+  --concept:#6b6e73; --concept-t:#f1f2f3; --spec:#7c3aed; --spec-t:#f3edfe; --ready:#2456d3; --ready-t:#ebf0fc;
+  --dev:#be2a6e; --dev-t:#fbeaf2; --qa:#8a6400; --qa-t:#fbf4dc; --done:#286f45; --done-t:#e7f3ec; --live-a:#cfe6d8;
+  --red:#a32020; --red-t:#fef2f2; --orange:#c2410c; --sel:#f3edfe; --shadow:rgba(0,0,0,.08);
+  --font:Figtree,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --label:330px; --panel:408px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--page);color:var(--fg);font:400 14px/20px var(--font);-webkit-font-smoothing:antialiased}
+b,strong,h1,h2,h3{font-weight:600}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.wrap{max-width:1360px;margin:0 auto;padding-block:32px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.head h1{margin:0;font-size:24px;line-height:32px;font-weight:400;text-wrap:balance}
+.head p{margin:4px 0 24px;color:var(--muted-fg);max-width:70ch}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)}
+.seg{display:inline-flex;background:var(--muted);border-radius:8px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:4px 12px;border-radius:4px;color:var(--muted-fg);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--fg);font-weight:600;box-shadow:0 1px 2px var(--shadow)}
+.spacer{flex:1}
+.tog{display:inline-flex;align-items:center;gap:8px;font-size:13px;border:0;background:none;cursor:pointer;padding:2px 0}
+.tog i{width:30px;height:18px;border-radius:9px;background:#d4d4d8;position:relative;display:inline-block;flex-shrink:0}
+.tog i::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--card);transition:left .15s}
+.tog[aria-pressed="true"] i{background:var(--primary)}
+.tog[aria-pressed="true"] i::after{left:14px}
+.tog:disabled{color:var(--muted-fg);cursor:not-allowed}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;line-height:16px;color:var(--muted-fg);padding:10px 16px;border-bottom:1px solid var(--border)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:16px;height:8px;border-radius:2px;display:inline-block}
+.body{display:flex;align-items:stretch;height:calc(100dvh - 150px);min-height:460px;position:relative}
+.chart{flex:1;min-width:0;overflow:auto;position:relative;overscroll-behavior:contain}
+.inner{position:relative;min-width:100%}
+.row{display:grid;grid-template-columns:var(--label) 1fr;border-top:1px solid var(--border);min-height:36px}
+.lab{padding:8px 12px;display:flex;align-items:center;gap:8px;border-right:1px solid var(--border);min-width:0;position:sticky;left:0;z-index:4;background:var(--card)}
+.track{position:relative;min-width:0}
+.grp{border-top:1px solid var(--border);background:var(--muted);padding:6px 0;font-size:12px;line-height:16px;font-weight:600;color:var(--fg2)}
+.grp span{position:sticky;left:0;z-index:4;display:inline-block;width:var(--label);padding:6px 12px;margin:-6px 0;background:var(--muted);border-right:1px solid var(--border)}
+.row.area{min-height:44px;cursor:pointer}
+.row.area .lab{font-weight:600}
+.row.area.empty{cursor:default}
+.row.area.empty .lab{color:var(--muted-fg);font-weight:400}
+.row.feature{cursor:pointer}
+.row.feature .lab{padding-left:30px}
+.row.req{cursor:pointer}
+.row.req .lab{padding-left:86px;position:sticky}
+.row.req .lab::before{content:"";position:absolute;left:57px;top:0;bottom:0;border-left:1px solid var(--border)}
+.row:hover .lab{background:#f7f7f8}
+.row.sel,.row.sel .lab{background:var(--sel)}
+.caret{width:14px;text-align:center;color:var(--muted-fg);font-size:11px;flex-shrink:0;border:0;background:none;padding:0;cursor:pointer}
+/* one line per row: long names end in "…", the full name shows on hover and in the side panel */
+.nm{min-width:min(11ch,40%);flex:1 1 auto;overflow-wrap:normal}
+.row .lab .nm{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.req .nm{font-size:13px;line-height:17px}
+.cnt,.stg{margin-left:auto;font-size:12px;color:var(--muted-fg);font-weight:400;white-space:nowrap;padding-left:6px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.ring{display:inline-block;width:14px;height:14px;border-radius:50%;flex-shrink:0;-webkit-mask:radial-gradient(circle,transparent 3.5px,#000 4px);mask:radial-gradient(circle,transparent 3.5px,#000 4px)}
+.ring.empty{background:transparent;border:1.5px dashed #a1a1aa;-webkit-mask:none;mask:none;width:12px;height:12px}
+.kind{font-size:12px;line-height:16px;font-weight:600;border-radius:4px;padding:2px 8px;background:var(--muted);color:var(--fg2);white-space:nowrap;margin-left:auto}
+.kind.bug{background:var(--red-t);color:var(--red)} .kind.improvement{background:var(--ready-t);color:var(--ready)} .kind.change{background:var(--spec-t);color:var(--spec)}
+.guess{color:var(--orange);font-weight:600;margin-left:2px}
+.bar{position:absolute;top:10px;height:16px;left:calc(var(--s) * 100%);width:calc(var(--w) * 100%)}
+.row.req .bar{top:13px;height:10px}
+.bar.first{border-top-left-radius:4px;border-bottom-left-radius:4px}
+.bar.last{border-top-right-radius:4px;border-bottom-right-radius:4px}
+.bar.approx{opacity:.45}
+.st{position:absolute;height:4px;border-radius:2px;left:calc(var(--s) * 100%);width:calc(var(--w) * 100%);top:calc(7px + var(--i) * 6px)}
+.c-concept{background:var(--concept)} .c-spec,.c-design{background:var(--spec)} .c-ready{background:var(--ready)} .c-dev{background:var(--dev)} .c-qa{background:var(--qa)} .c-done{background:var(--done)}
+.c-live{background:repeating-linear-gradient(45deg,var(--live-a) 0 6px,var(--done-t) 6px 12px)}
+.mark{position:absolute;top:8px;left:calc(var(--s) * 100%);font-size:12px;line-height:16px;font-weight:600;border-radius:4px;padding:2px 6px;white-space:nowrap}
+.mark.merge{color:var(--done);background:var(--done-t);margin-left:6px}
+.mark.split{color:var(--fg2);background:var(--muted);transform:translateX(-100%);margin-left:-6px}
+.mark.donec{color:var(--done);background:var(--done-t);transform:translateX(-50%)}
+.early{position:absolute;top:0;left:3px;font-size:11px;line-height:12px;color:var(--muted-fg)}
+.ask{position:absolute;top:2px;left:calc(var(--s) * 100%);transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid var(--fg)}
+.axis{display:grid;grid-template-columns:var(--label) 1fr;background:#fcfcfc;position:sticky;top:0;z-index:6;border-bottom:1px solid var(--border)}
+.axis .lab{background:#fcfcfc;z-index:7}
+.axis .scale{background:#fcfcfc}
+.axis .lab{align-items:flex-end;font-size:12px;color:var(--muted-fg);height:96px}
+.scale{position:relative;height:96px}
+.pins{position:absolute;left:0;right:0;top:10px;height:28px}
+.pin{position:absolute;left:calc(var(--s) * 100%);transform:translateX(-50%);width:24px;height:24px;border-radius:50%;background:var(--card);border:1.5px solid var(--fg);display:inline-flex;align-items:center;justify-content:center;color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;padding:0}
+.pin svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k-email{color:var(--ready);border-color:var(--ready)} .k-doc{color:var(--done);border-color:var(--done)} .k-comments{color:var(--orange);border-color:var(--orange)} .k-page{color:var(--spec);border-color:var(--spec)}
+.pin.grp{background:var(--fg);color:var(--on-primary);border-color:var(--fg)}
+.pin.on{box-shadow:0 0 0 3px #d4d4d8}
+.pin.sm{position:static;transform:none;width:18px;height:18px;cursor:default}
+.pin.sm svg{width:10px;height:10px}
+.ticks{position:absolute;left:0;right:0;bottom:6px;height:40px}
+.tk{position:absolute;bottom:0;width:1px;height:6px;background:#d4d4d8;left:calc(var(--s) * 100%)}
+.tk.big{height:12px;background:#a1a1aa}
+.tl{position:absolute;bottom:16px;left:calc(var(--s) * 100%);font-size:12px;color:var(--muted-fg);white-space:nowrap;padding-left:3px}
+.lines{position:absolute;top:0;bottom:0;right:0;pointer-events:none;z-index:1}
+.rl{position:absolute;top:96px;bottom:0;left:calc(var(--s) * 100%);border-left:1px dashed var(--done)}
+.rl span{position:sticky;top:100px;display:inline-block;margin-left:4px;font-size:12px;line-height:16px;font-weight:600;color:var(--done);background:var(--done-t);border-radius:4px;padding:2px 6px;white-space:nowrap}
+.rl.today{top:96px;border-left:2px solid var(--fg)}
+.rl.today span{position:absolute;top:auto;bottom:6px;left:auto;right:4px;margin:0;color:var(--on-primary);background:var(--fg)}
+.foot{padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted-fg)}
+.side{width:var(--panel);flex-shrink:0;border-left:1px solid var(--border);padding:20px;display:flex;flex-direction:column;gap:10px;height:100%;overflow-y:auto;overscroll-behavior:contain;background:var(--card)}
+.side h2{margin:0;font-size:18px;line-height:28px;text-wrap:balance}
+.sidehead{display:flex;align-items:center;gap:12px;min-width:0}
+.sidehead .back{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidehead .shut{margin-left:auto;flex-shrink:0}
+.close{align-self:flex-start;border:0;background:none;color:var(--muted-fg);cursor:pointer;padding:0;font-size:13px}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-size:12px;line-height:16px;font-weight:600;border-radius:4px;padding:2px 8px;white-space:nowrap;background:var(--muted);color:var(--fg2)}
+.p-concept{background:var(--concept-t);color:var(--concept)} .p-spec,.p-design{background:var(--spec-t);color:var(--spec)} .p-ready{background:var(--ready-t);color:var(--ready)}
+.p-dev{background:var(--dev-t);color:var(--dev)} .p-qa{background:var(--qa-t);color:var(--qa)} .p-done,.p-live{background:var(--done-t);color:var(--done)}
+.btn{display:inline-block;align-self:flex-start;background:var(--primary);color:var(--on-primary);text-decoration:none;border-radius:4px;padding:6px 12px;font-size:13px;font-weight:600}
+.sh{margin-top:10px;font-size:12px;line-height:16px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-fg)}
+.li{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border);font-size:13px;min-width:0}
+.li .r{margin-left:auto;color:var(--muted-fg);font-size:12px;white-space:nowrap;padding-left:8px}
+.li.click{cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left}
+.li small{display:block;color:var(--muted-fg);font-size:12px}
+.note{margin:0;font-size:12px;color:var(--muted-fg)}
+.mix{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px}
+.bul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:18px}
+.ititle{display:flex;gap:8px;align-items:flex-start}
+.ititle h2{flex:1}
+.copylink{border:1px solid var(--border);background:var(--card);border-radius:4px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0}
+.copylink svg{width:14px;height:14px;fill:none;stroke:var(--fg2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ulab{font-size:13px;font-weight:600;margin-top:6px}
+#u-note{font:inherit;font-size:13px;min-height:72px;border:1px solid var(--border);border-radius:4px;padding:8px;resize:vertical;width:100%;color:var(--fg);background:var(--card)}
+.ucheck{display:flex;gap:8px;align-items:center;font-size:13px}
+.urow{display:flex;gap:12px;align-items:center}
+button.btn{border:0;cursor:pointer}
+.li.other{opacity:.5}
+.li.other:hover,.li.other:focus-visible{opacity:.85}
+button.btn:disabled{opacity:.6}
+.bul .src{color:var(--muted-fg);font-size:12px;white-space:nowrap}
+a{color:var(--fg)}
+.empty-msg{padding:24px 16px;color:var(--muted-fg)}
+.find{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
+.find input,.find select{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--border);border-radius:4px;padding:5px 10px;height:32px}
+.find input{width:220px;max-width:100%}
+.badge{font-size:11px;line-height:16px;font-weight:600;color:#fff;border-radius:8px;min-width:16px;padding:0 5px;text-align:center;margin-left:4px;flex-shrink:0}
+.badge.q{background:var(--red)} .badge.w{background:var(--orange)}
+.badge + .badge{margin-left:2px}
+.wline{position:absolute;height:2px;bottom:calc(3px + var(--i) * 3px);left:calc(var(--s) * 100%);width:calc(var(--w) * 100%);background:repeating-linear-gradient(90deg,var(--orange) 0 6px,transparent 6px 9px)}
+@media (max-width:900px){
+  :root{--label:200px}
+  .side{position:absolute;right:0;top:0;bottom:0;width:min(var(--panel),92%);z-index:9;box-shadow:-8px 0 24px var(--shadow)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.fab{position:fixed;right:calc(24px + env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:20;display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 18px 0 14px;border-radius:24px;border:0;background:var(--primary);color:var(--on-primary);font:600 14px/1 var(--font);box-shadow:0 6px 20px rgba(0,0,0,.18);cursor:pointer}
+.fab b{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--on-primary);color:var(--primary);font-size:18px;line-height:1}
+.fab:hover{transform:translateY(-1px)}
+.btn.ghost{background:var(--card);color:var(--fg);border:1px solid var(--border)}
+.sform{display:flex;flex-direction:column;gap:10px}
+.sform label{font-size:13px;font-weight:600;display:flex;flex-direction:column;gap:4px}
+.sform label small{font-weight:400;color:var(--muted-fg)}
+.sform input,.sform select,.sform textarea{font:inherit;font-size:13px;font-weight:400;color:var(--fg);background:var(--card);border:1px solid var(--border);border-radius:4px;padding:7px 9px;width:100%}
+.sform textarea{min-height:110px;resize:vertical}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips label{flex-direction:row;align-items:center;gap:6px;font-weight:400;border:1px solid var(--border);border-radius:4px;padding:5px 9px;cursor:pointer}
+.chips input{width:auto}
+.row.sug .lab .nm{font-style:italic}
+.dot.sugdot{background:transparent;border:1.5px dashed var(--fg2)}
+.bar.sugbar{border:1.5px dashed var(--fg2);background:repeating-linear-gradient(45deg,transparent 0 5px,#f4f4f5 5px 10px);border-radius:4px}
+.kind.sug{background:#fff7d6;color:#7a5a00}
+.k-idea{color:#a16207;border-color:#a16207}
+.p-suggested{background:#fff7d6;color:#7a5a00} .p-accepted{background:var(--done-t);color:var(--done)} .p-declined{background:var(--muted);color:var(--fg2)}
+@media (max-width:600px){.fab span{display:none}.fab{padding:0;width:48px;justify-content:center}}
+.help{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--fg2);font:600 14px/1 var(--font);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.help[aria-expanded="true"]{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.tag{font-size:11px;line-height:15px;font-weight:600;color:var(--fg2);background:var(--card);border:1px solid var(--border);border-radius:4px;padding:0 5px;white-space:nowrap;flex-shrink:0}
+.tagsel{position:relative}
+.tagsel summary{list-style:none;cursor:pointer;font-size:13px;border:1px solid var(--border);border-radius:4px;padding:0 10px;height:32px;display:inline-flex;align-items:center;gap:6px;background:var(--card);white-space:nowrap}
+.tagsel summary::-webkit-details-marker{display:none}
+.tagsel[open] summary,.tagsel.on summary{border-color:var(--primary)}
+.tagsel .menu{position:absolute;top:36px;left:0;z-index:30;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px;min-width:200px;max-height:320px;overflow:auto}
+.tagsel .menu label{display:flex;gap:8px;align-items:center;font-size:13px;padding:5px 6px;border-radius:4px;cursor:pointer}
+.tagsel .menu label:hover{background:var(--muted)}
+.tagsel .menu input{width:auto;height:auto;padding:0;margin:0;flex:none;border-radius:2px}  /* not the search box's size */
+/* the four views: Timeline, Clarification pages, To-dos, Next meeting agenda */
+.tabs{margin:0 0 16px}
+.tabs button .n{font-weight:400;color:var(--muted-fg);margin-left:4px}
+.card[data-view]:not([data-view="tl"]) :is(#toolbar,#legend,#chart,#foot){display:none}
+.card[data-view="tl"] #list{display:none}
+.list{flex:1;min-width:0;overflow:auto;padding:4px 20px 24px;overscroll-behavior:contain}
+.list .li{padding:10px 0}
+.lbar{position:sticky;top:0;z-index:2;background:var(--card);padding:12px 0 8px;margin-bottom:4px}
+.lbar .clear{border:0;background:none;color:var(--muted-fg);font-size:12px;cursor:pointer;text-decoration:underline;padding:4px}
+.list .sh:first-child{margin-top:12px}
+.list a.li{text-decoration:none;color:inherit}
+.list a.li:hover .nm b,.list .li.click:hover .nm b{text-decoration:underline}
+.li .pills{margin-left:auto;flex-wrap:nowrap;padding-left:8px}
+.p-open{background:var(--red-t);color:var(--red)}
+.tagsel .menu .clear{border:0;background:none;color:var(--muted-fg);font-size:12px;padding:6px;cursor:pointer;text-decoration:underline}
+
+</style>
+
+<div class="wrap">
+  <div class="head">
+    <h1 id="h1"></h1>
+    <p id="intro"></p>
+  </div>
+  <div class="seg tabs" role="tablist" aria-label="View" id="tabs"></div>
+  <div class="card">
+    <div class="toolbar" id="toolbar">
+      <div class="seg" role="group" aria-label="Period" id="period"></div>
+      <div class="find"><input id="q" type="search" placeholder="Search features, requests, questions…" aria-label="Search"><select id="person" aria-label="Filter by person"></select><details class="tagsel" id="tagsel"><summary id="tagsum"></summary><div class="menu" id="tagmenu"></div></details></div>
+      <span class="spacer"></span>
+      <button class="tog" id="hideDone" aria-pressed="true"><i></i>Hide done &gt; 2 weeks</button>
+      <button class="tog" id="openAll" aria-pressed="false"><i></i>Open all areas</button>
+      <button class="help" id="legendBtn" type="button" aria-expanded="false" aria-controls="legend" title="What do the colours and icons mean?">?</button>
+    </div>
+    <div class="legend" id="legend" hidden></div>
+    <div class="body">
+      <div class="chart" id="chart"></div>
+      <div class="list" id="list"></div>
+      <aside class="side" id="side" hidden></aside>
+    </div>
+    <div class="foot" id="foot"></div>
+  </div>
+</div>
+
+<button class="fab" id="suggestBtn" type="button" aria-label="Suggest a new feature or a change"><b>+</b><span>Suggest</span></button>
+
+<script>
+const DATA = /*__DATA__*/null;
+// the project's own words: see ba-tools docs/timeline-data-contract.md
+const P = DATA.product || {};
+const BA_NAME = P.ba || "the BA";
+const TRACKER = {jira:{name:"Jira", work:"Jira tickets"}, "github-bmad":{name:"GitHub", work:"Stories"}}[P.tracker] || {name:"the tracker", work:"Work items"};
+const STAGE = {concept:"Concept",spec:"Spec & design",design:"Spec & design",ready:"Ready for dev",dev:"In dev",qa:"In QA",done:"Done",live:"Live"};
+const COL = {concept:"var(--concept)",spec:"var(--spec)",design:"var(--spec)",ready:"var(--ready)",dev:"var(--dev)",qa:"var(--qa)",done:"var(--done)",live:"var(--done)"};
+const KIND = {"sub-feature":"sub-feature",change:"change",improvement:"improvement",bug:"bug"};
+const MK = {call:"Client call",email:"Email",comments:"Comments",doc:"Document",page:"Clarification-page answers",idea:"Suggestion"};
+const ICON = {
+  call:'<svg viewBox="0 0 24 24"><path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
+  email:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  comments:'<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  idea:'<svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>',
+  doc:'<svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>',
+  page:'<svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="m9 15 2 2 4-4"/></svg>'};
+const PERIODS = [["2w","2 weeks",14],["4w","4 weeks",28],["10w","10 weeks",70],["all","All",null]];
+const DAY = 86400000;
+let rw = 0;
+let RES = {}, DB = null, VIEWER = "";
+let SUG = [], USER = null, ME_ID = null, CAN_EDIT = false, SUG_NAMES = {};
+const sugFor = fid => SUG.filter(x => x.featureId === fid);
+const sugNew = area => SUG.filter(x => !x.featureId && x.area === area);
+const SUG_TYPE = {feature:"New feature", change:"Change", problem:"Something's wrong"};
+const SUG_URG = {nice:"Nice to have", soon:"Soon", blocking:"Blocking us"};
+const SUG_STATUS = {suggested:"Suggested", accepted:"Accepted", declined:"Declined"};
+const allMs = () => DATA.pins.concat(SUG.map(x => ({id:"sg:"+x.id, date:x.date, kind:"idea", title:"Suggestion · "+x.title})));
+function sugRow(x, w, level){
+  const a = Math.max(d(x.date), w.start), bar = d(x.date) <= w.end ? `<i class="bar sugbar" style="--s:${pos(a,w)};--w:${Math.max(TODAY+DAY-a, DAY)/w.span}"></i>` : "";
+  const sel = st.sel?.t==="sg" && st.sel.id===x.id ? " sel" : "";
+  const lab = level === "feature"
+    ? `<span class="caret"></span><i class="dot sugdot"></i><span class="nm" title="${esc(x.title)}">${esc(x.title)}</span><span class="stg">${SUG_STATUS[x.status]||"Suggested"}</span>`
+    : `<span class="nm" title="${esc(x.title)}">${esc(x.title)}</span><span class="kind sug">${x.status==="suggested"?"suggested":SUG_STATUS[x.status].toLowerCase()}</span>`;
+  return `<div class="row ${level==="feature"?"feature":"req"} sug${sel}" data-sg="${esc(x.id)}" tabindex="0" role="button"><div class="lab">${lab}</div><div class="track">${bar}</div></div>`;
+}
+// "BA" in the dashboard data means the project's BA (product.ba)
+const ownerOf = c => { const o = whoKey(c.who); return o === "BA" ? (P.ba || "BA") : o; };
+const isMine = c => !VIEWER || samePerson(ownerOf(c).split(" ")[0], VIEWER);
+const isResolved = c => !!(c && c.key && RES[c.key] && RES[c.key].resolved);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function d(s){ const [y,m,dd]=s.split("-").map(Number); return Date.UTC(y,m-1,dd); }
+function mon(x){ return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][x.getUTCMonth()]; }
+function fmt(s,year){ const x=new Date(d(s)); return x.getUTCDate()+" "+mon(x)+(year?" "+x.getUTCFullYear():""); }
+const TODAY = d(DATA.today);
+
+const st = { view:"tl", cpPhase:"", cpArea:"", cpSort:"new",tdPerson:"", tdArea:"", tdSort:"old",period:"4w",hideDone:true, openAll:false, open:new Set(), openF:new Set(), sel:null, q:"", person:"", tags:new Set() };
+try { const p = localStorage.getItem("epd-tl-period"); if (p && PERIODS.some(x=>x[0]===p)) st.period = p; } catch(e) {}
+
+// index
+const F = {}, A = {}, Q = {}, M = {};
+DATA.groups.forEach(g => g.areas.forEach(a => { a.group = g.name; A[a.name] = a; a.features.forEach(f => { f.area = a.name; F[f.id] = f; (f.requests||[]).forEach(q => { q.feature = f.id; Q[f.id+"/"+q.id] = q; }); }); }));
+DATA.pins.forEach(m => M[m.id] = m);
+
+function win(){
+  // finished work before the start date shows only with "Hide done" off or while searching or filtering
+  const start = d(DATA.from && (!st.hideDone || filtering()) ? DATA.from : DATA.start), end = TODAY + 2*DAY, span = end - start;
+  const p = PERIODS.find(x=>x[0]===st.period), days = p[2] || span/DAY;
+  const chart = document.getElementById("chart");
+  const label = parseFloat(getComputedStyle(chart).getPropertyValue("--label")) || 300;
+  const visible = Math.max(200, (chart.clientWidth || 900) - label);
+  const ppd = visible / days, tw = Math.max(visible, ppd * span / DAY);
+  return {start, end, span, ppd, tw, label};
+}
+const pos = (t,w) => (t-w.start)/w.span;
+
+// stage spans of a feature or request (ms), with the end of each
+function spans(stages, end){
+  return stages.map((s,i) => ({stage:s.stage, a:d(s.from), b: i+1<stages.length ? d(stages[i+1].from) : end}));
+}
+function featureSpans(f){
+  // a story from before the start date stops at its done day (a short done cap), so hundreds of finished
+  // stories do not paint the chart solid all the way to today
+  if (f.origin && f.origin !== "dashboard" && f.doneDate) return {list:spans(f.stages, d(f.doneDate) + 3*DAY), approx:false};
+  if (f.stages && f.stages.length) return {list:spans(f.stages, TODAY+DAY), approx:false};
+  if (f.since) {
+    if (f.stage==="done" && f.doneDate) return {list:[{stage:"concept",a:d(f.since),b:d(f.doneDate)},{stage:"done",a:d(f.doneDate),b:TODAY+DAY}], approx:true};
+    return {list:[{stage:f.stage,a:d(f.since),b:TODAY+DAY}], approx:true};
+  }
+  if (f.stage==="done" && f.doneDate) return {list:[], approx:true, doneAt:d(f.doneDate)};
+  return {list:[], approx:true};
+}
+function reqOpen(q){ return !q.merged && !q.splitOff && !["done","live"].includes(q.stages[q.stages.length-1]?.stage); }
+// "Hide done > 2 weeks" hides the same things everywhere: on the chart and in the side panels
+const OLD = () => TODAY - 14*DAY;
+function reqDoneOld(q){ if (q.merged) return d(q.merged) < OLD(); const l = q.stages[q.stages.length-1]; return !!l && ["done","live"].includes(l.stage) && d(l.from) < OLD(); }
+const workDoneOld = t => !!t.done && d(t.done) < OLD();
+const visibleReqs = f => (f.requests||[]).filter(q => filtering() || !(st.hideDone && reqDoneOld(q)));
+const hiddenNote = n => n ? `<p class="note">${n} done more than 2 weeks ago ${n>1?"are":"is"} hidden. Switch off "Hide done" to see ${n>1?"them":"it"}.</p>` : "";
+function isDoneOld(f){
+  const stg = f.stages && f.stages.length ? f.stages[f.stages.length-1] : null;
+  const doneFrom = stg && ["done","live"].includes(stg.stage) ? d(stg.from) : (f.stage==="done" && f.doneDate ? d(f.doneDate) : null);
+  if (doneFrom===null) return false;
+  if ((f.requests||[]).some(reqOpen)) return false;
+  return doneFrom < TODAY - 14*DAY;
+}
+// search and person filter
+const whoKey = w => String(w||"").split(/[+→,]/)[0].replace(/[(].*?[)]/g,"").trim();
+const samePerson = (a,b) => a===b || a.startsWith(b+" ") || b.startsWith(a+" ");
+const filtering = () => !!(st.q || st.person || st.tags.size);
+function featureText(f){ return [f.label, f.area, f.desc, ...(f.openQ||[]), ...(f.requests||[]).map(q=>q.title), ...(f.todos||[]).map(x=>(x.who||"")+" "+x.title+" "+(x.s||"")), ...(f.work||[]).map(t=>t.id+" "+(t.title||""))].join(" ").toLowerCase(); }
+function personMatch(f){
+  if (!st.person) return true;
+  const [mode, name] = st.person.split(":");
+  if (mode==="r") return (f.who||[]).includes(name) || (f.requests||[]).some(q => (q.askedBy||"").split(" ")[0]===name);
+  return (f.todos||[]).some(x => samePerson(whoKey(x.who), name));
+}
+const featureMatch = (f, area) => tagMatch(f) && personMatch(f) && (!st.q || featureText(f).includes(st.q) || area.toLowerCase().includes(st.q));
+const reqMatch = q => st.q && q.title.toLowerCase().includes(st.q);
+const TAG_WORD = P.tagWord || "Phase";
+const hasTag = list => (list && list.length) ? list.some(t => st.tags.has(t)) : st.tags.has("(none)");
+const tagMatch = f => !st.tags.size || hasTag(f.tags) || (f.requests||[]).some(q => q.tags && hasTag(q.tags));
+// one tag on the row (the latest); the others are counted, and all of them are in the side panel
+const tagChips = list => { const l = list || []; if (!l.length) return ""; const t = l[l.length-1]; return `<span class="tag" title="${esc(TAG_WORD)}: ${esc(l.join(", "))}">${esc(t)}${l.length > 1 ? " +" + (l.length-1) : ""}</span>`; };
+const visibleFeatures = a => a.features.filter(f => filtering() ? featureMatch(f, a.name) : !(st.hideDone && isDoneOld(f)));
+const todosOld = f => (f.todos||[]).filter(x => !isResolved(x) && (x.age ?? 0) > 30).length;
+
+function bars(list, w, cls, extra=""){
+  const vis = list.filter(s => s.b > w.start && s.a < w.end).map(s => ({...s, a:Math.max(s.a,w.start), b:Math.min(Math.max(s.b,s.a+DAY),w.end)}));
+  return vis.map((s,i) => `<i class="${cls} c-${s.stage}${i===0?" first":""}${i===vis.length-1?" last":""}" style="--s:${pos(s.a,w)};--w:${(s.b-s.a)/w.span};${extra}"></i>`).join("");
+}
+function ring(fs){
+  if (!fs.length) return '<i class="ring empty"></i>';
+  const order=["done","live","qa","dev","ready","spec","design","concept"];
+  const ls = fs.map(f=>f.stage).sort((x,y)=>order.indexOf(x)-order.indexOf(y));
+  return `<i class="ring" style="background:conic-gradient(${ls.map((s,k)=>`${COL[s]} ${k*100/ls.length}% ${(k+1)*100/ls.length}%`).join(",")})"></i>`;
+}
+
+// ---------- the four views: tabs above the card, like Map and Board on the old dashboard
+const VIEWS = [["tl","Timeline"],["pages","Clarification pages"],["todos","To-dos"],["agenda","Next meeting agenda"]];
+const INTRO = {
+  tl: "How each area grew, and where every request is now. Open an area to see its features, and a feature to see what was added to it later. Click anything for the details.",
+  pages: `Every clarification page for ${P.name || "this product"}. The ones still waiting for answers come first. Each page opens in a new tab.`,
+  todos: "Every open to-do and everything waiting on someone. Yours come first; the others are greyed out below. Click one to read it and leave an update.",
+  agenda: "Everything marked for the next client call. Click one to read it and leave an update."};
+const PAGES = DATA.pages || [];
+const itemsOf = kinds => { const out = []; Object.values(F).forEach(f => (f.todos||[]).forEach(x => { if (kinds.includes(x.kind)) out.push({f, x}); })); return out.sort((a,b) => String(a.x.since).localeCompare(String(b.x.since))); };
+const openCount = l => l.filter(o => !isResolved(o.x)).length;
+function itemRow(o, grey){
+  const {f, x} = o;
+  return `<button class="li click${grey ? " other" : ""}" data-i="${esc(f.id+"/"+x.key)}"><span class="nm"><b>${esc(x.title)}</b><small>${esc(whoKey(x.who))} · ${esc(f.label)} · since ${esc(fmt(String(x.since)))}${x.age!=null?` (${x.age} days)`:""}</small></span><span class="pills">${itemPills(x)}</span></button>`;
+}
+function syncView(){
+  document.getElementById("h1").textContent = (P.name || "") + " — dashboard";
+  document.querySelector(".card").dataset.view = st.view;
+  document.getElementById("intro").textContent = INTRO[st.view];
+  const n = {pages: PAGES.length, todos: openCount(itemsOf(["todo","waiting"])), agenda: openCount(itemsOf(["agenda"]))};
+  document.getElementById("tabs").innerHTML = VIEWS.map(([k,v]) => `<button role="tab" data-view="${k}" aria-selected="${st.view===k}" aria-pressed="${st.view===k}">${v}${n[k]!=null?`<span class="n">${n[k]}</span>`:""}</button>`).join("");
+}
+function renderView(){
+  renderSide();
+  let h = "";
+  if (st.view === "pages") {
+    const row = p => { const f = p.feature && F[p.feature]; return `<a class="li" href="${esc(p.url)}" target="_blank" rel="noopener"><span class="nm"><b>${esc(p.name)}</b><small>${esc(p.title)}</small><small>${esc(p.round)}${f ? " · " + esc(f.label) : ""}</small></span><span class="pills">${p.open ? `<span class="pill p-open">${p.open} open</span>` : `<span class="pill p-done">All answered</span>`}${f ? stagePill(f.stage) : ""}</span></a>`; };
+    // filters: the phase and area come from the page's feature
+    const featOf = p => p.feature && F[p.feature];
+    const phasesOf = p => { const f = featOf(p), t = f && f.tags; return t && t.length ? t : ["(none)"]; };
+    const areaOf = p => { const f = featOf(p); return f ? f.area : "(none)"; };
+    const num = t => /^\d/.test(t);
+    const phases = [...new Set(PAGES.flatMap(phasesOf))].sort((a,b) => a==="(none)" ? 1 : b==="(none)" ? -1 : num(a) && num(b) ? a.localeCompare(b, undefined, {numeric:true}) : a.localeCompare(b));
+    const pareas = [...new Set(PAGES.map(areaOf))].sort((a,b) => a==="(none)" ? 1 : b==="(none)" ? -1 : a.localeCompare(b));
+    const opt = (v, label, cur) => `<option value="${esc(v)}"${v===cur?" selected":""}>${esc(label)}</option>`;
+    h = `<div class="find lbar"><select id="cp-phase" aria-label="Filter by ${esc(TAG_WORD.toLowerCase())}">${opt("","Every " + TAG_WORD.toLowerCase(),st.cpPhase)}${phases.map(t => opt(t, t==="(none)" ? "No " + TAG_WORD.toLowerCase() + " yet" : TAG_WORD + " " + t, st.cpPhase)).join("")}</select>`
+      + `<select id="cp-area" aria-label="Filter by area">${opt("","All areas",st.cpArea)}${pareas.map(a => opt(a, a==="(none)" ? "No feature yet" : a, st.cpArea)).join("")}</select>`
+      + `<select id="cp-sort" aria-label="Sort">${opt("new","Newest first",st.cpSort)}${opt("old","Oldest first",st.cpSort)}</select>`
+      + (st.cpPhase || st.cpArea ? `<button class="clear" type="button" id="cp-clear">Clear filters</button>` : "") + `</div>`;
+    const shown = PAGES.filter(p => (!st.cpPhase || phasesOf(p).includes(st.cpPhase)) && (!st.cpArea || areaOf(p) === st.cpArea));
+    const byDate = (a,b) => (st.cpSort === "old" ? 1 : -1) * String(a.updated||"").localeCompare(String(b.updated||"")) || a.name.localeCompare(b.name);
+    const waiting = shown.filter(p => p.open).sort(byDate), done = shown.filter(p => !p.open).sort(byDate);
+    if (!shown.length) h += '<p class="empty-msg">No clarification pages match these filters.</p>';
+    h += (waiting.length ? `<div class="sh">Waiting for answers · ${waiting.length}</div>${waiting.map(row).join("")}` : "") + (done.length ? `<div class="sh">All answered · ${done.length}</div>${done.map(row).join("")}` : "");
+    if (!PAGES.length) h = '<p class="empty-msg">No clarification pages yet.</p>';
+  } else if (st.view === "todos") {
+    const every = itemsOf(["todo","waiting"]);
+    // one entry per person: "Sam" and "Sam Carter" are one; "Vadim / Sam" counts for both
+    const raw = o => ownerOf(o.x).split("/").map(s => s.trim()).filter(Boolean);
+    const short = {};
+    every.forEach(o => raw(o).forEach(n => { const k = n.split(" ")[0]; if (!short[k] || n.length < short[k].length) short[k] = n; }));
+    const namesOf = o => [...new Set(raw(o).map(n => short[n.split(" ")[0]]))];
+    const people = [...new Set(Object.values(short))].sort((a,b) => a.localeCompare(b));
+    const areas = [...new Set(every.map(o => o.f.area))].sort((a,b) => a.localeCompare(b));
+    const opt = (v, label, cur) => `<option value="${esc(v)}"${v===cur?" selected":""}>${esc(label)}</option>`;
+    h = `<div class="find lbar"><select id="td-person" aria-label="Filter by person">${opt("","Everyone",st.tdPerson)}${people.map(p => opt(p, p, st.tdPerson)).join("")}</select>`
+      + `<select id="td-area" aria-label="Filter by area">${opt("","All areas",st.tdArea)}${areas.map(a => opt(a, a, st.tdArea)).join("")}</select>`
+      + `<select id="td-sort" aria-label="Sort">${opt("old","Oldest first",st.tdSort)}${opt("new","Newest first",st.tdSort)}</select>`
+      + (st.tdPerson || st.tdArea ? `<button class="clear" type="button" id="td-clear">Clear filters</button>` : "") + `</div>`;
+    let all = every.filter(o => (!st.tdPerson || namesOf(o).includes(st.tdPerson)) && (!st.tdArea || o.f.area === st.tdArea));
+    if (st.tdSort === "new") all = all.slice().reverse();
+    const mine = all.filter(o => isMine(o.x)), rest = all.filter(o => !isMine(o.x));
+    if (!all.length) h += `<p class="empty-msg">${every.length ? "No to-dos match these filters." : "No open to-dos."}</p>`;
+    else if (st.tdPerson) h += `<div class="sh">To-dos for ${esc(st.tdPerson)} · ${all.length}</div>${all.map(o => itemRow(o)).join("")}`;
+    else if (VIEWER) h += `<div class="sh">Yours · ${mine.length}</div>${mine.length ? mine.map(o => itemRow(o)).join("") : '<p class="note">Nothing on you here.</p>'}` + (rest.length ? `<div class="sh">Everyone else · ${rest.length}</div>${rest.map(o => itemRow(o, true)).join("")}` : "");
+    else h += `<div class="sh">All to-dos · ${all.length}</div>${all.map(o => itemRow(o)).join("")}`;
+  } else if (st.view === "agenda") {
+    const all = itemsOf(["agenda"]);
+    h = all.length ? `<div class="sh">For the next call · ${all.length}</div>${all.map(o => itemRow(o)).join("")}` : '<p class="empty-msg">Nothing on the agenda for the next call.</p>';
+  }
+  const list = document.getElementById("list"), top = list.scrollTop;
+  list.innerHTML = h; list.scrollTop = top;
+  const cpp = document.getElementById("cp-phase");
+  if (cpp) {
+    cpp.onchange = e => { st.cpPhase = e.target.value; render(); };
+    document.getElementById("cp-area").onchange = e => { st.cpArea = e.target.value; render(); };
+    document.getElementById("cp-sort").onchange = e => { st.cpSort = e.target.value; render(); };
+    const cc = document.getElementById("cp-clear"); if (cc) cc.onclick = () => { st.cpPhase = ""; st.cpArea = ""; render(); };
+  }
+  const tdp = document.getElementById("td-person");
+  if (tdp) {
+    tdp.onchange = e => { st.tdPerson = e.target.value; render(); };
+    document.getElementById("td-area").onchange = e => { st.tdArea = e.target.value; render(); };
+    document.getElementById("td-sort").onchange = e => { st.tdSort = e.target.value; render(); };
+    const tc = document.getElementById("td-clear"); if (tc) tc.onclick = () => { st.tdPerson = ""; st.tdArea = ""; render(); };
+  }
+  if (st.sel && st.sel.t === "i") list.querySelectorAll("[data-i]").forEach(r => r.classList.toggle("sel", r.dataset.i === st.sel.id));
+}
+function setView(v){
+  if (!VIEWS.some(x => x[0] === v) || v === st.view) return;
+  st.view = v; st.sel = null; st.toToday = v === "tl";
+  try { history.replaceState(null, "", v === "tl" ? location.pathname + location.search : "#" + v); } catch (err) {}
+  render();
+  document.getElementById("list").scrollTop = 0;   // a new tab starts at its top
+}
+
+function render(){
+  syncView();
+  if (st.view !== "tl") return renderView();
+  const chart = document.getElementById("chart");
+  // keep the date at the right edge of the view in place when the width or zoom changes
+  const w0 = win();
+  const keep = {y: chart.scrollTop, right: st.lastPpd ? (st.lastStart ?? w0.start) + (chart.scrollLeft + chart.clientWidth - w0.label) / st.lastPpd * DAY : null};
+  renderSide();                // the panel changes the chart's width, so place it first
+  const w = win();
+  let h = `<div class="inner" style="width:${w.label + w.tw}px"><div class="axis"><div class="lab">Area · feature · request</div><div class="scale"><div class="pins" id="pins"></div><div class="ticks">${ticks(w)}</div></div></div>`;
+  let shown = 0;
+  DATA.groups.forEach(g => {
+    const rows = [];
+    g.areas.forEach(a => {
+      const fs = visibleFeatures(a);
+      const sn = filtering() ? [] : sugNew(a.name);
+      if ((st.hideDone || filtering()) && !fs.length && !sn.length) return;
+      shown++;
+      const open = (fs.length || sn.length) && (filtering() || (st.openAll ? !st.open.has("-"+a.name) : st.open.has(a.name)));
+      const stripes = fs.map((f,i) => bars(featureSpans(f).list, w, "st", `--i:${Math.min(i,5)};`)).join("");
+      rows.push(`<div class="row area${fs.length?"":" empty"}${st.sel?.t==="a"&&st.sel.id===a.name?" sel":""}" data-a="${esc(a.name)}" tabindex="0" role="button" aria-expanded="${!!open}">
+        <div class="lab">${(fs.length||sn.length)?`<span class="caret">${open?"▾":"▸"}</span>`:'<span class="caret"></span>'}${ring(fs)}<span class="nm">${esc(a.name)}</span><span class="cnt">${fs.length?fs.length+" feature"+(fs.length>1?"s":""):"no open features"}</span></div>
+        <div class="track">${stripes}</div></div>`);
+      if (!open) return;
+      fs.forEach(f => {
+        const sp = featureSpans(f), reqs = visibleReqs(f), fo = st.openF.has(f.id) || reqs.some(reqMatch);
+        const first = sp.list[0]?.a ?? (f.startedBefore ? d(f.startedBefore) : null);
+        const startedEarly = f.startedBefore ? d(f.startedBefore) : first;
+        let tr = bars(sp.list, w, "bar" + (sp.approx?" approx":""));
+        if (startedEarly !== null && startedEarly < w.start && sp.list.length) tr += `<span class="early">◂ since ${fmt(new Date(startedEarly).toISOString().slice(0,10), new Date(startedEarly).getUTCFullYear()!==new Date(TODAY).getUTCFullYear())}</span>`;
+        if (sp.doneAt && sp.doneAt >= w.start) tr += `<span class="mark donec" style="--s:${pos(sp.doneAt,w)}">✓ done ${fmt(f.doneDate)}</span>`;
+        if (f.askedIn && M[f.askedIn]) { const t=d(M[f.askedIn].date); if (t>=w.start) tr += `<span class="ask" style="--s:${pos(t+DAY/2,w)}" title="First asked: ${esc(M[f.askedIn].title)}, ${fmt(M[f.askedIn].date)}"></span>`; }
+        const qn = (f.openQ||[]).length, wo = todosOld(f);
+        const badges = (qn?`<span class="badge q" title="${qn} open question${qn>1?"s":""} for the client">${qn}</span>`:"") + (wo?`<span class="badge w" title="${wo} to-do${wo>1?"s":""} open over 30 days">${wo}</span>`:"");
+        rows.push(`<div class="row feature${st.sel?.t==="f"&&st.sel.id===f.id?" sel":""}" data-f="${esc(f.id)}" tabindex="0" role="button">
+          <div class="lab">${(reqs.length||sugFor(f.id).length)?`<button class="caret" data-tf="${esc(f.id)}" aria-label="Show what was added">${fo?"▾":"▸"}</button>`:'<span class="caret"></span>'}<i class="dot" style="background:${COL[f.stage]}"></i><span class="nm" title="${esc(f.label)}">${esc(f.label)}${f.guess?`<span class="guess" title="${esc(guessWhy(f))}">*</span>`:""}</span>${tagChips(f.tags)}${badges}<span class="stg"${badges?' style="margin-left:6px"':""}>${STAGE[f.stage]||f.stage}</span></div>
+          <div class="track" title="${sp.approx?"Stage history not recorded yet: the bar starts when the dashboard first lists it":""}">${tr}</div></div>`);
+        if (!fo) return;
+        reqs.filter(q => !st.q || reqMatch(q) || featureText(f).includes(st.q)).forEach(q => {
+          const key = f.id+"/"+q.id, end = q.merged ? d(q.merged) : TODAY+DAY;
+          let qt = q.splitOff ? "" : bars(spans(q.stages, end), w, "bar");
+          if (q.askedIn && M[q.askedIn]) { const t=d(M[q.askedIn].date); if (t>=w.start) qt += `<span class="ask" style="--s:${pos(t+DAY/2,w)}" title="Asked: ${esc(M[q.askedIn].title)}, ${fmt(M[q.askedIn].date)}"></span>`; }
+          if (q.merged && d(q.merged)>=w.start) qt += `<span class="mark merge" style="--s:${pos(d(q.merged),w)}">✓ merged ${fmt(q.merged)}</span>`;
+          if (q.splitOff) { const t=Math.max(d(q.stages[0].from),w.start); qt += `<span class="mark split" style="--s:${pos(t,w)}">→ own feature</span>`; }
+          rows.push(`<div class="row req${st.sel?.t==="q"&&st.sel.id===key?" sel":""}" data-q="${esc(key)}" tabindex="0" role="button">
+            <div class="lab"><span class="nm" title="${esc(q.title)}">${esc(q.title)}</span>${tagChips(q.tags)}<span class="kind ${q.kind}">${KIND[q.kind]||q.kind}</span></div><div class="track">${qt}</div></div>`);
+        });
+        sugFor(f.id).forEach(x => rows.push(sugRow(x, w, "req")));
+      });
+      sn.forEach(x => rows.push(sugRow(x, w, "feature")));
+    });
+    if (rows.length) h += `<div class="grp"><span>${esc(g.name)}</span></div>` + rows.join("");
+  });
+  if (!shown) h += filtering() ? `<div class="empty-msg">Nothing matches. Try another word or person.</div>` : `<div class="empty-msg">Nothing open in any area. Switch off "Hide done &gt; 2 weeks" to see finished work.</div>`;
+  // release lines; a label too close to the one before it is left out (the line stays, its name shows on hover)
+  let lastX = -1e9;
+  const relLines = DATA.releases.filter(r=>d(r.date)>=w.start&&d(r.date)<=w.end).map(r => {
+    const x = (d(r.date) - w.start) / DAY * w.ppd, room = x - lastX >= 170;
+    if (room) lastX = x;
+    const name = `${esc(r.name.split(" - ")[0].replace(/\.$/,""))} · ${fmt(r.date, new Date(d(r.date)).getUTCFullYear() !== new Date(TODAY).getUTCFullYear())}`;
+    return `<div class="rl" style="--s:${pos(d(r.date)+DAY/2,w)}" title="${esc(r.name)} · ${fmt(r.date, true)}">${room ? `<span title="${esc(r.name)}">${name}</span>` : ""}</div>`;
+  }).join("");
+  h += `<div class="lines" style="left:var(--label)">${relLines}<div class="rl today" style="--s:${pos(TODAY+DAY,w)}"><span>Today · ${fmt(DATA.today)}</span></div></div></div>`;
+  chart.innerHTML = h;
+  if (st.toToday) { chart.scrollLeft = chart.scrollWidth; chart.scrollTop = keep.y; st.toToday = false; }
+  else { if (keep.right !== null) chart.scrollLeft = (keep.right - w.start) / DAY * w.ppd - (chart.clientWidth - w.label); chart.scrollTop = keep.y; }
+  st.lastPpd = w.ppd; st.lastStart = w.start;
+  placePins();
+  rw = chart.clientWidth;
+  document.getElementById("foot").textContent = `Built ${DATA.built} from ${P.footer || "the BA dashboard"}`;
+}
+
+function ticks(w){
+  const days = Math.round(w.span/DAY), ppd = w.ppd; let out="";
+  for (let i=0;i<days;i++){
+    const t = w.start + i*DAY, x = new Date(t), first = x.getUTCDate()===1, isMon = x.getUTCDay()===1;
+    // the year on January and on the first label, so a chart that spans years stays readable
+    const yr = (x.getUTCMonth()===0 && x.getUTCDate()<=7) || i===0 ? " " + x.getUTCFullYear() : "";
+    if (ppd>=14){ out += `<i class="tk${isMon?" big":""}" style="--s:${pos(t,w)}"></i>`; if (isMon) out += `<span class="tl" style="--s:${pos(t,w)}">Mon ${x.getUTCDate()} ${mon(x)}${yr}</span>`; }
+    else if (ppd>=4){ if (isMon) out += `<i class="tk${first?" big":""}" style="--s:${pos(t,w)}"></i>`; if (first||i===0) out += `<span class="tl" style="--s:${pos(t,w)}">${first?mon(x):x.getUTCDate()+" "+mon(x)}${yr}</span><i class="tk big" style="--s:${pos(t,w)}"></i>`; }
+    else if (first && (ppd>=1.6 || x.getUTCMonth()%3===0)){ out += `<i class="tk big" style="--s:${pos(t,w)}"></i><span class="tl" style="--s:${pos(t,w)}">${mon(x)}${yr}</span>`; }
+    else if (first){ out += `<i class="tk" style="--s:${pos(t,w)}"></i>`; }
+  }
+  return out;
+}
+
+// milestones: icons that would overlap merge into one numbered circle
+function placePins(){
+  const w = win(), box = document.getElementById("pins"); if (!box) return;
+  const width = w.tw, GAP = 26;
+  const ms = allMs().filter(m => d(m.date)>=w.start && d(m.date)<=w.end).map(m => ({m, x:pos(d(m.date)+DAY/2,w)*width}));
+  const cl = [];
+  ms.forEach(p => { const c = cl[cl.length-1]; if (c && p.x - c[c.length-1].x < GAP) c.push(p); else cl.push([p]); });
+  let last = -1e9;
+  document.querySelectorAll(".rl:not(.today) span").forEach(sp => { const x = parseFloat(sp.parentNode.style.getPropertyValue("--s"))*width; sp.hidden = x - last < 110; if (!sp.hidden) last = x; });
+  box.innerHTML = cl.map(c => {
+    const ids = c.map(p=>p.m.id).join(","), x = c.reduce((s,p)=>s+p.x,0)/c.length/width;
+    const on = st.sel?.t==="m" && st.sel.id===ids ? " on" : "";
+    if (c.length===1){ const m=c[0].m; return `<button class="pin k-${m.kind}${on}" style="--s:${x}" data-m="${esc(ids)}" title="${esc(fmt(m.date))} · ${esc(m.title)}" aria-label="${esc(fmt(m.date))}: ${esc(m.title)}">${ICON[m.kind]}</button>`; }
+    const days = [...new Set(c.map(p=>p.m.date))];
+    return `<button class="pin grp${on}" style="--s:${x}" data-m="${esc(ids)}" title="${c.length} events, ${esc(fmt(days[0]))}${days.length>1?" – "+esc(fmt(days[days.length-1])):""}" aria-label="${c.length} events">${c.length}</button>`;
+  }).join("");
+}
+
+// side panel
+function stagePill(s){ return `<span class="pill p-${s}">${STAGE[s]||s}</span>`; }
+function workList(list){ return list.map(t => `<div class="li"><a href="${esc(t.url || (P.workLink || "") + t.id)}" target="_blank" rel="noopener">${esc(t.id)}</a><span class="nm">${esc(t.title||"")}</span><span class="r">${esc(t.status||"")}</span></div>`).join(""); }
+function workBlock(list){
+  if (!list || !list.length) return "";
+  const shown = st.hideDone ? list.filter(t => !workDoneOld(t)) : list;
+  return `<div class="sh">${TRACKER.work} · ${list.length}</div>` + workList(shown) + hiddenNote(list.length - shown.length);
+}
+// why a row sits in its area by guess
+const guessWhy = f => f.origin === "old-work" ? `Placed under ${f.area} by guess: in ${TRACKER.name} it has no area.` : f.origin === "spec" ? `Placed under ${f.area} by guess: its spec names no area.` : `Placed under ${f.area} by guess: on the dashboard it has no area.`;
+function msLine(id){ if (id.startsWith("sg:")) { const x = SUG.find(y => y.id === id.slice(3)); return x ? `<button class="li click" data-sg="${esc(x.id)}"><span class="pin sm k-idea">${ICON.idea}</span><span class="nm">${esc(x.title)}</span><span class="r">${fmt(x.date)}</span></button>` : ""; }
+  const m = M[id]; if (!m) return ""; return `<button class="li click" data-m="${esc(id)}"><span class="pin sm k-${m.kind}">${ICON[m.kind]}</span><span class="nm">${esc(m.title)}</span><span class="r">${fmt(m.date)}</span></button>`; }
+function stageDates(stages, end){
+  // dates outside this year carry the year
+  const f = t => { const s = new Date(t).toISOString().slice(0,10); return fmt(s, new Date(t).getUTCFullYear() !== new Date(TODAY).getUTCFullYear()); };
+  return spans(stages, end).map((s, i, all) => `<div class="li"><i class="dot" style="background:${COL[s.stage]}"></i>${STAGE[s.stage]}<span class="r">${s.b>=TODAY+DAY || i===all.length-1 ? "since "+f(s.a) : f(s.a)+" – "+f(s.b)}</span></div>`).join("");
+}
+// items: the same pills, text and Update box as the dashboard's item panel
+const KIND_NAME = {waiting:"To-do", todo:"To-do", agenda:"To-do"};
+function itemPills(c, full){
+  let h = full ? `<span class="pill">${KIND_NAME[c.kind]}</span>` : "";
+  if (c.kind==="agenda") h += `<span class="pill p-spec">Next call</span>`;
+  if (isResolved(c)) h += `<span class="pill p-done">Resolved</span>`;
+  else if (c.status==="hot") h += `<span class="pill" style="background:var(--red-t);color:var(--red)">Hot</span>`;
+  else if ((c.age ?? 0) > 30) h += `<span class="pill" style="background:#fdf0e4;color:var(--orange)">Over 30 days</span>`;
+  if (full && c.prod) h += `<span class="pill">${esc(c.prod)}</span>`;
+  return h;
+}
+function richText(t){
+  let h = "", list = [];
+  const flush = () => { if (list.length) { h += `<ul class="bul">${list.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`; list = []; } };
+  for (const ln of String(t).split("\n").map(x => x.trim())) {
+    if (ln.startsWith("- ") || ln.startsWith("• ")) { list.push(ln.slice(2)); continue; }
+    if (!ln) { flush(); continue; }
+    // a lead-in line ("Already settled:") stays a heading line; any other prose becomes one bullet per sentence
+    if (ln.endsWith(":")) { flush(); h += `<p style="margin:0 0 6px">${esc(ln)}</p>`; continue; }
+    ln.split(/(?<=[.!?])\s+(?=[A-Z0-9"“(])/).forEach(x => { if (x.trim()) list.push(x.trim()); });
+  }
+  flush(); return h;
+}
+function updateHtml(c){
+  const r = RES[c.key] || {}, notes = r.notes || [];
+  const list = notes.length ? `<ul class="bul">${notes.slice().reverse().map(n => `<li><span class="src">${esc(n.at)}</span> ${esc(n.text)}</li>`).join("")}</ul>` : "";
+  if (!DB) return `<div class="sh">Update</div>${list}<p class="note">Notes and the Resolved tick can be saved on the published page only.</p>`;
+  return `<div class="sh">Update</div>${list}
+    <label class="ulab" for="u-note">What happened?</label>
+    <textarea id="u-note" placeholder="e.g. The client replied: the fee stays $50"></textarea>
+    <label class="ucheck"><input type="checkbox" id="u-res"${r.resolved ? " checked" : ""}> Resolved — close this item</label>
+    <div class="urow"><button class="btn" id="u-save" type="button">Save</button><span class="note" id="u-msg">${r.resolved ? "Closed here; it leaves the dashboard at the next sync." : ""}</span></div>`;
+}
+async function saveUpdate(c){
+  const msg = document.getElementById("u-msg"), text = document.getElementById("u-note").value.trim();
+  const resolved = document.getElementById("u-res").checked, r = RES[c.key] || {};
+  if (!text && resolved === !!r.resolved) { msg.textContent = "Write a note or change the tick first."; return; }
+  const btn = document.getElementById("u-save"); btn.disabled = true; msg.textContent = "Saving…";
+  const notes = (r.notes || []).slice();
+  if (text) notes.push({ at: new Date().toISOString().slice(0, 10), text });
+  try {
+    await DB.collection("resolutions").doc(c.key).set({ key: c.key, id: c.id, kind: c.kind, title: c.title, resolved, notes, updatedAt: new Date().toISOString() });
+    msg.textContent = resolved ? "Saved — marked resolved." : "Saved.";
+  } catch (e) { msg.textContent = "Could not save (" + (e && e.code ? e.code : "unknown") + "). Try again."; }
+  btn.disabled = false;
+}
+function copyItemLink(c){
+  const out = document.getElementById("copied");
+  const text = `${c.kind==="waiting"?"Waiting on others":c.kind==="agenda"?"Next-call agenda":"My to-do"}: "${c.title}" ${DATA.dashboardUrl||""}#i-${c.key}`;
+  const shown = () => { out.textContent = "Copied: " + text; };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => { out.textContent = "Link copied — paste it into your chat with Claude."; }, shown);
+  else shown();
+}
+async function sendSuggestion(e){
+  e.preventDefault();
+  const msg = document.getElementById("s-msg");
+  if (!DB) { msg.textContent = "Suggestions can be sent on the published page only."; return; }
+  const target = document.getElementById("s-target").value, title = document.getElementById("s-title").value.trim();
+  if (!target || !title) { msg.textContent = "Choose a feature or area and write a title."; return; }
+  const btn = document.getElementById("s-send"); btn.disabled = true; msg.textContent = "Sending…";
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const f = target.startsWith("f:") ? F[target.slice(2)] : null;
+  const doc = { id, type: (document.querySelector('#sform input[name="type"]:checked')||{}).value || "feature",
+    featureId: f ? f.id : null, area: f ? f.area : target.slice(2), title,
+    what: document.getElementById("s-what").value.trim(), urgency: (document.querySelector('#sform input[name="urg"]:checked')||{}).value || "nice",
+    link: document.getElementById("s-link").value.trim(), by: ME_ID, date: new Date().toISOString().slice(0,10),
+    createdAt: new Date().toISOString(), status: "suggested", exported: false };
+  try {
+    await DB.collection("suggestions").doc(id).set(doc);
+    SUG = SUG.filter(x => x.id !== id).concat([doc]);
+    if (f) { st.openF.add(f.id); st.open.add(f.area); } else st.open.add(doc.area);
+    st.sel = {t:"sg", id}; render();
+  } catch (err) { msg.textContent = "Could not send (" + (err && err.code ? err.code : "unknown") + "). Try again."; btn.disabled = false; }
+}
+async function reviewSuggestion(e, id){
+  e.preventDefault();
+  const msg = document.getElementById("r-msg"), x = SUG.find(y => y.id === id);
+  const status = (document.querySelector('#rform input[name="st"]:checked')||{}).value || "suggested";
+  try { await DB.collection("suggestions").doc(id).update({ status, reason: document.getElementById("r-reason").value.trim(), reviewedAt: new Date().toISOString() }); msg.textContent = "Saved."; }
+  catch (err) { msg.textContent = "Could not save (" + (err && err.code ? err.code : "unknown") + ")."; }
+}
+function renderSide(){
+  const side = document.getElementById("side"), s = st.sel;
+  if (!s){ side.hidden = true; side.innerHTML = ""; return; }
+  let h = "", back = "";   // the top line: Back (to the parent feature) on the left, Close on the right
+  if (s.t==="f"){
+    const f = F[s.id];
+    h += `<div class="pills"><span class="pill">Feature</span><span class="pill">${esc(f.area)}</span>${stagePill(f.stage)}</div><h2>${esc(f.label)}</h2>`;
+    if (f.tags && f.tags.length) h += `<p class="note">Planned for ${esc(TAG_WORD.toLowerCase())} ${f.tags.map(esc).join(", ")}</p>`;
+    // what the feature is, in plain words: the dashboard's client text, else the short description written for the timeline
+    if (f.desc) h += richText(f.desc);
+    else if (f.about && f.about.length) h += `<ul class="bul">${f.about.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    if (f.originNote) h += `<p class="note">${esc(f.originNote)}</p>`;
+    if (f.changes && F[f.changes]) h += `<div class="sh">Changes</div><button class="li click" data-f="${esc(f.changes)}"><i class="dot" style="background:${COL[F[f.changes].stage]}"></i><span class="nm">${esc(F[f.changes].label)} · ${esc(F[f.changes].area)}</span></button>`;
+    if (f.clar) h += `<a class="btn" href="${esc(f.clar)}" target="_blank" rel="noopener">▤ ${esc(f.clarLabel||"Clarification page")}</a>`;
+    if (f.askedIn) h += `<div class="sh">First asked</div>${msLine(f.askedIn)}${f.askedBy?`<p class="note">Asked by ${esc(f.askedBy)}</p>`:""}`;
+    else if (f.startedBefore) h += `<div class="sh">First asked</div><p class="note">Before the timeline starts — work on it began ${fmt(f.startedBefore,true)}.</p>`;
+    h += `<div class="sh">Stage dates</div>` + (f.basisNote ? `<p class="note">${esc(f.basisNote)}</p>` : "") + (f.stages ? stageDates(f.stages, TODAY+DAY) :`<p class="note">Not recorded yet. ${f.since?"The dashboard lists it since "+fmt(f.since)+"; the bar starts there.":"The dashboard has no start date for it."}${f.doneDate?" Done on "+fmt(f.doneDate)+".":""}</p>`);
+    const allReqs = f.requests||[], reqs = st.hideDone ? allReqs.filter(q => !reqDoneOld(q)) : allReqs;
+    if (allReqs.length) h += `<div class="sh">Changes and bugs · ${allReqs.length}</div>` + reqs.map(q => `<button class="li click" data-q="${esc(f.id+"/"+q.id)}"><span class="nm"><b>${esc(q.title)}</b><small>${KIND[q.kind]} · ${M[q.askedIn]?esc(fmt(M[q.askedIn].date)):""}${q.askedBy?" · "+esc(q.askedBy):""}${q.splitOff?" · now its own feature":""}${q.merged?" · merged "+fmt(q.merged):""}</small></span>${stagePill(q.stages[q.stages.length-1].stage)}</button>`).join("");
+    h += hiddenNote(allReqs.length - reqs.length);
+    if (f.who && f.who.length) h += `<p class="note">Requested by ${esc(f.who.join(", "))}</p>`;
+    if (f.openQ) h += `<div class="sh">Open questions · ${f.openQ.length}</div><ul class="bul">${f.openQ.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    if (f.todos) h += `<div class="sh">To-dos · ${f.todos.length}${VIEWER ? ` · ${f.todos.filter(isMine).length} yours` : ""}</div>` + f.todos.slice().sort((a,b) => isMine(b) - isMine(a)).map(x => `<button class="li click${isMine(x) ? "" : " other"}" data-i="${esc(f.id+"/"+x.key)}"><span class="nm"><b>${esc(x.title)}</b><small>${esc(whoKey(x.who))} · since ${esc(fmt(String(x.since)))}${x.age!=null?` (${x.age} days)`:""}</small></span>${itemPills(x)}</button>`).join("");
+    h += workBlock(f.work);
+    if (f.guess) h += `<p class="note">* ${esc(guessWhy(f))}</p>`;
+  } else if (s.t==="new"){
+    const target = s.id || "";
+    const opts = DATA.groups.map(g => `<optgroup label="${esc(g.name)}">` + g.areas.map(a => `<option value="a:${esc(a.name)}"${target==="a:"+a.name?" selected":""}>${esc(a.name)} — new feature</option>` + a.features.map(f => `<option value="f:${esc(f.id)}"${target==="f:"+f.id?" selected":""}>${esc(a.name)} › ${esc(f.label)}</option>`).join("")).join("") + `</optgroup>`).join("");
+    const preType = target.startsWith("f:") ? "change" : "feature";
+    h += `<div class="pills"><span class="pill p-suggested">New suggestion</span></div><h2>Suggest a feature or a change</h2>
+      <p class="note">It shows on the chart straight away. ${esc(BA_NAME)} reviews every suggestion and marks it Accepted or Declined, with a reason.</p>
+      <form class="sform" id="sform">
+        <div class="chips" role="radiogroup" aria-label="Type">${Object.entries(SUG_TYPE).map(([k,v]) => `<label><input type="radio" name="type" value="${k}"${k===preType?" checked":""}> ${v}</label>`).join("")}</div>
+        <label>Feature or area<select id="s-target" required><option value="">Choose…</option>${opts}</select></label>
+        <label>Title<input id="s-title" maxlength="120" required placeholder="e.g. Let agents see a customer's loan history"></label>
+        <label>What and why <small>One point per line</small><textarea id="s-what" placeholder="What should change?&#10;Who needs it?&#10;Why does it matter?"></textarea></label>
+        <div class="chips" role="radiogroup" aria-label="How urgent">${Object.entries(SUG_URG).map(([k,v],i) => `<label><input type="radio" name="urg" value="${k}"${i===0?" checked":""}> ${v}</label>`).join("")}</div>
+        <label>Link <small>Optional — Figma, a sheet, a document</small><input id="s-link" type="url" placeholder="https://"></label>
+        <div class="urow"><button class="btn" type="submit" id="s-send">Send</button><span class="note" id="s-msg">${DB ? "" : "Suggestions can be sent on the published page only."}</span></div>
+      </form>`;
+  } else if (s.t==="sg"){
+    const x = SUG.find(y => y.id === s.id);
+    if (!x) { st.sel = null; side.hidden = true; return; }
+    const where = x.featureId && F[x.featureId] ? `<button class="li click" data-f="${esc(x.featureId)}"><i class="dot" style="background:${COL[F[x.featureId].stage]}"></i><span class="nm">${esc(F[x.featureId].label)} · ${esc(F[x.featureId].area)}</span></button>` : `<p class="note">New feature in ${esc(x.area || "")}</p>`;
+    h += `<div class="pills"><span class="pill">Suggestion</span><span class="pill p-${x.status}">${SUG_STATUS[x.status]||"Suggested"}</span><span class="pill">${SUG_TYPE[x.type]||""}</span><span class="pill">${SUG_URG[x.urgency]||""}</span></div>
+      <h2>${esc(x.title)}</h2>
+      <p style="margin:0"><b>${esc(SUG_NAMES[x.by] || "Someone")}</b> · ${fmt(x.date, true)}</p>
+      <div class="sh">For</div>${where}
+      ${x.what ? `<div class="sh">What and why</div>${richText(x.what)}` : ""}
+      ${x.link ? `<div class="sh">Link</div><p style="margin:0;overflow-wrap:anywhere"><a href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.link)}</a></p>` : ""}
+      ${x.reason ? `<div class="sh">${x.status==="declined"?"Why it was declined":"Note from "+esc(BA_NAME)}</div>${richText(x.reason)}` : ""}
+      ${CAN_EDIT && DB ? `<div class="sh">Review</div><form class="sform" id="rform"><div class="chips">${Object.entries(SUG_STATUS).map(([k,v]) => `<label><input type="radio" name="st" value="${k}"${x.status===k?" checked":""}> ${v}</label>`).join("")}</div><label>Reason or note<textarea id="r-reason">${esc(x.reason||"")}</textarea></label><div class="urow"><button class="btn" type="submit">Save</button><span class="note" id="r-msg"></span></div></form>` : ""}`;
+  } else if (s.t==="i"){
+    const [fid, key] = s.id.split("/"), f = F[fid], c = (f.todos||[]).find(x => x.key===key);
+    if (!c) { st.sel = null; side.hidden = true; return; }
+    back = `<button class="close back" data-f="${esc(f.id)}" title="Back to ${esc(f.label)}">← ${esc(f.label)}</button>`;
+    h = `
+      <div class="ititle"><h2>${esc(c.title)}</h2><button class="copylink" id="copy-link" title="Copy a link to this item" aria-label="Copy a link to this item"><svg viewBox="0 0 24 24"><path d="M8 8m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z M16 8v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2"/></svg></button></div>
+      <p class="note" id="copied" role="status"></p>
+      <div class="pills">${itemPills(c, true)}${VIEWER ? (isMine(c) ? `<span class="pill p-ready">Yours</span>` : `<span class="pill">For ${esc(ownerOf(c))}</span>`) : ""}</div>
+      <p style="margin:0"><b>${esc(c.who)}</b> · since ${esc(fmt(String(c.since), true))}${c.age!=null?` (${c.age} days)`:""}</p>
+      ${c.s ? `<div class="sh">Where it stands</div>${richText(c.s)}` : ""}
+      ${c.l ? `<div class="sh">Next</div>${richText(c.l)}` : ""}
+      ${updateHtml(c)}`;
+  } else if (s.t==="q"){
+    const q = Q[s.id], f = F[q.feature], last = q.stages[q.stages.length-1].stage;
+    back = `<button class="close back" data-f="${esc(f.id)}" title="Back to ${esc(f.label)}">← ${esc(f.label)}</button>`;
+    h = `<div class="pills"><span class="pill">${KIND[q.kind]}</span>${stagePill(last)}</div><h2>${esc(q.title)}</h2>`;
+    { const qt = q.tags || f.tags; if (qt && qt.length) h += `<p class="note">Planned for ${esc(TAG_WORD.toLowerCase())} ${qt.map(esc).join(", ")}</p>`; }
+    if (q.about && q.about.length) h += `<ul class="bul">${q.about.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    if (q.note) h += `<p class="note">${esc(q.note)}</p>`;
+    if (q.self && F[q.self]) h += `<button class="li click" data-f="${esc(q.self)}"><i class="dot" style="background:${COL[F[q.self].stage]}"></i><span class="nm"><b>Open its details</b><small>to-dos, questions and its clarification page</small></span></button>`;
+    if (q.askedIn) h += `<div class="sh">Where it came from</div>${msLine(q.askedIn)}${q.askedBy?`<p class="note">Asked by ${esc(q.askedBy)}${q.asked?" — "+esc(q.asked):""}</p>`:""}`;
+    h += `<div class="sh">${q.kind==="change"?"Changes":q.kind==="bug"?"Found in":"Part of"}</div><button class="li click" data-f="${esc(f.id)}"><i class="dot" style="background:${COL[f.stage]}"></i><span class="nm">${esc(f.label)} · ${esc(f.area)}</span><span class="r">${q.merged?"merged "+fmt(q.merged):q.splitOff?"now its own feature":""}</span></button>`;
+    if (q.guess) h += `<p class="note">* Placed under this feature by guess.</p>`;
+    h += `<div class="sh">Stage dates</div>${stageDates(q.stages, q.merged?d(q.merged):TODAY+DAY)}`;
+    h += workBlock(q.work);
+  } else if (s.t==="a"){
+    const a = A[s.id], fs = a.features, n = fs.length || 1;
+    h += `<div class="pills"><span class="pill">Area</span><span class="pill">${esc(a.group)}</span></div><h2>${esc(a.name)}</h2>`;
+    if (fs.length){
+      const order=["done","live","qa","dev","ready","spec","design","concept"], counts={};
+      fs.forEach(f=>counts[f.stage]=(counts[f.stage]||0)+1);
+      h += `<div class="mix">${order.filter(k=>counts[k]).map(k=>`<i style="flex:${counts[k]};background:${COL[k]}"></i>`).join("")}</div><p class="note">${fs.length} feature${fs.length>1?"s":""}: ${order.filter(k=>counts[k]).map(k=>counts[k]+" "+STAGE[k].toLowerCase()).join(", ")}</p>`;
+      const fsShown = st.hideDone ? fs.filter(f => !isDoneOld(f)) : fs;
+      h += `<div class="sh">Features</div>` + fsShown.map(f => `<button class="li click" data-f="${esc(f.id)}"><i class="dot" style="background:${COL[f.stage]}"></i><span class="nm">${esc(f.label)}</span><span class="r">${STAGE[f.stage]}</span></button>`).join("") + hiddenNote(fs.length - fsShown.length);
+      const rq = fs.reduce((s,f)=>s+(f.requests||[]).length,0);
+      if (rq) h += `<p class="note">${rq} request${rq>1?"s":""} added later, across these features.</p>`;
+    } else h += `<p class="note">No features or specs for this area yet.</p>`;
+    if (a.link && a.link.url) h += `<p class="note"><a href="${esc(a.link.url)}" target="_blank" rel="noopener">${esc(a.link.label || "See all in " + TRACKER.name)}</a></p>`;
+  } else if (s.t==="m"){
+    const ids = s.id.split(","), list = ids.map(i => M[i] || (i.startsWith("sg:") ? allMs().find(m => m.id===i) : null)).filter(Boolean), days=[...new Set(list.map(m=>m.date))];
+    h += `<div class="pills"><span class="pill">${list.length>1?list.length+" events":MK[list[0].kind]}</span><span class="pill">${fmt(days[0])}${days.length>1?" – "+fmt(days[days.length-1]):""}</span></div><h2>${list.length>1?"What came in":"What "+fmt(list[0].date)+" brought"}</h2>`;
+    if (list.length > 1) h += `<p class="note">Click one to see its details.</p>` + list.map(m=>msLine(m.id)).join("");
+    else {
+      const m = list[0], facts = [];
+      if (m.minutes) facts.push(m.minutes + " min");
+      if (m.people && m.people.length) facts.push(esc(m.people.join(", ")) + (m.staff ? ` + ${m.staff} from Relevant` : ""));
+      else if (m.staff) facts.push(`${m.staff} from Relevant`);
+      h += `<div class="li"><span class="pin sm k-${m.kind}">${ICON[m.kind]}</span><span class="nm"><b>${esc(m.subject || m.title)}</b>${facts.length ? `<small>${facts.join(" · ")}</small>` : ""}</span></div>`;
+      if (m.summary) h += `<div class="sh">In short</div><ul class="bul">${m.summary.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+      if (m.decided) h += `<div class="sh">Decided · ${m.decided.length}</div><ul class="bul">${m.decided.map(x => `<li>${esc(x.title)} <span class="src">${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.page)}</a>` : esc(x.page)}</span></li>`).join("")}</ul>`;
+      if (m.owes) h += `<div class="sh">To-dos from it · ${m.owes.length}</div><ul class="bul">${m.owes.map(x => `<li><b>${esc(x.who)}</b> — ${esc(x.text)}</li>`).join("")}</ul>`;
+      if (!m.summary && !m.decided && !m.owes) h += `<p class="note">No summary for this ${MK[m.kind].toLowerCase()} yet.</p>`;
+    }
+    const asked = [];
+    Object.values(F).forEach(f => { if (ids.includes(f.askedIn)) asked.push(`<button class="li click" data-f="${esc(f.id)}"><span class="nm"><b>${esc(f.label)}</b><small>New feature · ${esc(f.area)}</small></span>${stagePill(f.stage)}</button>`); (f.requests||[]).forEach(q => { if (ids.includes(q.askedIn)) asked.push(`<button class="li click" data-q="${esc(f.id+"/"+q.id)}"><span class="nm"><b>${esc(q.title)}</b><small>${KIND[q.kind]} · ${esc(f.label)}</small></span>${stagePill(q.stages[q.stages.length-1].stage)}</button>`); }); });
+    h += `<div class="sh">Requests from ${list.length>1?"these":"it"}</div>` + (asked.length ? asked.join("") : '<p class="note">None recorded yet.</p>');
+  }
+  side.innerHTML = `<div class="sidehead">${back}<button class="close shut" data-close>✕ Close</button></div>` + h; side.hidden = false;
+  const sf = document.getElementById("sform"); if (sf) sf.onsubmit = sendSuggestion;
+  const rf = document.getElementById("rform"); if (rf) rf.onsubmit = e => reviewSuggestion(e, s.id);
+  if (s.t==="i") {
+    const [fid, key] = s.id.split("/"), c = (F[fid].todos||[]).find(x => x.key===key);
+    const us = document.getElementById("u-save"); if (us) us.onclick = () => saveUpdate(c);
+    const cl = document.getElementById("copy-link"); if (cl) cl.onclick = () => copyItemLink(c);
+  }
+}
+
+// redraw only the panel and the highlight when the panel stays open (its width, so the chart, does not change)
+function show(){
+  const side = document.getElementById("side");
+  if (side.hidden || !st.sel || st.view !== "tl") return render();   // the lists are cheap to redraw
+  const top = side.scrollTop; renderSide(); side.scrollTop = 0;
+  const s = st.sel, chart = document.getElementById("chart");
+  chart.querySelectorAll(".row.sel").forEach(r => r.classList.remove("sel"));
+  chart.querySelectorAll("#pins .on").forEach(r => r.classList.remove("on"));
+  const attr = {f:"data-f", q:"data-q", a:"data-a", sg:"data-sg"}[s.t];
+  if (attr) chart.querySelectorAll(".row[" + attr + "]").forEach(r => { if (r.getAttribute(attr) === s.id) r.classList.add("sel"); });
+  if (s.t === "m") chart.querySelectorAll("#pins [data-m]").forEach(r => { if (r.dataset.m === s.id) r.classList.add("on"); });
+  if (side.hidden) render();   // the panel had nothing to show
+}
+function select(t,id){ st.sel = (st.sel && st.sel.t===t && st.sel.id===id) ? null : {t,id}; show(); }
+
+document.addEventListener("click", e => {
+  const tab = e.target.closest("#tabs button");
+  if (tab) return setView(tab.dataset.view);
+  const el = e.target.closest("#legendBtn,#suggestBtn,[data-suggest],[data-sg],[data-close],[data-tf],[data-i],[data-m],[data-q],[data-f],[data-a],#period button,#hideDone,#openAll");
+  if (!el) return;
+  if (el.matches("[data-close]")) { st.sel=null; return render(); }
+  if (el.matches("#period button")) { st.period = el.dataset.p; st.toToday = true; try{localStorage.setItem("epd-tl-period",st.period);}catch(err){} syncToolbar(); return render(); }
+  if (el.id==="hideDone") { st.hideDone=!st.hideDone; syncToolbar(); return render(); }
+  if (el.id==="openAll") { st.openAll=!st.openAll; st.open.clear(); st.openF.clear(); syncToolbar(); return render(); }
+  if (el.dataset.tf) { e.stopPropagation(); const id=el.dataset.tf; st.openF.has(id)?st.openF.delete(id):st.openF.add(id); return render(); }
+  if (el.id === "legendBtn") {
+    const lg = document.getElementById("legend"); lg.hidden = !lg.hidden;
+    el.setAttribute("aria-expanded", String(!lg.hidden));
+    try { localStorage.setItem("epd-tl-legend", lg.hidden ? "0" : "1"); } catch (err) {}
+    return;
+  }
+  if (el.id === "suggestBtn") {
+    // fill in whatever is open in the side panel: a feature, an area, or the feature behind a to-do, request or suggestion
+    const c = st.sel; let target = "";
+    if (c) {
+      if (c.t === "f") target = "f:" + c.id;
+      else if (c.t === "a") target = "a:" + c.id;
+      else if (c.t === "i" || c.t === "q") target = "f:" + c.id.split("/")[0];
+      else if (c.t === "sg") { const x = SUG.find(y => y.id === c.id); if (x) target = x.featureId ? "f:" + x.featureId : "a:" + x.area; }
+      else if (c.t === "new") target = c.id;
+    }
+    st.sel = {t:"new", id:target}; return show();
+  }
+  if (el.dataset.suggest) { st.sel = {t:"new", id:el.dataset.suggest}; return show(); }
+  if (el.dataset.sg) { st.sel = {t:"sg", id:el.dataset.sg}; return show(); }
+  if (el.dataset.m && el.dataset.m.startsWith("sg:") && !el.dataset.m.includes(",")) { st.sel = {t:"sg", id:el.dataset.m.slice(3)}; return show(); }
+  if (el.dataset.i) { st.sel = {t:"i", id:el.dataset.i}; return show(); }
+  if (el.dataset.m) return select("m", el.dataset.m);
+  if (el.dataset.q) return select("q", el.dataset.q);
+  if (el.dataset.f) { if (el.classList.contains("close")||el.classList.contains("li")) { st.sel={t:"f",id:el.dataset.f}; return show(); } return select("f", el.dataset.f); }
+  if (el.dataset.a) {
+    const a = A[el.dataset.a];
+    if (e.target.closest(".caret") || !st.sel) { if (a.features.length){ const n=a.name; if (st.openAll){ st.open.has("-"+n)?st.open.delete("-"+n):st.open.add("-"+n);} else { st.open.has(n)?st.open.delete(n):st.open.add(n);} } if (e.target.closest(".caret")) return render(); }
+    return select("a", a.name);
+  }
+});
+document.addEventListener("keydown", e => { if ((e.key==="Enter"||e.key===" ") && e.target.matches(".row[role=button]")) { e.preventDefault(); e.target.click(); } if (e.key==="Escape" && st.sel){ st.sel=null; render(); } });
+
+function syncToolbar(){
+  document.getElementById("period").innerHTML = PERIODS.map(p=>`<button data-p="${p[0]}" aria-pressed="${st.period===p[0]}">${p[1]}</button>`).join("");
+  document.getElementById("hideDone").setAttribute("aria-pressed", st.hideDone);
+  document.getElementById("openAll").setAttribute("aria-pressed", st.openAll);
+}
+document.getElementById("legend").innerHTML =
+  Object.entries({concept:"Concept",spec:"Spec & design",ready:"Ready for dev",dev:"In dev",qa:"In QA",done:"Done",live:"Live"}).map(([k,v])=>`<span><i class="sw c-${k}"></i>${v}</span>`).join("") +
+  `<span><i class="sw c-spec" style="opacity:.45"></i>no stage history yet</span><span style="color:var(--done)">┆ release</span>` +
+  Object.entries(MK).map(([k,v])=>`<span><span class="pin sm k-${k}">${ICON[k]}</span>${v.toLowerCase()}</span>`).join("") +
+  `<span><span class="pin sm grp">3</span>several close together</span><span>▼ where it was asked</span>` +
+  `<span><span class="badge q" style="margin:0">2</span>open questions</span><span><span class="badge w" style="margin:0">1</span>to-dos open over 30 days</span>`;
+(function people(){
+  const req = new Set(), wait = new Set();
+  Object.values(F).forEach(f => { (f.who||[]).forEach(n=>req.add(n)); (f.requests||[]).forEach(q=>q.askedBy&&req.add(q.askedBy.split(" ")[0])); (f.todos||[]).forEach(x=>wait.add(whoKey(x.who))); });
+  const merge = set => [...set].filter(n => n && ![...set].some(m => m!==n && m.startsWith(n+" ") === false && n.startsWith(m+" ")));
+  const opt = (pre, set) => merge(set).sort().map(n=>`<option value="${pre}:${esc(n)}">${esc(n)}</option>`).join("");
+  document.getElementById("person").innerHTML = `<option value="">Everyone</option><optgroup label="Requested by">${opt("r",req)}</optgroup><optgroup label="To-dos for">${opt("w",wait)}</optgroup>`;
+})();
+(function tagMenu(){
+  const all = new Set();
+  Object.values(F).forEach(f => { (f.tags||[]).forEach(t => all.add(t)); (f.requests||[]).forEach(q => (q.tags||[]).forEach(t => all.add(t))); });
+  const num = t => /^\d/.test(t);
+  const list = [...all].sort((a, b) => num(a) && num(b) ? a.localeCompare(b, undefined, {numeric:true}) : num(a) ? -1 : num(b) ? 1 : a.localeCompare(b));
+  document.getElementById("tagmenu").innerHTML = list.concat(["(none)"]).map(t => `<label><input type="checkbox" value="${esc(t)}"> ${t==="(none)" ? "No " + esc(TAG_WORD.toLowerCase()) + " yet" : esc(t)}</label>`).join("") + `<button class="clear" type="button" id="tagclear">Clear</button>`;
+  syncTagSummary();
+  document.getElementById("tagmenu").addEventListener("change", e => { const v = e.target.value; e.target.checked ? st.tags.add(v) : st.tags.delete(v); syncTagSummary(); render(); });
+  document.getElementById("tagclear").addEventListener("click", () => { st.tags.clear(); document.querySelectorAll("#tagmenu input").forEach(i => i.checked = false); syncTagSummary(); render(); });
+  document.addEventListener("click", e => { const d = document.getElementById("tagsel"); if (d.open && !d.contains(e.target)) d.open = false; });
+})();
+function syncTagSummary(){
+  const n = st.tags.size, sum = document.getElementById("tagsum");
+  sum.textContent = n === 0 ? TAG_WORD + ": all ▾" : n === 1 ? TAG_WORD + ": " + ([...st.tags][0] === "(none)" ? "none yet" : [...st.tags][0]) + " ▾" : TAG_WORD + ": " + n + " selected ▾";
+  document.getElementById("tagsel").classList.toggle("on", n > 0);
+}
+document.getElementById("q").addEventListener("input", e => { st.q = e.target.value.trim().toLowerCase(); render(); });
+document.getElementById("person").addEventListener("change", e => { st.person = e.target.value; render(); });
+try { if (localStorage.getItem("epd-tl-legend") === "1") { document.getElementById("legend").hidden = false; document.getElementById("legendBtn").setAttribute("aria-expanded","true"); } } catch (err) {}
+{ const h = (location.hash || "").slice(1); if (VIEWS.some(x => x[0] === h)) st.view = h; }
+st.toToday = true; syncToolbar(); render();
+// the viewer's first name, to tell their to-dos apart from other people's
+if (window.claude && typeof window.claude.use === "function") {
+  window.claude.use("user").then(u => { USER = u; return u ? u.me() : null; }).then(me => {
+    ME_ID = me ? me.id : null; CAN_EDIT = !!(me && me.canEdit);
+    const n = me && me.name ? String(me.name).trim().split(" ")[0] : "";
+    if (n) VIEWER = n;
+    render();
+  }, () => {});
+}
+// notes and Resolved ticks: this page's own store, the same shape and keys as the dashboard's
+if (window.claude && typeof window.claude.use === "function") {
+  window.claude.use("db").then(db => {
+    if (!db) return;
+    DB = db;
+    db.collection("suggestions").onSnapshot(async snap => {
+      SUG = snap.docs.map(x => Object.assign({id: x.id}, x.data())).sort((a,b) => a.date < b.date ? -1 : 1);
+      const ids = [...new Set(SUG.map(x => x.by).filter(Boolean))];
+      if (USER && ids.length) { try { const ps = await USER.profiles(ids); ids.forEach(i => { SUG_NAMES[i] = (ps[i] && ps[i].name) || ""; }); } catch (e) {} }
+      const typing = document.activeElement && document.activeElement.closest && document.activeElement.closest("#sform,#rform,#u-note");
+      if (!typing) { const side = document.getElementById("side"), top = side.scrollTop; render(); side.scrollTop = top; }
+    }, () => {});
+    db.collection("resolutions").onSnapshot(snap => {
+      const m = {}; snap.docs.forEach(x => { m[x.id] = x.data(); }); RES = m;
+      const typing = document.activeElement && document.activeElement.id === "u-note";
+      if (!typing) { const side = document.getElementById("side"), top = side.scrollTop; render(); side.scrollTop = top; }
+    }, () => {});
+    if (st.sel && st.sel.t === "i") render();
+  }, () => {});
+}
+new ResizeObserver(() => { const c = document.getElementById("chart"); if (Math.abs(c.clientWidth - rw) > 4) { rw = c.clientWidth; render(); } }).observe(document.getElementById("chart"));
+</script>
