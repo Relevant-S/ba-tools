@@ -9,7 +9,9 @@ Read only. Uses JIRA_BASE_URL, JIRA_EMAIL and JIRA_API_TOKEN when set; otherwise
 reached, the caches next to the data file (jira-history.json, jira-earlier-stories.json).
 
 The data file: `product.work_link` (default https://example.atlassian.net/browse/), `jira_project` (default
-ACME), `jira: false` to skip the earlier stories, `earlier_work: {epic_areas, fallback_area}`.
+ACME), `jira: false` to skip the earlier stories, `earlier_work: {epic_areas, fallback_area, issue_types, until}`.
+`issue_types` (default [Story]) and `until` (default the start date; `all` = every one) widen the rows for a
+project whose work lives mostly in Jira tasks (the Bond Portal).
 """
 import base64, datetime as dt, json, os, re, urllib.request
 
@@ -70,7 +72,7 @@ class Tracker(Base):
         self.hist_cache = ctx.here / "jira-history.json"
         self.earlier_cache = ctx.here / "jira-earlier-stories.json"
         self.login = [os.environ.get(k) for k in ("JIRA_BASE_URL", "JIRA_EMAIL", "JIRA_API_TOKEN")]
-        self.hist, self.earlier, self.summary = {}, [], {}
+        self.hist, self.earlier, self.summary, self.until = {}, [], {}, ctx.start
 
     # ---------- Jira, read only
     def _post(self, body):
@@ -104,15 +106,17 @@ class Tracker(Base):
         print("Read the history of %d Jira tickets" % len(keys))
         return cache
 
-    def _earlier_stories(self, project, before):
-        """The Jira stories created before the timeline start (cached in jira-earlier-stories.json)."""
+    def _earlier_stories(self, project, before, types=("Story",)):
+        """The Jira stories (or other types) created before a day, or all with before=None (cached in jira-earlier-stories.json)."""
         cache = json.loads(self.earlier_cache.read_text(encoding="utf-8")) if self.earlier_cache.exists() else []
         if not all(self.login):
             print("No Jira login in this shell: earlier stories from the cache only (%d stories)" % len(cache))
             return cache
         out, page = [], None
         while True:
-            body = {"jql": "project = %s AND issuetype = Story AND created < %s ORDER BY created" % (project, before),
+            jql = "project = %s AND issuetype in (%s)%s ORDER BY created" % (
+                project, ", ".join('"%s"' % t for t in types), " AND created < %s" % before if before else "")
+            body = {"jql": jql,
                     "fields": ["summary", "created", "status", "components", "parent", "resolutiondate"], "maxResults": 100}
             if page:
                 body["nextPageToken"] = page
@@ -132,7 +136,7 @@ class Tracker(Base):
             if not page or res.get("isLast"):
                 break
         self.earlier_cache.write_text(json.dumps(out, indent=1, ensure_ascii=False), encoding="utf-8")
-        print("Read %d stories created before %s" % (len(out), before))
+        print("Read %d Jira %s%s" % (len(out), "/".join(types), " created before %s" % before if before else ""))
         return out
 
     def _done_day(self, key):
@@ -149,7 +153,12 @@ class Tracker(Base):
         if tl.get("earlier_work") and tl.get("jira", True) is not False:
             # every ticket the dashboard knows, not only this timeline's: a story linked anywhere is not "earlier"
             on_dashboard = {t["key"] for e in self.ctx.data["epics"] for f in e.get("features", []) for t in (f.get("tickets") or [])}
-            self.earlier = [s for s in self._earlier_stories(tl.get("jira_project", "ACME"), self.ctx.start) if s["key"] not in on_dashboard]
+            ew = tl["earlier_work"]
+            until = ew.get("until", self.ctx.start)
+            until = None if str(until) == "all" else str(until)
+            self.until = until
+            self.earlier = [s for s in self._earlier_stories(tl.get("jira_project", "ACME"), until, tuple(ew.get("issue_types") or ["Story"]))
+                            if s["key"] not in on_dashboard]
         all_keys = [t["key"] for e in self.ctx.data["epics"] for f in e.get("features", []) for t in (f.get("tickets") or [])]
         self.hist = self._history(all_keys + [s["key"] for s in self.earlier])
 
@@ -205,7 +214,8 @@ class Tracker(Base):
                 "id": s["key"], "label": s["summary"], "stage": last["stage"], "doneDate": done,
                 "since": s["created"], "desc": "", "clar": None, "clarLabel": None, "guess": guess,
                 "origin": "old-work", "basis": "tracker",
-                "originNote": "A Jira story from before %s%s." % (self._day(self.ctx.start), ", in the epic “%s”" % s["epicName"] if s.get("epicName") else ""),
+                "originNote": ("A Jira story from before %s" % self._day(self.ctx.start) if s["created"] < self.ctx.start
+                               else "A Jira ticket that is not on the dashboard") + (", in the epic “%s”." % s["epicName"] if s.get("epicName") else "."),
                 "work": [{"id": s["key"], "title": s["summary"], "status": s["status"], "done": done}],
                 "stages": stages, "tags": self.tags_of_work([{"id": s["key"]}]), "who": []})
         return rows
@@ -226,6 +236,8 @@ class Tracker(Base):
         rec = [f.get("title") or f["id"] for f in self.ctx.tl.get("features") or []]
         names = ", ".join(rec[:-1]) + " and " + rec[-1] if len(rec) > 1 else "".join(rec)
         return ("the BA dashboard, the timeline data file, Jira and the intake files. %sFaded bars have no stage history "
-                "yet. Rows from before %s are Jira stories, with stage dates from their Jira history; switch off \"Hide "
+                "yet. %s, with stage dates from their Jira history; switch off \"Hide "
                 "done\" to see the finished ones. * = placed here by guess." % (
-                    "Bars of %s show recorded stage dates. " % names if rec else "", self._day(self.ctx.start)))
+                    "Bars of %s show recorded stage dates. " % names if rec else "",
+                    "Rows from before %s are Jira stories" % self._day(self.ctx.start) if self.until == self.ctx.start
+                    else "Rows not on the dashboard are Jira tickets"))

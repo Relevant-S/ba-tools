@@ -82,7 +82,14 @@ INTAKE_KIND = {"fireflies": "call", "plaud": "call", "manual": "call", "gmail": 
 def pins_from_intake(ba, start, product):
     """One pin per day and kind. A call recorded in parts counts once."""
     kinds = {}
+    skip = re.compile(product["intake_skip"], re.I) if product.get("intake_skip") else None
+    pages = {}                                             # clarification page slug -> its product
+    for c in (ba / "clarifications").glob("*-decisions.yaml"):
+        m = re.search(r"^product:\s*(\S+)", c.read_text(encoding="utf-8", errors="replace"), re.M)
+        pages[c.name[:-len("-decisions.yaml")]] = m.group(1) if m else None
     for f in list((ba / "intake").glob("*.md")) + list((ba / "intake" / ".processed").glob("*.md")):
+        if skip and skip.search(f.name):
+            continue                                       # another product's file (product.intake_skip)
         m = re.match(r"(\d{4}-\d{2}-\d{2})-(?:\d{4}-)?([a-z]+)-(.*)\.md$", f.name)
         if not m:
             continue
@@ -96,6 +103,8 @@ def pins_from_intake(ba, start, product):
             continue
         if src == "slack" and product.get("slack_prefix") and not rest.startswith(product["slack_prefix"]):
             continue                                       # another product's channel
+        if src == "portal" and pages.get(re.sub(r"-decisions$", "", rest)) not in (None, product.get("clarifications")):
+            continue                                       # answers on another product's clarification page
         e = kinds.setdefault((day, kind), {"n": 0, "slugs": [], "files": [], "srcs": set()})
         e["n"] += 1
         e["slugs"].append(rest)

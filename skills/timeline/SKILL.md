@@ -46,6 +46,7 @@ product:
   ba: Vadim                    # the BA's first name ("BA" in the dashboard means them)
   slack_prefix: acme     # optional: only Slack intake files whose channel starts with this
   summary_drop: 'investor|…'   # optional: drop pin summary lines that match (another product's talk)
+  intake_skip: 'gmail-.*agreement'   # optional: leave out intake files whose name matches (another product's)
 ```
 
 ## Build
@@ -70,7 +71,7 @@ page come back the same way as on the dashboard: read the store with ArtifactDat
 
 From the intake file names: `fireflies` `plaud` `manual` `client-call` → call · `gmail` `client-message` → email ·
 `slack` `confluence` → comments · `document` → **doc** (any file the client sends: a sheet, a Doc, a PDF, an
-image) · `portal` → clarification-page answers. One pin per day and kind; the panel shows the intake file's
+image) · `portal` → clarification-page answers. Answers on another product's clarification page are left out. One pin per day and kind; the panel shows the intake file's
 people, minutes, summary, the decisions taken that day and what the call left waiting.
 
 ## Area panel
@@ -82,7 +83,7 @@ Counts **features** by stage — never commits or tickets (the client reads this
 
 | `tracker:` | Reads | Data file blocks |
 |---|---|---|
-| `jira` | ticket status history and releases (JIRA_* login, else the caches next to the data file); stories created before `start` as rows of their own | `earlier_work: {epic_areas, fallback_area}`, `jira_project`, `product.work_link` |
+| `jira` | ticket status history and releases (JIRA_* login, else the caches next to the data file); stories created before `start` as rows of their own (`issue_types` and `until: all` widen this to every ticket not on the dashboard) | `earlier_work: {epic_areas, fallback_area, issue_types, until}`, `jira_project`, `product.work_link` |
 | `github-bmad` | BA spec status (git history), BMAD stories (`sprint-status.yaml` history on `docs_ref`), the app's `dev` / `main` branches, the QA bug list | `github: {docs_ref, repo_url, spec_branch, spec_prefix, spec_areas, titles, skip, aliases, mvp, changes, doc_subject}`, `code_repo`, `code_commits`; `bug-parents.yaml` next to the data file |
 
 Both are read only.
