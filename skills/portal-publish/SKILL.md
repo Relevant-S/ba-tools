@@ -129,6 +129,31 @@ Dashboard send removes it from the old project, and the next page send adds it t
 
 If the BA edits `dashboard.yaml` after `plan`, discard and run `plan` again — `send` sends what `plan` built.
 
+## The Timeline — `timeline plan | send | discard` (contract 1.6.0)
+
+The BA's Timeline replaces Map and Board on the Portal (Vadim, 6 Nov 2026). A product moves to the Timeline when
+the BA sends `timeline/1` for it; a later `dashboard send` for that product brings Map and Board back. Until the
+Timeline page is on the Portal, the Client sees a "new dashboard is on its way" card after a Timeline send, so
+**send a Timeline only when the BA asks for it.**
+
+```bash
+uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py timeline plan [--product "<name>"]
+```
+
+1. **`timeline plan`** finds each product's Timeline data file (`docs/BA/timeline/**/*-timeline.yaml`, matched by
+   its `product.dashboard`), runs the Timeline build (`skills/timeline/scripts/build.py --json`), and turns it into
+   one `timeline/1` payload per product: every field of the BA page, except that a feature's clarification page
+   link becomes the Portal page's slug, and the BA page's own links are left out. It adds the Client contacts and
+   the product's Clarification pages (`clarification_pages`, with the same removal rule as the Dashboard send).
+   It checks every payload, asks the Portal which project each key opens (the Portal must accept `timeline/1`),
+   sends a dry run, and writes each payload to a temp file.
+2. **Show the BA**, product by product, every `warnings` line and the `client_list` word for word. Clients see
+   what the BA sees: the list names every to-do, the BA's own included, and says pins are shown whole.
+3. **Ask one question per product**, as for the Dashboard. **Yes** → `timeline send --payload <path>`;
+   **no** → `timeline discard --payload <path>`. A Timeline payload is refused by `dashboard send`, and the
+   other way round.
+4. **Report** `report` from each `send`.
+
 ## When it stops
 
 Show `error` as it is; it already says what to do. Nothing was sent in these cases, except the "may have arrived" row.

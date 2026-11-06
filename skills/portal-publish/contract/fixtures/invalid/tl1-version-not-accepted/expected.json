@@ -1,0 +1,9 @@
+{
+  "code": "contract_version_not_accepted",
+  "details": [
+    {
+      "check": "contract_version",
+      "path": "/contract"
+    }
+  ]
+}

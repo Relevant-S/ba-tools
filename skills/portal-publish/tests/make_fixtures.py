@@ -14,6 +14,9 @@ open ticket `updated`) and `v2-…` cases that break them; `answers/2` batches (
 Items) and the `reserve-request/1` body, with broken cases of both.
 Contract 1.5.0 adds the `connect-request/1` body (a one-time connect code and a repo name) and its `connect/1`
 reply (a new key for the code's project), with broken cases of both. The key is made up.
+Contract 1.6.0 adds `timeline/1` (the BA's Timeline data, sent to the Dashboard endpoint): a small file holding
+every field the real builds use, a real-size one shaped like Acme Lending's real build (made-up text), `tl1-…` cases
+that break the small one, the replies to a Timeline send, and an `answers/2` batch with an update on a `todo`.
 
 Pages: the clarification-page skill's example-probate-decisions.yaml converted to clarification/1, and a
 synthetic page of Merchants V7 size (6 Questions, 18 options, 4 screens). A page's invalid case is the
@@ -555,6 +558,277 @@ def client_view2(doc: dict) -> dict:
             "items": items, "releases": doc["releases"], "cards": cards}
 
 
+# ---- timeline/1 (contract 1.6.0) ---------------------------------------------------------------------
+
+TL_STAGES = ["concept", "spec", "ready", "dev", "qa", "done"]
+TL_PIN_KINDS = ["call", "email", "comments", "doc", "page", "idea"]
+TL_REQUEST_KINDS = ["sub-feature", "change", "improvement", "bug"]
+TL_PAGES = ["sign-up-questions", "advance-limits", "payday-repayment"]
+# The shape of Acme Lending's real Timeline build (6 Nov 2026): 7 groups holding 28 areas, 336 rows (features and
+# older Jira stories) with 13 changes and bugs, 98 to-dos, 333 work items, 58 pins, 26 releases, 16 pages of which
+# 14 are linked from a feature; the longest desc is 1,076 characters and the longest to-do text 1,994. All text
+# here is made up.
+EPD_AREAS = [[21, 13], [91, 2, 35, 18, 13], [24, 14, 9], [7, 5], [1, 3, 5], [2, 8, 0, 13, 3, 9, 14, 2], [4, 1, 13, 5, 1]]
+EPD_REQUESTS, EPD_TODOS, EPD_WORK, EPD_PINS, EPD_RELEASES, EPD_PAGES, EPD_LINKED = 13, 98, 333, 58, 26, 16, 14
+EPD_LONG_DESC, EPD_LONG_TODO = 1076, 1994
+
+
+def day(n: int) -> str:
+    """A date between 1 May and 6 Nov 2026."""
+    d = 1 + n % 189
+    months = [(5, 31), (6, 30), (7, 31), (8, 31), (9, 30), (10, 31), (11, 6)]
+    for m, length in months:
+        if d <= length:
+            return f"2026-{m:02d}-{d:02d}"
+        d -= length
+    return "2026-11-06"
+
+
+def tl_stages(n: int, upto: int) -> list[dict]:
+    return [{"stage": TL_STAGES[j], "from": day(n + j * 9)} for j in range(upto + 1)]
+
+
+def tl_work(n: int, done: bool) -> dict:
+    w = {"id": jira_key(n), "title": f"{words(n, 4).capitalize()} ({n})", "status": "Done" if done else "To Do"}
+    if done:
+        w["done"] = day(n + 40)
+    return w
+
+
+def tl_todo(n: int, kind: str, feature: str) -> dict:
+    title = f"{ASKS[n % len(ASKS)]} {feature.lower()} ({n})"
+    return {"key": item_key(kind, title), "id": f"{kind[0].upper()}{n}", "kind": kind, "title": title,
+            "who": PEOPLE[n % len(PEOPLE)] if kind != "todo" else "Sample BA", "since": day(n * 5),
+            "age": n % 30, "status": ["open", "hot", "old"][n % 3], "prod": "Sample",
+            "s": f"{words(n, 6).capitalize()}.", "l": f"{words(n + 1, 8).capitalize()}.\n- {words(n + 2, 4)}."}
+
+
+def tl_feature(n: int, pins: list[str], page: str | None = None) -> dict:
+    stage = n % 6
+    f = {"id": f"row-{n}", "label": f"{words(n, 3).capitalize()} {n}", "stage": TL_STAGES[stage],
+         "stages": tl_stages(n, stage), "since": day(n), "origin": ["dashboard", "spec", "old-work"][n % 3],
+         "basis": ["tracker", "recorded", "code", "none"][n % 4], "desc": f"{words(n, 12).capitalize()}." if n % 2 else "",
+         "work": [tl_work(n * 10 + j, j == 0) for j in range(n % 3)], "guess": n % 5 == 4,
+         "who": [PEOPLE[n % len(PEOPLE)].split(" ")[0]], "tags": [f"6.{n % 5}"]}
+    if n % 7 == 1 and f["work"]:
+        f["work"][0]["url"] = f"https://github.com/example/docs/blob/main/stories/story-{n}.md"
+    if TL_STAGES[stage] == "done":
+        f["doneDate"] = f["stages"][-1]["from"]
+    if not f["desc"]:
+        f["about"] = [f"{words(n + j, 7).capitalize()}." for j in range(2)]
+    if f["origin"] == "old-work":
+        f["originNote"] = "A Jira story from before 1 May 2026."
+    if f["basis"] == "tracker":
+        f["basisNote"] = "From the Jira history of its tickets."
+    if page:
+        f["page"] = page
+        f["clarLabel"] = "Clarification page — V2, 3 questions"
+    if n % 4 == 0 and pins:
+        f["askedIn"], f["askedBy"] = pins[n % len(pins)], "Maria"
+    return f
+
+
+def tl_pin(n: int) -> dict:
+    kind = TL_PIN_KINDS[n % len(TL_PIN_KINDS)]
+    date = day(n * 3)
+    p = {"id": f"{date}-{kind}", "date": date, "kind": kind,
+         "title": {"call": "Client call", "email": "Email · " + words(n, 2), "comments": "Slack · 2 messages",
+                   "doc": "Document · " + words(n, 2), "page": "Answers on 1 clarification page",
+                   "idea": "Suggestion · " + words(n, 2)}[kind]}
+    if kind == "call":
+        p.update(people=["Maria", "Tom"], staff=2, minutes=45 + n % 30,
+                 summary=[f"{words(n + j, 9).capitalize()}." for j in range(3)],
+                 owes=[{"who": "Maria → Sample BA", "text": f"{words(n, 5).capitalize()}."}])
+    if kind == "email":
+        p.update(people=["Priya"], subject=f"Re: {words(n, 3)}")
+    if kind == "page":
+        p["decided"] = [{"title": f"{words(n, 6).capitalize()}.", "page": "Sign-up questions",
+                         "how": "on the client Portal"}]
+    if kind == "doc":
+        p["ref"] = f"doc-{n}"
+    return p
+
+
+def timeline(features_by_area: list[list[int]], n_requests: int, n_todos: int, n_work: int, n_pins: int,
+             n_releases: int, pages: list[str], linked: int) -> dict:
+    pins = [tl_pin(n) for n in range(n_pins)]
+    pin_ids = [p["id"] for p in pins]
+    groups, n, linked_left, work_left = [], 0, linked, n_work
+    for g, areas in enumerate(features_by_area):
+        group = {"name": f"{words(g, 2).capitalize()} group", "areas": []}
+        for a, size in enumerate(areas):
+            area = {"name": f"{words(g * 10 + a, 2).title()} {g}.{a}", "features": []}
+            if (g + a) % 2 == 0:
+                area["link"] = {"label": "See all in Jira", "url": "https://example.atlassian.net/issues/?jql="
+                                + url_quote(f'component = "{area["name"]}"', safe="")}
+            for _ in range(size):
+                page = pages[(n // 3) % len(pages)] if linked_left > 0 and n % 3 == 0 else None
+                if page:
+                    linked_left -= 1
+                f = tl_feature(n, pin_ids, page)
+                work_left -= len(f["work"])
+                area["features"].append(f)
+                n += 1
+            group["areas"].append(area)
+        groups.append(group)
+    rows = [f for g in groups for a in g["areas"] for f in a["features"]]
+    i = 0
+    while work_left < 0:                               # trim, then top up, to the work-item count
+        f = next(f for f in reversed(rows) if f["work"])
+        f["work"].pop()
+        work_left += 1
+    while work_left > 0:
+        rows[i % len(rows)]["work"].append(tl_work(9000 + i, False))
+        work_left -= 1
+        i += 1
+    for j in range(n_requests):
+        f = rows[(j * 7) % len(rows)]
+        q = {"id": f"req-{j}", "kind": TL_REQUEST_KINDS[j % 4], "title": f"{words(j, 5).capitalize()} ({j})",
+             "stages": tl_stages(j, j % 6), "work": [tl_work(7000 + j, j % 6 == 5)] if j % 2 else []}
+        if j % 3 == 0:
+            q.update(askedIn=pin_ids[j % len(pin_ids)], askedBy="Tom", asked=f"{words(j, 6).capitalize()}?")
+        if j % 4 == 3:
+            q.update(note=f"QA bug BUG-{j:03d} · High · found {day(j)}", guess=True)
+        if j % 5 == 1:
+            q.update(about=[f"{words(j, 6).capitalize()}."], tags=["7.0"], self=rows[0]["id"])
+        if j % 7 == 5 and q["work"]:
+            q["work"][0]["url"] = f"https://github.com/example/docs/blob/main/stories/request-{j}.md"
+        if j % 6 == 2:
+            q["merged"] = day(j + 60)
+        if j % 6 == 4:
+            q["splitOff"] = f"later-{j}"
+        f.setdefault("requests", []).append(q)
+    for j in range(n_todos):
+        f = rows[(j * 5) % len(rows)]
+        f.setdefault("todos", []).append(tl_todo(j, ["waiting", "agenda", "todo"][j % 3], f["label"]))
+    for f in rows[:3]:
+        f["openQ"] = [f"{words(len(f['label']), 7).capitalize()}?"]
+    rows[1]["changes"] = rows[0]["id"]
+    rows[2]["startedBefore"] = "2026-03-02"
+    return {
+        "contract": "timeline/1", "sent_at": "2026-11-06T10:00:00.000Z", "sent_by": "Sample BA",
+        "ba_tools_version": "0.9.0", "source_commit": "0123456789abcdef0123456789abcdef01234567",
+        "product": {"name": "Sample", "tagWord": "Release", "tracker": "jira",
+                    "workLink": "https://example.atlassian.net/browse/", "ba": "Sample",
+                    "footer": "the BA dashboard, the timeline data file, Jira and the intake files."},
+        "today": "2026-11-06", "start": "2026-05-01", "from": "2026-03-02", "built": "06 Nov 2026, 10:00",
+        "groups": groups, "pins": pins,
+        "releases": [{"name": f"6.{j}", "date": day(j * 7)} for j in range(n_releases)],
+        "client_contacts": [{"name": "Maria Lopez", "email": "maria@example.com"},
+                            {"name": "Tom Baker", "slack": "tom.baker"}],
+        "clarification_pages": list(pages),
+    }
+
+
+def timeline_small() -> dict:
+    """The small timeline/1: every field the real builds use, at least once, and every stage (design on a row,
+    live on a request)."""
+    d = timeline([[3, 2], [4]], 7, 9, 6, 7, 3, TL_PAGES, 2)
+    rows = tl_rows(d)
+    rows[1]["stages"] = [{"stage": "concept", "from": day(1)}, {"stage": "design", "from": day(10)}]
+    rows[1]["stage"] = "design"
+    q = next(q for f in rows for q in f.get("requests", []) if q["stages"][-1]["stage"] == "done")
+    q["stages"].append({"stage": "live", "from": day(150)})
+    return d
+
+
+def timeline_real_size() -> dict:
+    """Acme Lending's real Timeline build, in shape and size, with made-up text."""
+    d = timeline(EPD_AREAS, EPD_REQUESTS, EPD_TODOS, EPD_WORK, EPD_PINS, EPD_RELEASES,
+                 [f"page-{j + 1}" for j in range(EPD_PAGES)], EPD_LINKED)
+    rows = [f for g in d["groups"] for a in g["areas"] for f in a["features"]]
+    long_desc = (" ".join(WORDS) + ". ") * 20
+    rows[1]["desc"] = long_desc[:EPD_LONG_DESC]
+    rows[1].pop("about", None)
+    todo = next(t for f in rows for t in f.get("todos", []))
+    todo["s"] = (" ".join(WORDS) + ".\n") * 30
+    todo["s"] = todo["s"][:EPD_LONG_TODO]
+    return d
+
+
+def tl_rows(doc: dict) -> list[dict]:
+    return [f for g in doc["groups"] for a in g["areas"] for f in a["features"]]
+
+
+def tl_invalid_cases() -> dict[str, tuple[dict, dict]]:
+    """Each breaks the small timeline/1 in one place."""
+    cases: dict[str, tuple[dict, dict]] = {}
+
+    def case(name, doc, code, check, path):
+        cases[name] = (doc, {"code": code, "check": check, "path": path})
+
+    f0 = "/groups/0/areas/0/features/0"
+    d = timeline_small(); d["contract"] = "timeline/2"
+    case("tl1-version-not-accepted", d, "contract_version_not_accepted", "contract_version", "/contract")
+    d = timeline_small(); tl_rows(d)[0]["clar"] = "https://claude.ai/artifact/AbCdEf0123456789"
+    case("tl1-artifact-link-left-in", d, "contract_invalid", "schema", f0 + "/clar")
+    d = timeline_small(); d["pages"] = []
+    case("tl1-pages-left-in", d, "contract_invalid", "schema", "/pages")
+    d = timeline_small(); d["dashboardUrl"] = "https://claude.ai/artifact/AbCdEf0123456789"
+    case("tl1-dashboard-url-left-in", d, "contract_invalid", "schema", "/dashboardUrl")
+    d = timeline_small(); i = next(i for i, p in enumerate(d["pins"]) if p.get("decided"))
+    d["pins"][i]["decided"][0]["url"] = "https://claude.ai/artifact/AbCdEf0123456789"
+    case("tl1-decided-url-left-in", d, "contract_invalid", "schema", f"/pins/{i}/decided/0/url")
+    d = timeline_small(); tl_rows(d)[1]["work"][0]["url"] = "http://example.com/story.md"
+    case("tl1-work-url-http", d, "contract_invalid", "schema", "/groups/0/areas/0/features/1/work/0/url")
+    d = timeline_small(); d["groups"][0]["areas"][0]["link"]["url"] = "javascript:alert(1)"
+    case("tl1-area-link-javascript", d, "contract_invalid", "schema", "/groups/0/areas/0/link/url")
+    d = timeline_small(); d["product"]["workLink"] = "http://example.atlassian.net/browse/"
+    case("tl1-work-link-http", d, "contract_invalid", "schema", "/product/workLink")
+    d = timeline_small(); del d["product"]
+    case("tl1-missing-product", d, "contract_invalid", "schema", "/product")
+    d = timeline_small(); tl_rows(d)[0]["doneDate"] = None
+    case("tl1-null-field", d, "contract_invalid", "schema", f0 + "/doneDate")
+    d = timeline_small(); tl_rows(d)[0]["stage"] = "shipped"
+    case("tl1-bad-stage", d, "contract_invalid", "schema", f0 + "/stage")
+    d = timeline_small(); tl_rows(d)[0]["since"] = "2026-13-01"
+    case("tl1-bad-date", d, "contract_invalid", "schema", f0 + "/since")
+    d = timeline_small(); tl_rows(d)[0]["todos"][0]["key"] = "ABCDEF012345"
+    case("tl1-bad-todo-key", d, "contract_invalid", "schema", f0 + "/todos/0/key")
+    d = timeline_small(); tl_rows(d)[0]["todos"][0]["kind"] = "topic"
+    case("tl1-bad-todo-kind", d, "contract_invalid", "schema", f0 + "/todos/0/kind")
+    d = timeline_small(); tl_rows(d)[0]["page"] = "Sign-Up"
+    case("tl1-bad-page-slug", d, "contract_invalid", "schema", f0 + "/page")
+    d = timeline_small(); tl_rows(d)[0]["todos"][0]["title"] = "T" * 501
+    case("tl1-todo-title-too-long", d, "contract_invalid", "schema", f0 + "/todos/0/title")
+    d = timeline_small(); rows = tl_rows(d); rows[3]["id"] = rows[0]["id"]
+    case("tl1-duplicate-feature-id", d, "contract_invalid", "unique_feature_id", "/groups/0/areas/1/features/0/id")
+    d = timeline_small(); rows = tl_rows(d); rows[5]["todos"] = [copy.deepcopy(rows[0]["todos"][0])]
+    case("tl1-duplicate-todo-key", d, "contract_invalid", "unique_item_key", "/groups/1/areas/0/features/0/todos/0/key")
+    d = timeline_small(); d["pins"][2]["id"] = d["pins"][0]["id"]
+    case("tl1-duplicate-pin-id", d, "contract_invalid", "unique_pin_id", "/pins/2/id")
+    d = timeline_small(); d["clarification_pages"].append(d["clarification_pages"][0])
+    case("tl1-duplicate-page-slug", d, "contract_invalid", "unique_page_slug", "/clarification_pages/3")
+    d = timeline_small(); tl_rows(d)[0]["askedIn"] = "2026-01-01-call"
+    case("tl1-unknown-pin", d, "contract_invalid", "known_pin", f0 + "/askedIn")
+    d = timeline_small(); q = next(q for f in tl_rows(d) for q in f.get("requests", []) if q.get("askedIn"))
+    q["askedIn"] = "2026-01-01-call"
+    path = next(f"/groups/{g}/areas/{a}/features/{i}/requests/{j}/askedIn"
+                for g, gr in enumerate(d["groups"]) for a, ar in enumerate(gr["areas"])
+                for i, f in enumerate(ar["features"]) for j, x in enumerate(f.get("requests", [])) if x is q)
+    case("tl1-unknown-request-pin", d, "contract_invalid", "known_pin", path)
+    d = timeline_small(); d["clarification_pages"].remove(tl_rows(d)[0]["page"])
+    case("tl1-unknown-page", d, "contract_invalid", "known_page", f0 + "/page")
+    d = timeline_small(); tl_rows(d)[0]["label"] = "Fees &amp; limits"
+    case("tl1-html-entity", d, "contract_invalid", "no_html_entities", f0 + "/label")
+    return cases
+
+
+def client_timeline(doc: dict) -> dict:
+    """The Portal's ClientTimeline1 of a timeline/1 send: the send without the envelope, client_contacts and
+    clarification_pages."""
+    drop = {"contract", "sent_at", "sent_by", "ba_tools_version", "source_commit", "client_contacts",
+            "clarification_pages"}
+    return {k: v for k, v in doc.items() if k not in drop}
+
+
+def timeline_counts(doc: dict) -> dict:
+    rows = tl_rows(doc)
+    return {"features": len(rows) + sum(len(f.get("requests", [])) for f in rows),
+            "items": sum(len(f.get("todos", [])) for f in rows), "client_contacts": len(doc["client_contacts"]),
+            "areas": sum(len(g["areas"]) for g in doc["groups"]), "pins": len(doc["pins"])}
+
+
 # ---- pages (clarification/1) -------------------------------------------------------------------------
 
 def page_envelope() -> dict:
@@ -886,8 +1160,8 @@ def reply_invalid_cases() -> dict[str, tuple[str, dict, str]]:
     case("answers2-batch-with-nothing", "answers/2", {**b2, "answers": [], "updates": []}, "")
     a = copy.deepcopy(b2); a["updates"][0]["item"]["key"] = "ABCDEF012345"
     case("answers2-update-bad-item-key", "answers/2", a, "/updates/0/item/key")
-    a = copy.deepcopy(b2); a["updates"][0]["item"]["kind"] = "todo"
-    case("answers2-update-todo-item", "answers/2", a, "/updates/0/item/kind")
+    a = copy.deepcopy(b2); a["updates"][0]["item"]["kind"] = "topic"
+    case("answers2-update-unknown-kind", "answers/2", a, "/updates/0/item/kind")
     a = copy.deepcopy(b2); a["updates"][1]["note"] = "n" * 2001
     case("answers2-update-note-too-long", "answers/2", a, "/updates/1/note")
     a = copy.deepcopy(b2); a["updates"][1]["note"] = ""
@@ -996,6 +1270,11 @@ def main() -> None:
     dump(FIXTURES / "valid" / "dashboard-2-with-pages.json", with_pages())
     dump(FIXTURES / "valid" / "dashboard-2-with-1-4-fields.json", with_1_4_fields())
     for name, (doc, stated) in v2_invalid_cases().items():
+        dump(FIXTURES / "invalid" / name / "input.json", doc)
+        dump(FIXTURES / "invalid" / name / "expected.json", expected_result(name, doc, stated))
+    dump(FIXTURES / "valid" / "timeline-1-small.json", timeline_small())
+    dump(FIXTURES / "valid" / "timeline-1-real-size.json", timeline_real_size())
+    for name, (doc, stated) in tl_invalid_cases().items():
         dump(FIXTURES / "invalid" / name / "input.json", doc)
         dump(FIXTURES / "invalid" / name / "expected.json", expected_result(name, doc, stated))
     dump(FIXTURES / "valid" / "clarification-1-probate.json", probate())
@@ -1133,8 +1412,21 @@ def replies() -> dict[str, dict]:
                {"slug": "employer-search", "title": "Employer search: who can be found"}]
     dry_pages = {**dry2, "pages_removed": removed}
     sent_pages = {**base, "counts": dry2["counts"], "pages_removed": removed}
+    tl = timeline_small()
+    tl_dry = {**base, "publish_id": None, "dry_run": True, "counts": timeline_counts(tl),
+              "client_view": client_timeline(tl), "client_contact_names": [c["name"] for c in tl["client_contacts"]],
+              "pages_removed": removed[:1]}
+    tl_sent = {**base, "counts": timeline_counts(tl), "pages_removed": []}
+    todo_t = "Write the collections note for the pilot"
+    todo_update = {**updates_only, "updates": [{
+        "id": "019a2b95-0a00-7c00-8a00-000000000004", "sent_at": "2026-11-06T09:00:00.000Z", "person": person,
+        "item": {"key": item_key("todo", todo_t), "kind": "todo", "title": todo_t},
+        "note": "We would like to read it before the call.", "resolved": False}]}
     return {
         "publish-reply-1-sent.json": base,
+        "publish-reply-1-timeline-1-dry-run.json": tl_dry,
+        "publish-reply-1-timeline-1-sent.json": tl_sent,
+        "answers-2-todo-update.json": todo_update,
         "publish-reply-1-dashboard-2-pages-removed-dry-run.json": dry_pages,
         "publish-reply-1-dashboard-2-pages-removed.json": sent_pages,
         "publish-reply-1-dry-run.json": dry,

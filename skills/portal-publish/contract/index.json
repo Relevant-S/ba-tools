@@ -1,9 +1,10 @@
 {
-  "contract_folder": "1.5.0",
-  "accepted": ["dashboard/1", "dashboard/2", "clarification/1"],
+  "contract_folder": "1.6.0",
+  "accepted": ["dashboard/1", "dashboard/2", "timeline/1", "clarification/1"],
   "schemas": {
     "dashboard/1": "dashboard-1.schema.json",
     "dashboard/2": "dashboard-2.schema.json",
+    "timeline/1": "timeline-1.schema.json",
     "clarification/1": "clarification-1.schema.json",
     "publish-reply/1": "publish-reply-1.schema.json",
     "status/1": "status-1.schema.json",

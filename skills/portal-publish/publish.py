@@ -15,6 +15,18 @@ Commands (run from the project root, or pass --root):
   dashboard send --payload <file>     after the BA says yes to that product: send that same payload for real,
                                       report, delete the file
   dashboard discard --payload <file>  after the BA says no to that product: delete the payload file, send nothing
+  timeline plan [--product <name>]    since contract 1.6.0: per product with a Timeline data file
+                                      (docs/BA/timeline/**/*-timeline.yaml), run the Timeline build
+                                      (skills/timeline/scripts/build.py --json), turn it into a timeline/1 send (a
+                                      feature's clarification page link becomes the Portal page's slug; the BA
+                                      page's own links are left out; client_contacts and clarification_pages are
+                                      added), check it against the contract, ask the Portal which project the key
+                                      opens (it must accept timeline/1), send it as a dry run and print what the
+                                      Client will get. Writes each payload to a temp file and prints its path. A
+                                      timeline/1 send replaces the project's Dashboard send (Map and Board) on the
+                                      Portal; a later `dashboard send` brings Map and Board back.
+  timeline send --payload <file>      after the BA says yes to that product: send that same payload for real
+  timeline discard --payload <file>   after the BA says no: delete the payload file, send nothing
   page plan <slug> [--product <name>] find docs/BA/clarifications/<slug>-decisions.yaml (else <slug>.yaml), run
                                       clarification-page's _fixyaml.py on it, build the clarification/1 page (only
                                       the contract's fields; old `settled:` lines become decisions), collect its
@@ -778,9 +790,10 @@ def project_name(url: str, key: str, key_name: str, contract: str | None = CONTR
 
 
 def exchange(url: str, endpoint: str, dry_run: bool, sources: dict, kind: str, send, *,
-             next_step: dict | None = None, where_fn=None, first_line=None) -> dict:
+             next_step: dict | None = None, where_fn=None, first_line=None, command: str | None = None) -> dict:
     """Send one request with send(client, target) and handle the reply the same way for every kind of Publish.
-    Returns the checked 200 reply; anything else stops the run. kind is the command word: dashboard or page."""
+    Returns the checked 200 reply; anything else stops the run. kind is the reply's kind: dashboard or page;
+    command is the command word to send again with (default: kind; timeline for a timeline/1 send)."""
     target = url + endpoint + ("?dry_run=1" if dry_run else "")
     try:
         with http_client() as client:
@@ -797,7 +810,7 @@ def exchange(url: str, endpoint: str, dry_run: bool, sources: dict, kind: str, s
                        "and that tools.portal.url is right. Nothing was sent.") from None
         raise MaybeSent(f"The send went out to {url}, but no reply came back, so it may have arrived. Before "
                         "sending again, check the Portal: Admin → Projects → the Project → Publishing. If the "
-                        f"send is not there, run `{kind} send` again with the same --payload file (it was "
+                        f"send is not there, run `{command or kind} send` again with the same --payload file (it was "
                         "kept).") from None
     try:
         doc = r.json()
@@ -955,6 +968,15 @@ def cmd_plan(root: Path, refresh: bool, only: str | None = None) -> dict:
                    "Nothing was sent.")
     names = key_names(prof, products, only)
     products = [only] if only else products
+    try:
+        timelines = timeline_files(root)
+    except Stop:
+        timelines = {}
+    for product in products:
+        if product in timelines:
+            warnings.append(f"{product} has a Timeline ({timelines[product].relative_to(root).as_posix()}). On the "
+                            f"Portal, this Dashboard send replaces {product}'s Timeline and puts Map and Board back. "
+                            "To send the Timeline instead, discard this and run `timeline plan`.")
     keys = read_keys(env, names)
     sent_at = now_utc()
     built = []
@@ -987,11 +1009,12 @@ def cmd_plan(root: Path, refresh: bool, only: str | None = None) -> dict:
 
 
 def payload_arg(argv: list[str]) -> Path:
-    """Only a file `dashboard plan` or `page plan` wrote: portal-publish-*.json in the system temp folder. Nothing else is
-    read or deleted."""
+    """Only a file `dashboard plan`, `timeline plan` or `page plan` wrote: portal-publish-*.json in the system temp
+    folder. Nothing else is read or deleted."""
     p = arg(argv, "--payload")
     if not p:
-        raise Stop("--payload <file> is required (the path `dashboard plan` or `page plan` printed).")
+        raise Stop("--payload <file> is required (the path `dashboard plan`, `timeline plan` or `page plan` "
+                   "printed).")
     path = Path(p).resolve()
     if not path.match(PAYLOAD_GLOB) or path.parent != Path(tempfile.gettempdir()).resolve():
         raise Stop(f"{p} is not a payload file `dashboard plan` or `page plan` wrote (portal-publish-*.json in the "
@@ -1019,9 +1042,10 @@ def read_saved(path: Path) -> dict | None:
 
 
 def payload_kind(path: Path) -> str | None:
-    """"page" for a file `page plan` wrote, "dashboard" for one `dashboard plan` wrote, else None."""
+    """"page", "dashboard" or "timeline" for a file `page plan`, `dashboard plan` or `timeline plan` wrote, else
+    None."""
     doc = read_saved(path) or {}
-    return doc.get("kind") if doc.get("kind") in ("page", "dashboard") else None
+    return doc.get("kind") if doc.get("kind") in ("page", "dashboard", "timeline") else None
 
 
 def check_kind(path: Path, want: str, action: str) -> None:
@@ -1032,14 +1056,15 @@ def check_kind(path: Path, want: str, action: str) -> None:
                    "deleted.")
 
 
-def read_dashboard_payload(path: Path) -> tuple[dict, bytes]:
-    """The file `dashboard plan` wrote: what it says about the send, and the exact bytes to send."""
+def read_dashboard_payload(path: Path, kind: str = "dashboard") -> tuple[dict, bytes]:
+    """The file `dashboard plan` (or `timeline plan`) wrote: what it says about the send, and the exact bytes to
+    send."""
     if not path.exists():
-        raise Stop(f"{path} is not there. Run `dashboard plan` again. Nothing was sent.")
+        raise Stop(f"{path} is not there. Run `{kind} plan` again. Nothing was sent.")
     saved = read_saved(path)
-    if not (saved and saved.get("kind") == "dashboard" and isinstance(saved.get("publish"), str)
+    if not (saved and saved.get("kind") == kind and isinstance(saved.get("publish"), str)
             and text(saved.get("product")) and KEY_NAME.fullmatch(text(saved.get("key_name")))):
-        raise Stop(f"{path} is not a payload `dashboard plan` wrote. Run `dashboard plan` again. "
+        raise Stop(f"{path} is not a payload `{kind} plan` wrote. Run `{kind} plan` again. "
                    "Nothing was sent.")
     return saved, saved["publish"].encode("utf-8")
 
@@ -1093,10 +1118,346 @@ def cmd_send(root: Path, path: Path) -> dict:
 def cmd_discard(path: Path, kind: str = "dashboard") -> dict:
     check_kind(path, kind, "discard")
     existed = path.exists()
-    product = text((read_saved(path) or {}).get("product")) if kind == "dashboard" and existed else ""
+    product = text((read_saved(path) or {}).get("product")) if kind in ("dashboard", "timeline") and existed else ""
     path.unlink(missing_ok=True)
     return {"ok": True, "sent": None, "deleted": str(path) if existed else None,
             "report": ("Nothing was sent" + (f" for {product}" if product else "") + ". The payload file was deleted.")}
+
+
+
+# ---------------------------------------------------------------- timeline (a timeline/1 send, contract 1.6.0)
+
+TIMELINE_PY = SKILLS / "timeline" / "scripts" / "build.py"
+TIMELINE_DIR = "docs/BA/timeline"
+TIMELINE_CONTRACT = "timeline/1"
+# Fields of the BA's Timeline page that a timeline/1 send leaves out (contract timeline-1.md): the BA page's own
+# links. A feature's clar (a claude.ai artifact link) becomes page, the Portal page's slug.
+TIMELINE_DROPPED = ("pages", "dashboardUrl")
+TIMELINE_STAGE_NAME = {**STAGE_NAME, "design": "Spec & design", "live": "Live"}
+TODO_KIND_NAME = {"waiting": "Waiting", "agenda": "Next-call agenda", "todo": "BA to-do"}
+
+
+def timeline_files(root: Path) -> dict[str, Path]:
+    """Each product's Timeline data file: a docs/BA/timeline/**/*-timeline.yaml with a groups: list, by the
+    product's name in the dashboard data (product.dashboard, else project, else product.name), as the Timeline
+    build reads it. Two files for one product stop the run."""
+    found: dict[str, Path] = {}
+    folder = root / TIMELINE_DIR
+    for path in sorted(folder.rglob("*-timeline.yaml")) if folder.is_dir() else []:
+        tl = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if not isinstance(tl, dict) or not isinstance(tl.get("groups"), list):
+            continue
+        p = tl.get("product") if isinstance(tl.get("product"), dict) else {}
+        product = text(p.get("dashboard")) or text(tl.get("project")) or text(p.get("name"))
+        if not product:
+            continue
+        if product in found:
+            raise Stop(f"Two Timeline data files are for {product}: {found[product].relative_to(root).as_posix()} "
+                       f"and {path.relative_to(root).as_posix()}. Keep one. Nothing was sent.")
+        found[product] = path
+    return found
+
+
+def run_timeline_build(root: Path, data_file: Path) -> dict:
+    """The Timeline build (skills/timeline/scripts/build.py --json) of one data file: the page's data, as the BA
+    page gets it. Written to a temp file outside the repo, read, and deleted."""
+    fd, name = tempfile.mkstemp(prefix="portal-timeline-build-", suffix=".json")
+    os.close(fd)
+    out_file = Path(name)
+    rel = data_file.relative_to(root).as_posix()
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+    try:
+        try:
+            r = subprocess.run([sys.executable, str(TIMELINE_PY), str(data_file), "--json", str(out_file)], cwd=root,
+                               capture_output=True, env=env, timeout=BUILD_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            raise Stop(f"The Timeline build of {rel} did not finish in {BUILD_TIMEOUT // 60} minutes, so it was "
+                       "stopped. Nothing was sent.") from None
+        if r.returncode != 0:
+            err = (r.stderr or b"").decode("utf-8", "replace").strip()
+            why = err.splitlines()[-1] if err else f"exit code {r.returncode}"
+            raise Stop(f"The Timeline build of {rel} failed: {why}. Fix it, then run `timeline plan` again. "
+                       "Nothing was sent.")
+        try:
+            build = json.loads(out_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            build = None
+    finally:
+        out_file.unlink(missing_ok=True)
+    if not isinstance(build, dict) or not isinstance(build.get("groups"), list):
+        raise Stop(f"The Timeline build of {rel} wrote no data. Nothing was sent.")
+    return build
+
+
+def no_nulls(value):
+    """A copy with every null field and every null list entry left out (timeline/1 has no nulls: a field the
+    build writes as null is not sent)."""
+    if isinstance(value, dict):
+        return {k: no_nulls(v) for k, v in value.items() if v is not None}
+    if isinstance(value, list):
+        return [no_nulls(v) for v in value if v is not None]
+    return value
+
+
+def timeline_rows(doc: dict) -> list[tuple[str, dict]]:
+    return checks.timeline_rows(doc)
+
+
+def timeline_payload(root: Path, prof: dict, product: str, build: dict, products: list[str],
+                     sent_at: str | None = None) -> tuple[dict, list[str]]:
+    """One product's timeline/1 send (contract timeline-1.md) from its Timeline build, and warnings. The build is
+    sent as it is, except: the envelope, client_contacts and clarification_pages are added; each feature's clar (a
+    claude.ai artifact link) becomes page, the slug of the Portal page with that url (clarLabel goes with it);
+    pages, dashboardUrl and pins[].decided[].url are left out; null fields are left out."""
+    warnings: list[str] = []
+    pages, more = dashboard_pages(root, prof, products, product)
+    warnings += more
+    found, _ = page_index(root)
+    slug_of = {link_key(p["url"]): p["slug"] for p in found if link_key(p["url"])}
+    doc = no_nulls({k: v for k, v in build.items() if k not in TIMELINE_DROPPED})
+    unmatched = []
+    for _, f in timeline_rows(doc):
+        clar = link_key(f.pop("clar", None))
+        label = f.pop("clarLabel", None)
+        if not clar:
+            continue
+        slug_ = slug_of.get(clar)
+        if slug_ in pages:
+            f["page"] = slug_
+            if label:
+                f["clarLabel"] = label
+        else:
+            unmatched.append(f"{f.get('label', f['id'])} ({clar})")
+    if unmatched:
+        warnings.append(f"These features link a clarification page that is not one of {product}'s pages in "
+                        f"{CLARIFICATIONS}/ (by url), so the Portal shows no page button on them: "
+                        + "; ".join(unmatched) + ".")
+    for pin in doc.get("pins") or []:
+        for d in pin.get("decided") or []:
+            d.pop("url", None)
+    people, _, warn = contacts(root, prof)
+    if warn:
+        warnings.append(warn)
+    sent_by = git(root, "config", "user.name")
+    if not sent_by:
+        raise Stop("git has no user name (git config user.name). The Portal logs who sent each Publish: set it with "
+                   "`git config user.name \"Your Name\"`, then run again. Nothing was sent.")
+    payload: dict = {"contract": TIMELINE_CONTRACT, "sent_at": sent_at or now_utc(), "sent_by": sent_by,
+                     "ba_tools_version": ba_tools_version(prof)}
+    put(payload, "source_commit", git(root, "rev-parse", "HEAD"))
+    payload.update(doc)
+    payload["client_contacts"] = people
+    payload["clarification_pages"] = pages
+    return payload, warnings
+
+
+def timeline_where(path: str, doc: dict) -> str:
+    """A timeline/1 path (/groups/0/areas/2/features/5/todos/1/title) in the BA's words: the row and the field."""
+    m = re.match(r"^/groups/(\d+)/areas/(\d+)/features/(\d+)(/.*)?$", path)
+    if m:
+        try:
+            f = doc["groups"][int(m[1])]["areas"][int(m[2])]["features"][int(m[3])]
+            return f"the Timeline build → the row '{f.get('label') or f.get('id')}' ({f.get('id')})" + (
+                f" → {m[4].strip('/')}" if m[4] else "")
+        except (KeyError, IndexError, TypeError):
+            pass
+    top = path.strip("/").split("/")[0] if path.strip("/") else ""
+    return {"client_contacts": f"{PROFILE} → tools.client_contacts", "sent_by": "git config user.name",
+            "clarification_pages": f"the page YAMLs in {CLARIFICATIONS}/ (their slug: lines)",
+            "ba_tools_version": f"{PROFILE} → ba_tools_version"}.get(top, "the Timeline build")
+
+
+def timeline_problem_lines(details: list[dict], doc: dict) -> list[str]:
+    lines = []
+    for det in details:
+        path, msg = str(det.get("path") or ""), str(det.get("message") or "").strip()
+        if path and msg.startswith(path):
+            msg = msg[len(path):].lstrip(": ").strip()
+        if len(msg) > 300:
+            msg = msg[:150].rstrip() + " … " + msg[-100:].lstrip()
+        lines.append(f"{timeline_where(path, doc)}: {msg}" + (f" ({path})" if path else ""))
+    return lines
+
+
+def timeline_local_check(payload: dict, body: bytes, product: str = "") -> None:
+    what = f"The {product} Timeline" if product else "The Timeline"
+    found = checks.check_publish(payload)
+    if found:
+        lines = timeline_problem_lines(found["details"], payload)
+        raise Stop(f"{what} does not match the contract, so nothing was sent. Fix these, then run "
+                   "`timeline plan` again:\n" + "\n".join(f"- {ln}" for ln in lines))
+    if len(body) > MAX_BYTES:
+        raise Stop(f"{what} is {len(body) / 1e6:.1f} MB; the Portal takes at most 5 MB. Nothing was sent.")
+
+
+def post_timeline(url: str, key: str, body: bytes, dry_run: bool, doc: dict, key_name: str) -> dict:
+    """POST a timeline/1 send to the Dashboard endpoint. Returns the checked 200 reply; anything else stops."""
+    return exchange(url, ENDPOINT, dry_run, {}, "dashboard",
+                    lambda client, target: client.post(target, content=body, headers={
+                        "Authorization": f"Bearer {key}", "Content-Type": "application/json",
+                        "Accept": "application/json"}), next_step=key_steps(key_name),
+                    where_fn=lambda details, _: timeline_problem_lines(details, doc), command="timeline")
+
+
+def timeline_list(reply: dict, product: str = "", project: str = "") -> str:
+    """The dry-run summary for one product, from the Portal's own reply (a timeline/1 Client view). Clients see
+    what the BA sees, so every to-do is listed by name; pins are counted."""
+    view = reply["client_view"]
+    if not isinstance(view, dict) or "groups" not in view:
+        raise Stop("The Portal's dry-run reply is not a timeline/1 view. It may be an older Portal. Nothing was sent.")
+    rows = [f for g in view["groups"] for a in g["areas"] for f in a["features"]]
+    requests = [q for f in rows for q in f.get("requests") or []]
+    out_lines = [f"{product} → Portal project \"{project}\"", ""] if product else []
+    out_lines += ["What the Client will get — the Portal's own dry run. Nothing is stored yet. Until the Timeline "
+                  "page is on the Portal, the Client sees a \"new dashboard is on its way\" card in place of Map "
+                  "and Board.", ""]
+    areas = sum(len(g["areas"]) for g in view["groups"])
+    out_lines.append(f"{len(view['groups'])} area groups, {areas} areas, {len(rows)} rows, "
+                     f"{len(requests)} changes and bugs under them.")
+    by_stage: dict[str, int] = {}
+    for f in rows:
+        by_stage[f["stage"]] = by_stage.get(f["stage"], 0) + 1
+    out_lines.append("Rows by stage: " + ", ".join(f"{TIMELINE_STAGE_NAME.get(s, s)} {n}"
+                                                    for s, n in sorted(by_stage.items(), key=lambda x: -x[1])))
+    linked = [f for f in rows if f.get("page")]
+    out_lines.append(f"Rows with a Clarification page button: {len(linked)}")
+    todos = [(t, f) for f in rows for t in f.get("todos") or []]
+    for kind in ("waiting", "agenda", "todo"):
+        shown = [(t, f) for t, f in todos if t["kind"] == kind]
+        out_lines += ["", f"{TODO_KIND_NAME[kind]} ({len(shown)}):"]
+        if not shown:
+            out_lines.append("- none")
+        for t, f in shown:
+            out_lines.append(f"- {t['title']}" + (f" — {t['who']}" if t.get("who") else "")
+                             + f" · under {f.get('label') or f['id']}")
+    kinds: dict[str, int] = {}
+    for p in view["pins"]:
+        kinds[p["kind"]] = kinds.get(p["kind"], 0) + 1
+    out_lines += ["", f"Pins ({len(view['pins'])}): " + (", ".join(f"{k} {n}" for k, n in kinds.items()) or "none")
+                  + ". Every pin field is shown: summaries, people, decisions and \"To-dos from it\"."]
+    out_lines.append(f"Releases: {len(view['releases'])}")
+    names = reply.get("client_contact_names") or []
+    out_lines += ["", f"Client contacts ({len(names)}): " + (", ".join(names) if names else "none")]
+    removed = removed_pages(reply)
+    if removed:
+        out_lines += ["", f"These pages will be removed from the Portal project \"{project}\": {removed}"]
+    return "\n".join(out_lines)
+
+
+def save_timeline(product: str, project: str, url: str, key_name: str, body: bytes) -> Path:
+    """The payload file `timeline send` reads: the exact bytes to send, plus the product, Portal project and .env
+    variable."""
+    return write_payload(json.dumps({"kind": "timeline", "product": product, "project_name": project,
+                                     "portal": url, "key_name": key_name, "publish": body.decode("utf-8")},
+                                    ensure_ascii=False).encode("utf-8"))
+
+
+def portal_products(root: Path, prof: dict, found: dict[str, Path]) -> list[str]:
+    """The product list `dashboard plan` shares the Clarification pages out by: the built map's products (its
+    DATA.products); without a built map, tools.portal.products, else the products with a Timeline. So a page goes
+    with the same product in a Timeline send as in a Dashboard send, even when only some products have a
+    Timeline."""
+    if (root / MAP_PAGE).exists():
+        return map_products(read_map(root))
+    return list(key_map(prof)) or list(found)
+
+
+def timeline_order(prof: dict, found: dict[str, Path]) -> list[str]:
+    """The products with a Timeline data file, in tools.portal.products order, then the rest by name."""
+    order = [p for p in key_map(prof) if p in found]
+    return order + sorted(p for p in found if p not in order)
+
+
+def cmd_timeline_plan(root: Path, only: str | None = None) -> dict:
+    url, prof, env = settings(root)
+    found = timeline_files(root)
+    if not found:
+        raise Stop(f"No Timeline data file in {TIMELINE_DIR}/ (a *-timeline.yaml with a groups: list). Build the "
+                   "Timeline first (the timeline skill), or send the dashboard with `dashboard plan`. Nothing was "
+                   "sent.")
+    products = timeline_order(prof, found)
+    if only and only not in products:
+        raise Stop(f"There is no Timeline for '{only}'. The Timelines in this repo are for: {', '.join(products)}. "
+                   "Nothing was sent.")
+    names = key_names(prof, products, only)
+    keys = read_keys(env, names)
+    clean_old_payloads()
+    sent_at = now_utc()
+    built, warnings = [], []
+    every_product = portal_products(root, prof, found)
+    for product in [only] if only else products:   # every product's local check passes before anything is sent
+        build = run_timeline_build(root, found[product])
+        payload, more = timeline_payload(root, prof, product, build, every_product, sent_at)
+        body = encode(payload)
+        timeline_local_check(payload, body, product if len(products) > 1 else "")
+        warnings += [w for w in more if w not in warnings]
+        built.append((product, payload, body))
+    results = []
+    owner: dict[str, str] = {}
+    for product, payload, body in built:
+        project = project_name(url, keys[product], names[product], TIMELINE_CONTRACT)
+        if project in owner:
+            raise Stop(f"The keys for {owner[project]} ({names[owner[project]]}) and {product} ({names[product]}) "
+                       f"both open the same Portal project, \"{project}\". Each product needs its own Portal "
+                       "project. Ask an Admin for the right key for one of them, put it in .env, and run "
+                       "`timeline plan` again. Nothing was sent.")
+        owner[project] = product
+        reply = post_timeline(url, keys[product], body, True, payload, names[product])
+        results.append((product, project, body, reply))
+    out_products = []
+    for product, project, body, reply in results:
+        path = save_timeline(product, project, url, names[product], body)
+        out_products.append({"product": product, "project_name": project, "payload": str(path),
+                             "bytes": len(body), "counts": reply["counts"],
+                             "pages_removed": reply.get("pages_removed") or [],
+                             "client_list": timeline_list(reply, product, project)})
+    return {"ok": True, "portal": url, "sent_at": sent_at, "warnings": warnings, "products": out_products}
+
+
+def cmd_timeline_send(root: Path, path: Path) -> dict:
+    check_kind(path, "timeline", "send")
+    keep = False
+    try:
+        url, prof, env = settings(root)
+        saved, body = read_dashboard_payload(path, "timeline")
+        product, project, key_name = text(saved["product"]), text(saved.get("project_name")), saved["key_name"]
+        if text(saved.get("portal")).rstrip("/") != url:
+            raise Stop(f"`timeline plan` ran its dry run against {saved.get('portal') or 'another Portal'}, but "
+                       f"tools.portal.url is now {url}. Run `timeline plan` again. Nothing was sent.")
+        key = read_keys(env, {product: key_name})[product]
+        try:
+            payload = json.loads(body.decode("utf-8"))
+        except ValueError:
+            raise Stop(f"{path} is not a payload `timeline plan` wrote. Run `timeline plan` again.") from None
+        timeline_local_check(payload, body, product)
+        now_opens = project_name(url, key, key_name, TIMELINE_CONTRACT)
+        if now_opens != project:
+            keep = True
+            raise Stop(f"The key in {key_name} now opens Portal project \"{now_opens}\", but `timeline plan` "
+                       f"showed the {product} Timeline going to \"{project or 'an unnamed project'}\". Check "
+                       f"that {key_name} in .env holds the key for the right project, then run `timeline plan` "
+                       "again and look at the new dry run before sending. Nothing was sent.")
+        try:
+            reply = post_timeline(url, key, body, False, payload, key_name)
+        except MaybeSent:
+            keep = True
+            raise
+    finally:
+        if not keep:
+            path.unlink(missing_ok=True)
+    c = reply["counts"]
+    report = (f"Sent the {product} Timeline to Portal project \"{project}\" at {url}: {c.get('areas', 0)} areas, "
+              f"{c['features']} rows (features with their changes and bugs), {c['items']} to-dos, "
+              f"{c.get('pins', 0)} pins, {c['client_contacts']} Client contacts. The Portal confirmed it at "
+              f"{reply['received_at']} (UTC), publish id {reply['publish_id']}. It replaces the project's "
+              "Dashboard send.")
+    removed = removed_pages(reply)
+    if removed:
+        report += (f" It removed {len(reply['pages_removed'])} page(s) from Portal project \"{project}\", because "
+                   f"the repo no longer sends them with {product}: {removed}.")
+    return {"ok": True, "sent": "Timeline", "product": product, "project_name": project, "portal": url,
+            "counts": c, "pages_removed": reply.get("pages_removed") or [], "publish_id": reply["publish_id"],
+            "received_at": reply["received_at"], "report": report}
 
 
 # ---------------------------------------------------------------- page <slug> (a Clarification page)
@@ -1964,6 +2325,15 @@ def main(argv: list[str]) -> int:
             result = cmd_send(root, payload_arg(argv))
         elif words[:2] == ["dashboard", "discard"]:
             result = cmd_discard(payload_arg(argv))
+        elif words[:2] == ["timeline", "plan"]:
+            if "--product" in argv and not text(arg(argv, "--product")):
+                raise Stop("--product needs a product name, as the dashboard writes it (for example "
+                           "--product \"Bond Portal\"). Nothing was sent.")
+            result = cmd_timeline_plan(root, text(arg(argv, "--product")) or None)
+        elif words[:2] == ["timeline", "send"]:
+            result = cmd_timeline_send(root, payload_arg(argv))
+        elif words[:2] == ["timeline", "discard"]:
+            result = cmd_discard(payload_arg(argv), "timeline")
         else:
             sys.stdout.reconfigure(encoding="utf-8")
             print(__doc__)

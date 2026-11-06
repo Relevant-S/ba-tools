@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- **`portal-publish` contract 1.6.0** (tag `portal-contract-1.6.0`): the Timeline on the Portal, slice 1. The
+  Timeline replaces Map and Board (Vadim, 6 Nov 2026).
+  - New **`timeline/1`** (`timeline-1.schema.json`, `timeline-1.md`): the BA's Timeline page data for one product,
+    with every field the three real builds use, plus the envelope, `client_contacts` and `clarification_pages`.
+    A feature names its Portal Clarification page by slug (`page`) in place of the artifact link (`clar`);
+    `pages`, `dashboardUrl` and `pins[].decided[].url` are left out, and so is any null field. It goes to
+    `POST /api/v1/publish/dashboard`; the latest send of either kind wins. Named checks: `unique_feature_id`,
+    `unique_item_key`, `unique_pin_id`, `unique_page_slug`, `known_pin`, `known_page`, `no_html_entities`.
+  - `publish-reply/1` gains the `client_timeline_1` view and a `pins` count; `counts.features`, `items`, `areas` and
+    `pins` may go up to 1,000,000 (a Timeline counts every row). `answers/2` takes the item kind `todo`; the invalid case
+    `answers2-update-todo-item` is now `answers2-update-unknown-kind`.
+  - `index.json`: `contract_folder` `1.6.0`, `accepted` adds `timeline/1`. New fixtures: `timeline-1-small` (every
+    field), `timeline-1-real-size` (Acme Lending's build in shape and size, made-up text), the Timeline replies,
+    `answers-2-todo-update`, and 24 invalid `tl1-…` cases. `dashboard/1`, `dashboard/2` and older fixtures are
+    unchanged.
+- **`portal-publish timeline plan | send | discard`**: per product with a Timeline data file
+  (`docs/BA/timeline/**/*-timeline.yaml`), run the Timeline build, turn it into `timeline/1`, check it, dry run it
+  on the Portal and show what the Client will get; then send or discard, as for the Dashboard.
+- **`timeline` build.py `--json PATH`**: writes only the page's data, as JSON, and no page.
+
 - **`portal-publish` contract 1.5.0** (tag `portal-contract-1.5.0`, Story 3.12): connect a repo to a Portal
   project with a one-time code, so no one copies a key by hand.
   - New **`connect-request/1`** (`connect-request-1.schema.json`): the body of `POST /api/v1/connect`,

@@ -1,0 +1,9 @@
+{
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "known_pin",
+      "path": "/groups/0/areas/0/features/0/askedIn"
+    }
+  ]
+}

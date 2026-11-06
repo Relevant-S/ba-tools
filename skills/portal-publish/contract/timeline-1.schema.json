@@ -1,0 +1,1099 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/timeline-1.schema.json",
+  "title": "timeline/1",
+  "description": "Since 1.6.0. One Timeline send for one product (one Portal project): the BA's Timeline page data (ba-tools skills/timeline, build.py --json) with the envelope, client_contacts and clarification_pages added; a feature names its Portal Clarification page by slug (page) in place of the artifact link (clar); clar, pages, dashboardUrl and pins[].decided[].url are left out. A field the build writes as null is left out. Sent to POST /api/v1/publish/dashboard like dashboard/2; the latest send of either wins. Readable twin: timeline-1.md. x-visibility says who may see each leaf field: client, id, portal or admin.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "sent_at",
+    "sent_by",
+    "ba_tools_version",
+    "product",
+    "today",
+    "start",
+    "built",
+    "groups",
+    "pins",
+    "releases",
+    "client_contacts"
+  ],
+  "properties": {
+    "contract": {
+      "description": "Which contract this Publish follows. Written by the skill.",
+      "type": "string",
+      "const": "timeline/1",
+      "x-visibility": "admin"
+    },
+    "sent_at": {
+      "description": "When the skill sent it, UTC, exactly YYYY-MM-DDTHH:MM:SS.sssZ.",
+      "type": "string",
+      "minLength": 24,
+      "maxLength": 24,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+      "format": "date-time",
+      "x-visibility": "admin"
+    },
+    "sent_by": {
+      "description": "The git user name of the BA who sent it.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "x-visibility": "admin"
+    },
+    "ba_tools_version": {
+      "description": "The ba-tools version that sent it.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "x-visibility": "admin"
+    },
+    "source_commit": {
+      "description": "The Project repo commit the data came from.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "x-visibility": "admin"
+    },
+    "product": {
+      "description": "The product.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "tagWord",
+        "tracker",
+        "ba",
+        "footer"
+      ],
+      "properties": {
+        "name": {
+          "description": "Its name: the title.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "x-visibility": "client"
+        },
+        "tagWord": {
+          "description": "What a tag is: Release or Phase.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "x-visibility": "client"
+        },
+        "tracker": {
+          "description": "Which tracker plug-in built it (jira, github-bmad).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "x-visibility": "client"
+        },
+        "workLink": {
+          "description": "The base link of a work item's id. Only https:// links, so a link can never run script.",
+          "type": "string",
+          "minLength": 9,
+          "maxLength": 2000,
+          "pattern": "^https://[^\\s]+(?![\\s\\S])",
+          "format": "uri",
+          "x-visibility": "client"
+        },
+        "ba": {
+          "description": "The BA's first name.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "x-visibility": "client"
+        },
+        "footer": {
+          "description": "What the page is built from, for the footer.",
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 5000,
+          "x-visibility": "client"
+        }
+      }
+    },
+    "today": {
+      "description": "The build day. YYYY-MM-DD.",
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 10,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "format": "date",
+      "x-visibility": "client"
+    },
+    "start": {
+      "description": "Where the chart starts by default. YYYY-MM-DD.",
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 10,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "format": "date",
+      "x-visibility": "client"
+    },
+    "from": {
+      "description": "The earliest feature start, when it is before start. YYYY-MM-DD.",
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 10,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "format": "date",
+      "x-visibility": "client"
+    },
+    "built": {
+      "description": "When it was built, as the footer shows it (\"06 Nov 2026, 11:11\").",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "x-visibility": "client"
+    },
+    "groups": {
+      "description": "Area groups → areas → rows. Feature ids unique across them all.",
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "description": "One area group (\"Getting in\").",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "areas"
+        ],
+        "properties": {
+          "name": {
+            "description": "The group's name.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "x-visibility": "client"
+          },
+          "areas": {
+            "description": "Its areas.",
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "description": "One area (\"Sign-in\").",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "features"
+              ],
+              "properties": {
+                "name": {
+                  "description": "The area's name.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300,
+                  "x-visibility": "client"
+                },
+                "features": {
+                  "description": "Its rows, in the build's order.",
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "description": "One row: a feature of the dashboard, a spec, or older work from the tracker.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "label",
+                      "stage",
+                      "origin",
+                      "basis",
+                      "desc",
+                      "work",
+                      "guess",
+                      "who",
+                      "tags"
+                    ],
+                    "properties": {
+                      "id": {
+                        "description": "Its id: the dashboard id, a spec id or a story id. Unique in a send (check unique_feature_id).",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 300,
+                        "x-visibility": "id"
+                      },
+                      "label": {
+                        "description": "The row name.",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "x-visibility": "client"
+                      },
+                      "stage": {
+                        "description": "Where it is now.",
+                        "type": "string",
+                        "enum": [
+                          "concept",
+                          "spec",
+                          "design",
+                          "ready",
+                          "dev",
+                          "qa",
+                          "done",
+                          "live"
+                        ],
+                        "x-visibility": "client"
+                      },
+                      "stages": {
+                        "description": "The bar: each stage and the day it started, oldest first.",
+                        "type": "array",
+                        "maxItems": 50,
+                        "items": {
+                          "description": "One stage.",
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "stage",
+                            "from"
+                          ],
+                          "properties": {
+                            "stage": {
+                              "description": "The stage.",
+                              "type": "string",
+                              "enum": [
+                                "concept",
+                                "spec",
+                                "design",
+                                "ready",
+                                "dev",
+                                "qa",
+                                "done",
+                                "live"
+                              ],
+                              "x-visibility": "client"
+                            },
+                            "from": {
+                              "description": "The day it started. YYYY-MM-DD.",
+                              "type": "string",
+                              "minLength": 10,
+                              "maxLength": 10,
+                              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                              "format": "date",
+                              "x-visibility": "client"
+                            }
+                          }
+                        }
+                      },
+                      "since": {
+                        "description": "When the dashboard first lists it. YYYY-MM-DD.",
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 10,
+                        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                        "format": "date",
+                        "x-visibility": "client"
+                      },
+                      "doneDate": {
+                        "description": "When it reached Done. YYYY-MM-DD.",
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 10,
+                        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                        "format": "date",
+                        "x-visibility": "client"
+                      },
+                      "startedBefore": {
+                        "description": "It started before the chart's start, on this day. YYYY-MM-DD.",
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 10,
+                        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                        "format": "date",
+                        "x-visibility": "client"
+                      },
+                      "origin": {
+                        "description": "dashboard, spec (a spec not on the dashboard) or old-work (an old Jira story or MVP story).",
+                        "type": "string",
+                        "enum": [
+                          "dashboard",
+                          "spec",
+                          "old-work"
+                        ],
+                        "x-visibility": "client"
+                      },
+                      "basis": {
+                        "description": "Where the stage dates come from: recorded (by hand), tracker, code (commit list) or none (a faded bar).",
+                        "type": "string",
+                        "enum": [
+                          "recorded",
+                          "tracker",
+                          "code",
+                          "none"
+                        ],
+                        "x-visibility": "client"
+                      },
+                      "originNote": {
+                        "description": "One line at the top of its panel, for a row not on the dashboard.",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000,
+                        "x-visibility": "client"
+                      },
+                      "basisNote": {
+                        "description": "One line above the stage dates.",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000,
+                        "x-visibility": "client"
+                      },
+                      "desc": {
+                        "description": "The dashboard's client text, plain. May be empty.",
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 20000,
+                        "x-visibility": "client"
+                      },
+                      "about": {
+                        "description": "2-3 plain bullets when there is no desc.",
+                        "type": "array",
+                        "maxItems": 20,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        },
+                        "x-visibility": "client"
+                      },
+                      "page": {
+                        "description": "Its Clarification page on this Portal: the page's slug (in place of the BA page's artifact link). When clarification_pages is sent, it is one of them (check known_page).",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80,
+                        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?![\\s\\S])",
+                        "x-visibility": "id"
+                      },
+                      "clarLabel": {
+                        "description": "The clarification page button's words (\"Clarification page — V3, all answered\").",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 300,
+                        "x-visibility": "client"
+                      },
+                      "openQ": {
+                        "description": "Open questions.",
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        },
+                        "x-visibility": "client"
+                      },
+                      "todos": {
+                        "description": "Its to-dos, waiting and agenda items, oldest first.",
+                        "type": "array",
+                        "maxItems": 500,
+                        "items": {
+                          "description": "One to-do: a waiting, agenda or BA to-do item of the dashboard, as the BA page shows it.",
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "key",
+                            "kind",
+                            "title"
+                          ],
+                          "properties": {
+                            "key": {
+                              "description": "The BA page's item key: the first 12 hex characters of sha1(\"<kind>|<title>\") (title trimmed, UTF-8), as the dashboard builds it. Notes and Resolved ticks are saved under it. Unique in a send (check unique_item_key).",
+                              "type": "string",
+                              "minLength": 12,
+                              "maxLength": 12,
+                              "pattern": "^[0-9a-f]{12}$",
+                              "x-visibility": "id"
+                            },
+                            "id": {
+                              "description": "The dashboard's own short id (A21, T66).",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 40,
+                              "x-visibility": "id"
+                            },
+                            "kind": {
+                              "description": "waiting (someone owes an answer), agenda (for the next call) or todo (the BA's own to-do).",
+                              "type": "string",
+                              "enum": [
+                                "waiting",
+                                "agenda",
+                                "todo"
+                              ],
+                              "x-visibility": "client"
+                            },
+                            "title": {
+                              "description": "The to-do in one line.",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500,
+                              "x-visibility": "client"
+                            },
+                            "who": {
+                              "description": "Who it waits on, as the dashboard writes it (\"Sam Carter\", \"Vadim\"). May be empty.",
+                              "type": "string",
+                              "minLength": 0,
+                              "maxLength": 200,
+                              "x-visibility": "client"
+                            },
+                            "since": {
+                              "description": "When it was first listed. YYYY-MM-DD.",
+                              "type": "string",
+                              "minLength": 10,
+                              "maxLength": 10,
+                              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                              "format": "date",
+                              "x-visibility": "client"
+                            },
+                            "age": {
+                              "description": "How many days old it was on the build day.",
+                              "type": "integer",
+                              "minimum": 0,
+                              "x-visibility": "client"
+                            },
+                            "status": {
+                              "description": "open, hot or old, as the dashboard marks it.",
+                              "type": "string",
+                              "enum": [
+                                "open",
+                                "hot",
+                                "old"
+                              ],
+                              "x-visibility": "client"
+                            },
+                            "prod": {
+                              "description": "The dashboard's product for it (AcmeLending, Both).",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100,
+                              "x-visibility": "client"
+                            },
+                            "s": {
+                              "description": "The short text, plain.",
+                              "type": "string",
+                              "minLength": 0,
+                              "maxLength": 10000,
+                              "x-visibility": "client"
+                            },
+                            "l": {
+                              "description": "The long text, plain.",
+                              "type": "string",
+                              "minLength": 0,
+                              "maxLength": 10000,
+                              "x-visibility": "client"
+                            }
+                          }
+                        }
+                      },
+                      "who": {
+                        "description": "Who asked for it (first names).",
+                        "type": "array",
+                        "maxItems": 50,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        },
+                        "x-visibility": "client"
+                      },
+                      "askedIn": {
+                        "description": "Where it was first asked: a pin's id (pins[].id) (check known_pin).",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100,
+                        "x-visibility": "id"
+                      },
+                      "askedBy": {
+                        "description": "Who asked.",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200,
+                        "x-visibility": "client"
+                      },
+                      "tags": {
+                        "description": "Releases or phases.",
+                        "type": "array",
+                        "maxItems": 50,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "x-visibility": "client"
+                      },
+                      "work": {
+                        "description": "The tickets or stories behind it (Jira or GitHub + BMAD), as the tracker plug-in reads them.",
+                        "type": "array",
+                        "maxItems": 1000,
+                        "items": {
+                          "description": "One work item.",
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "title",
+                            "status"
+                          ],
+                          "properties": {
+                            "id": {
+                              "description": "Its id as the tracker shows it: a Jira key (ACME-1401) or a BMAD story id. Copied from the tracker.",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 300,
+                              "x-visibility": "client"
+                            },
+                            "title": {
+                              "description": "Its title, copied from the tracker. May be empty.",
+                              "type": "string",
+                              "minLength": 0,
+                              "maxLength": 2000,
+                              "x-visibility": "client"
+                            },
+                            "status": {
+                              "description": "Its status, copied from the tracker. May be empty.",
+                              "type": "string",
+                              "minLength": 0,
+                              "maxLength": 200,
+                              "x-visibility": "client"
+                            },
+                            "url": {
+                              "description": "Its own link, when it has one (a GitHub file). Else the page links product.workLink + id. Only https:// links, so a link can never run script.",
+                              "type": "string",
+                              "minLength": 9,
+                              "maxLength": 2000,
+                              "pattern": "^https://[^\\s]+(?![\\s\\S])",
+                              "format": "uri",
+                              "x-visibility": "client"
+                            },
+                            "done": {
+                              "description": "The day it was done (for Hide done). YYYY-MM-DD.",
+                              "type": "string",
+                              "minLength": 10,
+                              "maxLength": 10,
+                              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                              "format": "date",
+                              "x-visibility": "client"
+                            }
+                          }
+                        }
+                      },
+                      "guess": {
+                        "description": "Placed in this area by guess (* on the page).",
+                        "type": "boolean",
+                        "x-visibility": "client"
+                      },
+                      "changes": {
+                        "description": "For a change's own row: the id of the feature it changes.",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 300,
+                        "x-visibility": "id"
+                      },
+                      "requests": {
+                        "description": "Changes and bugs under it.",
+                        "type": "array",
+                        "maxItems": 500,
+                        "items": {
+                          "description": "One change or bug: a row under its feature.",
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "kind",
+                            "title",
+                            "stages",
+                            "work"
+                          ],
+                          "properties": {
+                            "id": {
+                              "description": "Its id (chg-tkt52, bug-093).",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 300,
+                              "x-visibility": "id"
+                            },
+                            "kind": {
+                              "description": "What it is.",
+                              "type": "string",
+                              "enum": [
+                                "sub-feature",
+                                "change",
+                                "improvement",
+                                "bug"
+                              ],
+                              "x-visibility": "client"
+                            },
+                            "title": {
+                              "description": "Plain words.",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 1000,
+                              "x-visibility": "client"
+                            },
+                            "stages": {
+                              "description": "The bar: each stage and the day it started, oldest first.",
+                              "type": "array",
+                              "maxItems": 50,
+                              "items": {
+                                "description": "One stage.",
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "stage",
+                                  "from"
+                                ],
+                                "properties": {
+                                  "stage": {
+                                    "description": "The stage.",
+                                    "type": "string",
+                                    "enum": [
+                                      "concept",
+                                      "spec",
+                                      "design",
+                                      "ready",
+                                      "dev",
+                                      "qa",
+                                      "done",
+                                      "live"
+                                    ],
+                                    "x-visibility": "client"
+                                  },
+                                  "from": {
+                                    "description": "The day it started. YYYY-MM-DD.",
+                                    "type": "string",
+                                    "minLength": 10,
+                                    "maxLength": 10,
+                                    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                                    "format": "date",
+                                    "x-visibility": "client"
+                                  }
+                                }
+                              }
+                            },
+                            "work": {
+                              "description": "The tickets or stories behind it (Jira or GitHub + BMAD), as the tracker plug-in reads them.",
+                              "type": "array",
+                              "maxItems": 1000,
+                              "items": {
+                                "description": "One work item.",
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "title",
+                                  "status"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "description": "Its id as the tracker shows it: a Jira key (ACME-1401) or a BMAD story id. Copied from the tracker.",
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 300,
+                                    "x-visibility": "client"
+                                  },
+                                  "title": {
+                                    "description": "Its title, copied from the tracker. May be empty.",
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 2000,
+                                    "x-visibility": "client"
+                                  },
+                                  "status": {
+                                    "description": "Its status, copied from the tracker. May be empty.",
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 200,
+                                    "x-visibility": "client"
+                                  },
+                                  "url": {
+                                    "description": "Its own link, when it has one (a GitHub file). Else the page links product.workLink + id. Only https:// links, so a link can never run script.",
+                                    "type": "string",
+                                    "minLength": 9,
+                                    "maxLength": 2000,
+                                    "pattern": "^https://[^\\s]+(?![\\s\\S])",
+                                    "format": "uri",
+                                    "x-visibility": "client"
+                                  },
+                                  "done": {
+                                    "description": "The day it was done (for Hide done). YYYY-MM-DD.",
+                                    "type": "string",
+                                    "minLength": 10,
+                                    "maxLength": 10,
+                                    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                                    "format": "date",
+                                    "x-visibility": "client"
+                                  }
+                                }
+                              }
+                            },
+                            "askedIn": {
+                              "description": "Where it was first asked: a pin's id (pins[].id) (check known_pin).",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100,
+                              "x-visibility": "id"
+                            },
+                            "askedBy": {
+                              "description": "Who asked.",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "x-visibility": "client"
+                            },
+                            "asked": {
+                              "description": "Their words.",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000,
+                              "x-visibility": "client"
+                            },
+                            "about": {
+                              "description": "Plain bullets.",
+                              "type": "array",
+                              "maxItems": 20,
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2000
+                              },
+                              "x-visibility": "client"
+                            },
+                            "note": {
+                              "description": "One fact line (\"QA bug BUG-093 · High · found 18 Sep\").",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000,
+                              "x-visibility": "client"
+                            },
+                            "self": {
+                              "description": "The change's own row (a feature id), when it has one.",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 300,
+                              "x-visibility": "id"
+                            },
+                            "guess": {
+                              "description": "Placed under this feature by guess.",
+                              "type": "boolean",
+                              "x-visibility": "client"
+                            },
+                            "merged": {
+                              "description": "When it merged into the feature. YYYY-MM-DD.",
+                              "type": "string",
+                              "minLength": 10,
+                              "maxLength": 10,
+                              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                              "format": "date",
+                              "x-visibility": "client"
+                            },
+                            "splitOff": {
+                              "description": "It became a feature of its own: that feature's id.",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 300,
+                              "x-visibility": "id"
+                            },
+                            "tags": {
+                              "description": "Releases or phases, only when different from the feature's.",
+                              "type": "array",
+                              "maxItems": 50,
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              "x-visibility": "client"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "link": {
+                  "description": "Optional: a \"see all in Jira\" link.",
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "label",
+                    "url"
+                  ],
+                  "properties": {
+                    "label": {
+                      "description": "The link's words.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "x-visibility": "client"
+                    },
+                    "url": {
+                      "description": "The link. Only https:// links, so a link can never run script.",
+                      "type": "string",
+                      "minLength": 9,
+                      "maxLength": 2000,
+                      "pattern": "^https://[^\\s]+(?![\\s\\S])",
+                      "format": "uri",
+                      "x-visibility": "client"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pins": {
+      "description": "Calls, emails, comments, documents, page answers, suggestions, oldest first.",
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "description": "One pin on the time axis: a call, email, comment batch, document, page answers or suggestion.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "date",
+          "kind",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "description": "Its id (2026-10-26-email). Unique in a send (check unique_pin_id).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "x-visibility": "id"
+          },
+          "date": {
+            "description": "Its day. YYYY-MM-DD.",
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 10,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "format": "date",
+            "x-visibility": "client"
+          },
+          "kind": {
+            "description": "call, email, comments, doc (a file the client sent), page (clarification answers) or idea (a suggestion).",
+            "type": "string",
+            "enum": [
+              "call",
+              "email",
+              "comments",
+              "doc",
+              "page",
+              "idea"
+            ],
+            "x-visibility": "client"
+          },
+          "title": {
+            "description": "\"Client call\", \"Email\".",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "x-visibility": "client"
+          },
+          "subject": {
+            "description": "An email's subject.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "x-visibility": "client"
+          },
+          "ref": {
+            "description": "The data file's own id for it.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "x-visibility": "id"
+          },
+          "people": {
+            "description": "Who took part (first names).",
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "x-visibility": "client"
+          },
+          "staff": {
+            "description": "How many Relevant people took part.",
+            "type": "integer",
+            "minimum": 0,
+            "x-visibility": "client"
+          },
+          "minutes": {
+            "description": "How long the call was.",
+            "type": "integer",
+            "minimum": 0,
+            "x-visibility": "client"
+          },
+          "summary": {
+            "description": "\"In short\": the summary bullets.",
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 5000
+            },
+            "x-visibility": "client"
+          },
+          "decided": {
+            "description": "\"Decided\": decisions from clarification pages made that day.",
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "description": "One decision.",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "page",
+                "how"
+              ],
+              "properties": {
+                "title": {
+                  "description": "The decision.",
+                  "type": "string",
+                  "minLength": 0,
+                  "maxLength": 2000,
+                  "x-visibility": "client"
+                },
+                "page": {
+                  "description": "The clarification page's name.",
+                  "type": "string",
+                  "minLength": 0,
+                  "maxLength": 300,
+                  "x-visibility": "client"
+                },
+                "how": {
+                  "description": "How it was decided (\"on the client call\").",
+                  "type": "string",
+                  "minLength": 0,
+                  "maxLength": 300,
+                  "x-visibility": "client"
+                }
+              }
+            }
+          },
+          "owes": {
+            "description": "\"To-dos from it\".",
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "description": "One to-do from it.",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "who",
+                "text"
+              ],
+              "properties": {
+                "who": {
+                  "description": "Who owes it.",
+                  "type": "string",
+                  "minLength": 0,
+                  "maxLength": 200,
+                  "x-visibility": "client"
+                },
+                "text": {
+                  "description": "What.",
+                  "type": "string",
+                  "minLength": 0,
+                  "maxLength": 10000,
+                  "x-visibility": "client"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "releases": {
+      "description": "Releases: dashed lines on the chart.",
+      "type": "array",
+      "maxItems": 2000,
+      "items": {
+        "description": "One release.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "date"
+        ],
+        "properties": {
+          "name": {
+            "description": "The release name (copied from the tracker).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "x-visibility": "client"
+          },
+          "date": {
+            "description": "Its date. YYYY-MM-DD.",
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 10,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "format": "date",
+            "x-visibility": "client"
+          }
+        }
+      }
+    },
+    "client_contacts": {
+      "description": "Client contacts, from tools.client_contacts, as in dashboard/2: \"Yours first\" on the To-dos tab. Each accepted send replaces the whole list. May be empty. Server only.",
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "description": "One contact.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "description": "The contact's name.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "x-visibility": "portal"
+          },
+          "email": {
+            "description": "The contact's email.",
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 254,
+            "format": "email",
+            "x-visibility": "portal"
+          },
+          "slack": {
+            "description": "A Slack name or member id.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "x-visibility": "portal"
+          }
+        }
+      }
+    },
+    "clarification_pages": {
+      "description": "The slugs of every Clarification page now in the repo that belongs to this Portal project, as in dashboard/2. The Portal hides every page of the project not in the list, and clears that mark on every listed page. Optional: when it is missing, no page is touched. May be empty (then every page is hidden). Slugs unique (unique_page_slug). Server only.",
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80,
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?![\\s\\S])"
+      },
+      "x-visibility": "portal"
+    }
+  }
+}

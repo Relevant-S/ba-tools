@@ -1,0 +1,9 @@
+{
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "unique_page_slug",
+      "path": "/clarification_pages/3"
+    }
+  ]
+}

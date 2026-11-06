@@ -20,6 +20,8 @@ Reads, read only (paths from the project's docs/BA folder):
   <data folder>/descriptions.yaml      optional: 2–3 plain bullets per row without client text
 Writes:
   <data folder>/<out>.html             the page to publish (default: <data file name>.html)
+  --json PATH                          instead of the page: only the page's data (`payload`) as JSON, at PATH.
+                                       portal-publish's `timeline plan` reads it and makes the timeline/1 send.
 
 Run from the project's repo root:
   python <ba-tools>/skills/timeline/scripts/build.py docs/BA/timeline/<project>-timeline.yaml
@@ -173,6 +175,7 @@ def main():
     ap.add_argument("data_file", help="the project's timeline data file, e.g. docs/BA/timeline/epd-timeline.yaml")
     ap.add_argument("--ba", default="docs/BA", help="the project's BA folder (default docs/BA)")
     ap.add_argument("--out", help="the page to write (default: next to the data file, .html)")
+    ap.add_argument("--json", metavar="PATH", help="write only the page's data, as JSON, to PATH (no page)")
     args = ap.parse_args()
 
     data_file = Path(args.data_file).resolve()
@@ -397,10 +400,14 @@ def main():
         "groups": groups, "pins": pins, "releases": releases, "pages": pages,
         "dashboardUrl": data.get("mapUrl"),
     }
-    tpl = (SKILL / "template.html").read_text(encoding="utf-8")
-    page = tpl.replace("/*__DATA__*/null", json.dumps(payload, ensure_ascii=False)).replace("__PRODUCT__", product["name"])
-    out = Path(args.out).resolve() if args.out else data_file.with_suffix(".html")
-    out.write_text(page, encoding="utf-8")
+    if args.json:
+        out = Path(args.json).resolve()
+        out.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    else:
+        tpl = (SKILL / "template.html").read_text(encoding="utf-8")
+        page = tpl.replace("/*__DATA__*/null", json.dumps(payload, ensure_ascii=False)).replace("__PRODUCT__", product["name"])
+        out = Path(args.out).resolve() if args.out else data_file.with_suffix(".html")
+        out.write_text(page, encoding="utf-8")
     print("Built %s: %d areas, %d rows (%d not on the dashboard), %d pins, %d releases, %d clarification pages · tracker: %s" % (
         out.name, sum(len(g["areas"]) for g in groups), len(rows_by_id),
         sum(1 for f in rows_by_id.values() if f["origin"] != "dashboard"), len(pins), len(releases), len(pages), tracker.name))

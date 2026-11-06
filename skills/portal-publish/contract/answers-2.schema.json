@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/answers-2.schema.json",
   "title": "answers/2",
-  "description": "Since 1.4.0. The 200 reply to POST /api/v1/answers/reserve when the request's accept list holds answers/2 (reserve-request/1). answers/1 plus updates: the Client's saves on Waiting and agenda Items (a note, the Resolved tick, or both). The Portal puts every sent Answer and every save not yet handed out into one new batch, held until reserved_until. With nothing to hand out, batch_id and reserved_until are null, both lists are empty and nothing is written. Order of answers: page slug, Round first published, Question position, sent_at. Order of updates: sent_at, then id. One ack (ack-request/1) confirms both.",
+  "description": "Since 1.4.0. The 200 reply to POST /api/v1/answers/reserve when the request's accept list holds answers/2 (reserve-request/1). answers/1 plus updates: the Client's saves on Waiting and agenda Items, and since 1.6.0 on a timeline/1 send's to-dos of any kind (a note, the Resolved tick, or both). The Portal puts every sent Answer and every save not yet handed out into one new batch, held until reserved_until. With nothing to hand out, batch_id and reserved_until are null, both lists are empty and nothing is written. Order of answers: page slug, Round first published, Question position, sent_at. Order of updates: sent_at, then id. One ack (ack-request/1) confirms both.",
   "type": "object",
   "additionalProperties": false,
   "required": ["contract", "batch_id", "reserved_until", "last_fetched_at", "answers", "updates"],
@@ -229,7 +229,7 @@
                 "maxLength": 12,
                 "pattern": "^[0-9a-f]{12}$"
               },
-              "kind": { "type": "string", "enum": ["waiting", "agenda"] },
+              "kind": { "description": "waiting or agenda; since 1.6.0 also todo (a to-do of a timeline/1 send).", "type": "string", "enum": ["waiting", "agenda", "todo"] },
               "title": { "type": "string", "minLength": 1, "maxLength": 500 }
             }
           },

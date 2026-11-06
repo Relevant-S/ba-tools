@@ -1,0 +1,9 @@
+{
+  "code": "contract_invalid",
+  "details": [
+    {
+      "check": "unique_item_key",
+      "path": "/groups/1/areas/0/features/0/todos/0/key"
+    }
+  ]
+}

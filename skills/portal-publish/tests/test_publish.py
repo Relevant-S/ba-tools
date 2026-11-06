@@ -1532,3 +1532,299 @@ def test_real_build_sends_stage_why_and_area_how(project):
     assert all(f["stage_why"] and f["area_how"] for f in app["features"])
     assert by_id["sign-up"]["area_how"] == "no tickets and no area set"
     assert by_id["identity-check"]["stage_why"] == "In dev, no tickets linked yet"
+
+
+# ---- timeline plan / send / discard (contract 1.6.0) ---------------------------------------------------
+
+TL_SMALL = VALID / "timeline-1-small.json"
+APP_TIMELINE = """product:
+  name: Sample App
+  dashboard: App
+  tracker: none
+start: 2026-05-01
+groups:
+  - name: Getting in
+    areas: [Onboarding]
+"""
+ADMIN_TIMELINE = APP_TIMELINE.replace("Sample App", "Sample Admin").replace("dashboard: App", "dashboard: Admin")
+SIGN_UP_URL = "https://pages.example.com/clarifications/sign-up/"
+
+
+def ba_build() -> dict:
+    """A Timeline build as build.py --json writes it for the BA page: the small timeline/1 fixture turned back
+    into the page's data (no envelope or Portal fields; clar artifact links; pages, dashboardUrl, decided urls;
+    nulls)."""
+    doc = read(TL_SMALL)
+    for k in ("contract", "sent_at", "sent_by", "ba_tools_version", "source_commit", "client_contacts",
+              "clarification_pages"):
+        doc.pop(k)
+    rows = [f for g in doc["groups"] for a in g["areas"] for f in a["features"]]
+    for i, f in enumerate(rows):
+        page = f.pop("page", None)
+        f["clar"] = None
+        f.setdefault("clarLabel", None)
+        f.setdefault("doneDate", None)
+        if page and i == 0:
+            f["clar"] = SIGN_UP_URL.rstrip("/")             # matched with or without the trailing /
+        elif page:
+            f["clar"] = "https://claude.ai/artifact/NotAPortalPage0001"
+    for p in doc["pins"]:
+        for d in p.get("decided") or []:
+            d["url"] = "https://claude.ai/artifact/SomePage0000000001"
+    doc["pages"] = [{"slug": "sign-up-decisions", "url": SIGN_UP_URL}]
+    doc["dashboardUrl"] = "https://claude.ai/artifact/TheBaDashboard00001"
+    return doc
+
+
+@pytest.fixture
+def timelines(project, monkeypatch):
+    """The sample repo with a Timeline data file per product; the build is stubbed with ba_build()."""
+    folder = project / publish.TIMELINE_DIR
+    (folder / "admin").mkdir(parents=True)
+    (folder / "app-timeline.yaml").write_text(APP_TIMELINE, encoding="utf-8")
+    (folder / "admin" / "admin-timeline.yaml").write_text(ADMIN_TIMELINE, encoding="utf-8")
+    (folder / "notes.yaml").write_text("just: notes\n", encoding="utf-8")
+    calls: list[Path] = []
+    monkeypatch.setattr(publish, "run_timeline_build", lambda root, f: calls.append(f) or ba_build())
+    return calls
+
+
+@pytest.fixture
+def tl_portal(portal):
+    portal.accepted = ["dashboard/1", "dashboard/2", "timeline/1", "clarification/1"]
+    portal.dry = read(VALID / "publish-reply-1-timeline-1-dry-run.json")
+    portal.sent = read(VALID / "publish-reply-1-timeline-1-sent.json")
+    return portal
+
+
+def test_timeline_files_are_found_by_product(project, timelines):
+    found = publish.timeline_files(project)
+    assert {p: f.relative_to(project).as_posix() for p, f in found.items()} == {
+        "App": "docs/BA/timeline/app-timeline.yaml", "Admin": "docs/BA/timeline/admin/admin-timeline.yaml"}
+
+
+def test_two_timeline_files_for_one_product_stop(capsys, project, timelines, tl_portal):
+    (project / publish.TIMELINE_DIR / "other-timeline.yaml").write_text(APP_TIMELINE, encoding="utf-8")
+    code, out, _ = run(capsys, project, "timeline", "plan")
+    assert code == 1 and "Two Timeline data files are for App" in out["error"]
+    assert tl_portal.requests == []
+
+
+def test_timeline_payload_turns_the_ba_page_data_into_timeline_1(project, timelines):
+    prof = yaml.safe_load((project / publish.PROFILE).read_text(encoding="utf-8"))
+    payload, warnings = publish.timeline_payload(project, prof, "App", ba_build(), ["App", "Admin"],
+                                                 "2026-11-06T10:00:00.000Z")
+    assert checks.check_publish(payload) is None
+    assert payload["contract"] == "timeline/1" and payload["sent_by"] == "Sample BA"
+    assert payload["clarification_pages"] == ["audit-log", "loose-page", "sign-up-decisions"]
+    assert [c["name"] for c in payload["client_contacts"]] == ["Maria Lopez", "Tom Baker", "Priya Shah"]
+    for gone in ("pages", "dashboardUrl"):
+        assert gone not in payload
+    rows = [f for _, f in checks.timeline_rows(payload)]
+    assert rows[0]["page"] == "sign-up-decisions" and rows[0]["clarLabel"].startswith("Clarification page")
+    assert all("clar" not in f for f in rows)
+    others = [f for f in rows[1:] if "page" in f or "clarLabel" in f]
+    assert others == [], "an artifact link with no Portal page gives no page button"
+    assert any("NotAPortalPage0001" in w for w in warnings)
+    assert all("url" not in d for p in payload["pins"] for d in p.get("decided") or [])
+    assert "null" not in json.dumps(payload)
+    keys = [t["key"] for f in rows for t in f.get("todos") or []]
+    assert keys == [t["key"] for f in checks.timeline_rows(read(TL_SMALL)) for t in f[1].get("todos") or []], \
+        "to-do keys are sent as the build has them"
+
+
+def test_timeline_plan_dry_runs_each_product_then_sends(capsys, project, timelines, tl_portal):
+    code, plan, _ = run(capsys, project, "timeline", "plan")
+    assert code == 0 and plan["ok"] is True, plan
+    assert [f.relative_to(project).as_posix() for f in timelines] == [
+        "docs/BA/timeline/app-timeline.yaml", "docs/BA/timeline/admin/admin-timeline.yaml"]
+    got = by_product(plan)
+    assert list(got) == ["App", "Admin"]
+    status, dry = tl_portal.requests[:2]
+    assert str(dry.url) == f"{URL}/api/v1/publish/dashboard?dry_run=1"
+    assert json.loads(dry.content)["contract"] == "timeline/1"
+    shown = got["App"]["client_list"]
+    for words in ('App → Portal project "Sample App"', "new dashboard is on its way", "Rows by stage:",
+                  "BA to-do (", "Waiting (", "Next-call agenda (", "Pins (7)", "Client contacts (2)"):
+        assert words in shown, words
+    payload_file = Path(got["App"]["payload"])
+    assert read_saved_kind(payload_file) == "timeline"
+    code, sent, _ = run(capsys, project, "timeline", "send", "--payload", str(payload_file))
+    assert code == 0 and sent["ok"] is True and sent["sent"] == "Timeline", sent
+    assert 'Sent the App Timeline to Portal project "Sample App"' in sent["report"]
+    assert tl_portal.posts()[-1].content == dry.content, "the dry run and the real send carry the same bytes"
+    assert str(tl_portal.posts()[-1].url) == f"{URL}/api/v1/publish/dashboard"
+    assert not payload_file.exists()
+    code, gone, _ = run(capsys, project, "timeline", "discard", "--payload", got["Admin"]["payload"])
+    assert code == 0 and gone["sent"] is None and "for Admin" in gone["report"]
+
+
+def read_saved_kind(path: Path) -> str | None:
+    return publish.payload_kind(path)
+
+
+def test_timeline_plan_for_one_product(capsys, project, timelines, tl_portal):
+    code, plan, _ = run(capsys, project, "timeline", "plan", "--product", "Admin")
+    try:
+        assert code == 0 and [p["product"] for p in plan["products"]] == ["Admin"], plan
+        assert len(timelines) == 1
+    finally:
+        cleanup(plan)
+    code, out, _ = run(capsys, project, "timeline", "plan", "--product", "Nope")
+    assert code == 1 and "There is no Timeline for 'Nope'" in out["error"]
+
+
+def test_timeline_plan_stops_on_a_portal_without_timeline(capsys, project, timelines, portal):
+    code, out, _ = run(capsys, project, "timeline", "plan")
+    assert code == 1 and "does not accept timeline/1 yet" in out["error"]
+    assert portal.posts() == []
+
+
+def test_timeline_plan_stops_on_a_broken_build_before_sending(capsys, project, timelines, tl_portal, monkeypatch):
+    def broken(root, f):
+        b = ba_build()
+        b["groups"][0]["areas"][0]["features"][1]["id"] = b["groups"][0]["areas"][0]["features"][0]["id"]
+        return b
+    monkeypatch.setattr(publish, "run_timeline_build", broken)
+    code, out, _ = run(capsys, project, "timeline", "plan")
+    assert code == 1 and "does not match the contract" in out["error"]
+    assert "the Timeline build → the row" in out["error"] and "is used twice" in out["error"]
+    assert tl_portal.requests == []
+
+
+def test_timeline_plan_without_a_data_file_stops(capsys, project, tl_portal):
+    code, out, _ = run(capsys, project, "timeline", "plan")
+    assert code == 1 and "No Timeline data file" in out["error"]
+
+
+def test_timeline_and_dashboard_payloads_are_not_swapped(capsys, project, timelines, tl_portal):
+    code, plan, _ = run(capsys, project, "timeline", "plan", "--product", "App")
+    path = plan["products"][0]["payload"]
+    try:
+        code, out, _ = run(capsys, project, "dashboard", "send", "--payload", path)
+        assert code == 1 and "is a timeline payload" in out["error"] and Path(path).exists()
+    finally:
+        cleanup(plan)
+
+
+def test_run_timeline_build_reads_the_json_and_deletes_it(project, monkeypatch, tmp_path):
+    script = tmp_path / "build.py"
+    script.write_text("import json, sys\n"
+                      "out = sys.argv[sys.argv.index('--json') + 1]\n"
+                      "open(out, 'w', encoding='utf-8').write(json.dumps({'groups': [], 'seen': sys.argv[1]}))\n",
+                      encoding="utf-8")
+    monkeypatch.setattr(publish, "TIMELINE_PY", script)
+    data_file = project / "docs" / "BA" / "timeline" / "x-timeline.yaml"
+    data_file.parent.mkdir(parents=True)
+    data_file.write_text("groups: []\n", encoding="utf-8")
+    assert publish.run_timeline_build(project, data_file) == {"groups": [], "seen": str(data_file)}
+    assert list(Path(tempfile.gettempdir()).glob("portal-timeline-build-*.json")) == []
+    script.write_text("import sys\nsys.exit('the tracker cache is missing')\n", encoding="utf-8")
+    with pytest.raises(publish.Stop, match="the tracker cache is missing"):
+        publish.run_timeline_build(project, data_file)
+
+
+REAL_TIMELINES = [
+    (EASY_PAYDAY, "AcmeLending", "docs/BA/timeline/epd-timeline.html"),
+    (EASY_PAYDAY, "Bond Portal", "docs/BA/timeline/bond-portal/ip-timeline.html"),
+    (Path(r"C:\Projects\nwe"), "NWE", "docs/BA/timeline/nwe-timeline.html"),
+]
+
+
+@pytest.mark.parametrize("repo,product,page", REAL_TIMELINES, ids=["easy-payday", "bond-portal", "nwe"])
+def test_real_timeline_builds_pass_the_contract(repo, product, page):
+    """The three real Timeline builds (the DATA of their built pages, read only) turn into valid timeline/1 sends
+    under 5 MB."""
+    if not (repo / page).exists():
+        pytest.skip(f"{repo / page} is not on this machine")
+    text = (repo / page).read_text(encoding="utf-8")
+    at = text.index("const DATA = ") + len("const DATA = ")
+    build, _ = json.JSONDecoder().raw_decode(text, at)
+    prof = yaml.safe_load((repo / publish.PROFILE).read_text(encoding="utf-8"))
+    found = publish.timeline_files(repo)
+    assert product in found
+    products = publish.portal_products(repo, prof, found)
+    payload, _ = publish.timeline_payload(repo, prof, product, build, products, "2026-11-06T10:00:00.000Z")
+    assert checks.check_publish(payload) is None
+    assert len(publish.encode(payload)) < publish.MAX_BYTES
+    linked = sum(1 for f in build_rows(build) if f.get("clar"))
+    assert sum(1 for _, f in checks.timeline_rows(payload) if "page" in f) <= linked
+
+
+def build_rows(build: dict) -> list[dict]:
+    return [f for g in build["groups"] for a in g["areas"] for f in a["features"]]
+
+
+def tl_saved(root: Path, product: str = "App", key_name: str = "PORTAL_PUBLISH_KEY_APP") -> Path:
+    """A payload file as `timeline plan` writes it."""
+    prof = yaml.safe_load((root / publish.PROFILE).read_text(encoding="utf-8"))
+    payload, _ = publish.timeline_payload(root, prof, product, ba_build(), ["App", "Admin"])
+    return publish.save_timeline(product, f"Sample {product}", URL, key_name, publish.encode(payload))
+
+
+def test_timeline_pages_go_with_the_same_product_as_in_a_dashboard_send(project, monkeypatch):
+    """Only Admin has a Timeline: a page no Feature links still goes with App (the first product), as in
+    `dashboard plan`, and not with Admin."""
+    folder = project / publish.TIMELINE_DIR / "admin"
+    folder.mkdir(parents=True)
+    (folder / "admin-timeline.yaml").write_text(ADMIN_TIMELINE, encoding="utf-8")
+    prof = yaml.safe_load((project / publish.PROFILE).read_text(encoding="utf-8"))
+    found = publish.timeline_files(project)
+    assert list(found) == ["Admin"]
+    products = publish.portal_products(project, prof, found)
+    assert products == ["App", "Admin"]
+    payload, _ = publish.timeline_payload(project, prof, "Admin", ba_build(), products)
+    assert "loose-page" not in payload["clarification_pages"]
+    assert payload["clarification_pages"] == publish.build_payload(project, prof, "Admin")[0]["clarification_pages"]
+
+
+def test_dashboard_plan_warns_that_it_replaces_a_timeline(capsys, project, portal, builds, timelines):
+    code, plan, _ = run(capsys, project, "dashboard", "plan")
+    try:
+        assert code == 0, plan
+        said = [w for w in plan["warnings"] if "replaces" in w]
+        assert len(said) == 2 and all("`timeline plan`" in w and "Map and Board back" in w for w in said)
+        assert "App has a Timeline (docs/BA/timeline/app-timeline.yaml)" in said[0]
+    finally:
+        cleanup(plan)
+
+
+def test_no_nulls_drops_null_fields_and_null_list_entries():
+    assert publish.no_nulls({"a": None, "b": [1, None, {"c": None, "d": [None]}], "e": "x"}) == \
+        {"b": [1, {"d": []}], "e": "x"}
+
+
+def test_timeline_send_stops_when_the_key_now_opens_another_project(capsys, project, tl_portal):
+    path = tl_saved(project)
+    tl_portal.projects[KEY_APP] = "Someone Else"
+    try:
+        code, result, _ = run(capsys, project, "timeline", "send", "--payload", str(path))
+        assert code == 1
+        assert ('The key in PORTAL_PUBLISH_KEY_APP now opens Portal project "Someone Else", but `timeline plan` '
+                'showed the App Timeline going to "Sample App"') in result["error"]
+        assert "run `timeline plan`" in result["error"] and "Nothing was sent" in result["error"]
+        assert tl_portal.posts() == [] and path.exists(), "nothing sent; the payload file is kept"
+    finally:
+        path.unlink(missing_ok=True)
+
+
+@pytest.mark.parametrize("exc", [httpx.ReadTimeout("slow"), httpx.RemoteProtocolError("dropped")])
+def test_timeline_real_send_without_a_reply_may_have_arrived(capsys, project, tl_portal, exc):
+    path = tl_saved(project)
+    tl_portal.post_exc = exc
+    try:
+        code, result, _ = run(capsys, project, "timeline", "send", "--payload", str(path))
+        assert code == 1
+        assert "may have arrived" in result["error"] and "run `timeline send` again" in result["error"]
+        assert "Nothing was sent" not in result["error"]
+        assert path.exists()
+    finally:
+        path.unlink(missing_ok=True)
+
+
+def test_timeline_send_after_the_portal_address_changed(capsys, project, tl_portal):
+    path = tl_saved(project)
+    edit_yaml(project / publish.PROFILE, lambda d: d["tools"]["portal"].update(url="https://portal.example.com"))
+    code, result, _ = run(capsys, project, "timeline", "send", "--payload", str(path))
+    assert code == 1 and "Run `timeline plan` again" in result["error"]
+    assert tl_portal.requests == [] and not path.exists()

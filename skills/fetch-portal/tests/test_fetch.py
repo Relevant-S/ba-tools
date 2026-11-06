@@ -1046,7 +1046,7 @@ def test_older_portal_reply_answers1_still_works(capsys, project, portal):
 def test_answers2_reply_that_fails_the_contract_writes_nothing(capsys, project, portal, reply):
     b = copy.deepcopy(BATCH2)
     if reply == "broken-update":
-        b["updates"][0]["item"]["kind"] = "todo"
+        b["updates"][0]["item"]["kind"] = "topic"     # since 1.6.0 todo is a kind too
     else:
         b["contract"] = "answers/3"
     portal.batches = [b]

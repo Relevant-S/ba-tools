@@ -44,6 +44,16 @@ ENTITY_SKIP = {
         *(f"/{lst}/*/tickets/*/{field}" for lst in ("features", "topics", "cards")
           for field in ("summary", "status", "assignee")),
     },
+    # timeline/1 (contract 1.6.0): links, the Client contacts' emails, and text copied from the tracker (work
+    # titles and statuses, release names), which the BA does not write and cannot fix. The rest is checked.
+    "timeline": {
+        "/product/workLink",
+        "/groups/*/areas/*/link/url",
+        "/client_contacts/*/email",
+        "/releases/*/name",
+        *(f"/groups/*/areas/*/features/*/{where}work/*/{field}" for where in ("", "requests/*/")
+          for field in ("url", "title", "status")),
+    },
     "clarification": {
         "/description",
         "/problem",
@@ -436,6 +446,49 @@ def dashboard_2_checks(doc: dict) -> list[dict]:
             + check_entities(doc, "dashboard"))
 
 
+def timeline_rows(doc: dict) -> list[tuple[str, dict]]:
+    """Every row (feature) of a timeline/1, with its path, in order: each group's areas' features."""
+    return [(f"/groups/{g}/areas/{a}/features/{i}", f)
+            for g, group in enumerate(doc["groups"]) for a, area in enumerate(group["areas"])
+            for i, f in enumerate(area["features"])]
+
+
+def check_unique_at(entries: list[tuple[str, object]], check: str, label: str) -> list[dict]:
+    """No value twice: entries are (path, value) in order; one detail at each later one, naming both."""
+    out, seen = [], {}
+    for here, value in entries:
+        if value in seen:
+            out.append(detail(here, check, f'{label} "{value}" is used twice: {seen[value]} and {here}'))
+        else:
+            seen[value] = here
+    return out
+
+
+def timeline_1_checks(doc: dict) -> list[dict]:
+    """The named checks of timeline/1 (contract 1.6.0), in checks.md order."""
+    rows = timeline_rows(doc)
+    pins = {p["id"] for p in doc["pins"]}
+    out = check_unique_at([(f"{w}/id", f["id"]) for w, f in rows], "unique_feature_id", "Feature id")
+    out += check_unique_at([(f"{w}/todos/{j}/key", t["key"]) for w, f in rows
+                            for j, t in enumerate(f.get("todos", []))], "unique_item_key", "To-do key")
+    out += check_unique(doc, "pins", "id", "unique_pin_id", "Pin id")
+    out += check_page_slugs(doc)
+    for w, f in rows:
+        asked = [(f"{w}/askedIn", f.get("askedIn"))]
+        asked += [(f"{w}/requests/{j}/askedIn", q.get("askedIn")) for j, q in enumerate(f.get("requests", []))]
+        for here, value in asked:
+            if value is not None and value not in pins:
+                out.append(detail(here, "known_pin", f'{here} names a pin "{value}" that is not in this Publish.'))
+    if "clarification_pages" in doc:
+        pages = set(doc["clarification_pages"])
+        for w, f in rows:
+            if "page" in f and f["page"] not in pages:
+                out.append(detail(f"{w}/page", "known_page",
+                                  f'{w}/page names a Clarification page "{f["page"]}" that is not in '
+                                  "clarification_pages."))
+    return out + check_entities(doc, "timeline")
+
+
 def cross_field(doc: dict, kind: str = "dashboard") -> list[dict]:
     if kind == "clarification":
         return (check_unique(doc, "questions", "id", "unique_question_id", "Question id")
@@ -448,18 +501,27 @@ def cross_field(doc: dict, kind: str = "dashboard") -> list[dict]:
                 + check_entities(doc, kind))
     if doc.get("contract") == "dashboard/2":
         return dashboard_2_checks(doc)
+    if doc.get("contract") == "timeline/1":
+        return timeline_1_checks(doc)
     return (check_unique(doc, "features", "id", "unique_feature_id", "Feature id")
             + check_unique(doc, "items", "key", "unique_item_key", "Item key")
             + check_entities(doc, kind))
 
 
+# The contract types each endpoint takes (checks.md, Order). Since 1.6.0 POST /publish/dashboard takes timeline too.
+ENDPOINT_TYPES = {"dashboard": ("dashboard", "timeline"), "clarification": ("clarification",)}
+
+
 def accepted_for(kind: str) -> list[str]:
-    """The accepted versions of one contract type, oldest first, e.g. ["dashboard/1"]."""
-    return [c for c in index()["accepted"] if c.startswith(kind + "/")]
+    """The accepted versions an endpoint takes, in index.json order, e.g. ["dashboard/1", "dashboard/2",
+    "timeline/1"] for the dashboard endpoint."""
+    types = ENDPOINT_TYPES.get(kind, (kind,))
+    return [c for c in index()["accepted"] if c.split("/")[0] in types]
 
 
 def check_publish(doc, kind: str = "dashboard", parts=None) -> dict | None:
-    """Check one Publish document of a contract type (dashboard or clarification). None = it passes.
+    """Check one Publish document sent to an endpoint (dashboard, which takes dashboard/<n> and timeline/<n>, or
+    clarification). None = it passes.
 
     parts: for a page, the names of the screenshot parts sent with it (not the publish part). When given,
     screens_match_parts runs last, only on a page that passed everything else."""

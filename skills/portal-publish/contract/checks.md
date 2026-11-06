@@ -20,12 +20,14 @@ A failed check gives one error code and a list of details:
 
 ## Order
 
-1. **Version** (`contract_version`). Each endpoint takes one contract type (`POST /publish/dashboard` takes
-   `dashboard`, `POST /publish/page` takes `clarification`). The accepted versions of that type are the
-   entries of `index.json` → `accepted` that start with `<type>/`. If the document is an object whose
-   `contract` is a string that is not one of them, the result is `contract_version_not_accepted` with one
-   detail at `/contract`. Its message names the accepted versions:
-   `dashboard/3 is not accepted. This Portal accepts dashboard/1, dashboard/2.` Nothing else is checked.
+1. **Version** (`contract_version`). Each endpoint takes its contract types (`POST /publish/dashboard` takes
+   `dashboard` and, since 1.6.0, `timeline`; `POST /publish/page` takes `clarification`). The accepted versions
+   of an endpoint are the entries of `index.json` → `accepted` that start with one of its types and `/`, in
+   `index.json` order. If the document is an object whose `contract` is a string that is not one of them, the
+   result is `contract_version_not_accepted` with one detail at `/contract`. Its message names the accepted
+   versions:
+   `dashboard/3 is not accepted. This Portal accepts dashboard/1, dashboard/2, timeline/1.` Nothing else is
+   checked.
    A `contract` that is missing or not a string is left to the schema of the **oldest** accepted version of
    the type (`dashboard/1`, `clarification/1`), so adding a version never changes how such a document fails.
 2. **Schema** (`schema`). The document is checked against the schema named for its `contract` in
@@ -38,6 +40,8 @@ A failed check gives one error code and a list of details:
      `unique_item_key`, `unique_card_id`, `unique_release_name`, `unique_special`, `unique_ticket_in_list`,
      `unique_page_slug` (since 1.3.0), `known_area` (Features, then topics, then cards), `known_parent`, `known_card_feature`, `known_release`,
      `card_kind_fields`, `answered_in_range`, `no_html_entities`.
+   - `timeline/1` (since 1.6.0), in this order: `unique_feature_id`, `unique_item_key`, `unique_pin_id`,
+     `unique_page_slug`, `known_pin`, `known_page`, `no_html_entities`.
    - `clarification`: `unique_question_id`, `unique_option_v`, `one_rec_max`, `bare_file_names`,
      `one_hero_max`, `max_screenshots`, `unique_decision_id`, `no_html_entities`.
 4. **Parts** (`screens_match_parts`) — pages only. Only on a page that passed steps 1 to 3, and only when the
@@ -121,6 +125,25 @@ characters), so two Items with one title under two parents do not clash. `dashbo
 - **One detail per unknown reference:** `path` is the field, in list order; the message names it and the value,
   for example `/items/2/parent names a Feature or topic "no-such-feature" that is not in this Publish.`
 
+### `timeline/1` checks (since 1.6.0)
+
+The rows of a `timeline/1` are walked in order: each group, each of its areas, each of its `features`. A row's
+path is `/groups/<g>/areas/<a>/features/<i>`.
+
+- **`unique_feature_id`:** no two rows share an `id`, across the whole send. One detail per repeat at the later
+  row's `id`, naming both places, for example
+  `Feature id "otp" is used twice: /groups/0/areas/0/features/0/id and /groups/0/areas/1/features/0/id`.
+- **`unique_item_key`:** no two to-dos share a `key`, across the whole send (rows in order, each row's `todos`
+  in order). One detail per repeat at the later `key`, naming both places (`To-do key "…" is used twice: …`).
+- **`unique_pin_id`:** no two pins share an `id`. One detail per repeat at the later `pins/<n>/id`.
+- **`unique_page_slug`:** as for `dashboard/2`, on `clarification_pages`.
+- **`known_pin`:** a row's `askedIn`, then each of its `requests[].askedIn` in order, names a pin `id` of the
+  send. One detail per unknown one at that `askedIn`, naming the value.
+- **`known_page`:** only when `clarification_pages` is sent: a row's `page` is one of its slugs. One detail per
+  unknown one at that `page`.
+- **`no_html_entities`:** below.
+- **Raises:** `contract_invalid`.
+
 ### `card_kind_fields` (dashboard/2)
 
 - **Rule:** a card's fields match its `kind`: a `feature` card has `feature` and no `epic`; an `epic` card has
@@ -151,6 +174,9 @@ characters), so two Items with one title under two parents do not clash. `dashbo
     `cards[].release`, `cards[].title` (an epic's name, or the Feature title), and the `summary`, `status`
     and `assignee` of every ticket of `features[]`, `topics[]` and `cards[]`. BA-written text (Feature,
     topic and Item titles, `short`, `open`, `who`, `how_to_send`) is still checked.
+  - `timeline/1`: the links `product.workLink`, `groups[].areas[].link.url` and every work item's `url`
+    (of rows and of their `requests`), `client_contacts[].email`, and the text copied from the tracker: every
+    work item's `title` and `status`, and `releases[].name`. Everything else, BA-written, is checked.
   - `clarification`: `description`, `problem`, `solution`, `design.summary`, `design.detail`,
     `questions[].body`, `questions[].body2`, `questions[].snag` (light HTML), `url`, and the screen file
     names `design.screens[].file` and `questions[].screens[].file` (checked by `bare_file_names`).
@@ -265,6 +291,11 @@ characters), so two Items with one title under two parents do not clash. `dashbo
   schemas only. The code's pattern ends in `(?![\s\S])` like the slug, since a code is 6 or 7 characters.
 - The reply to a `dashboard/2` send counts `areas`, `topics`, `cards` and `tickets` too. `tickets` counts the
   tickets on Board cards only (all `cards[].tickets` together), not the Feature, topic or area ticket lists.
+- Since 1.6.0 `POST /publish/dashboard` also takes `timeline/1`. A missing or non-string `contract` is still
+  checked with `dashboard/1`, the oldest version the endpoint takes. `timeline/1` has no light-HTML field and no
+  null field. Its reply counts (each up to 1,000,000) `features` (rows plus their changes and bugs), `items` (to-dos),
+  `client_contacts`, `areas` and `pins`, and a dry run's `client_view` is `client_timeline_1`. `answers/2` takes
+  the item kind `todo` (a to-do of a `timeline/1` send).
 - Python: `Draft202012Validator(schema, format_checker=FormatChecker())` from `jsonschema[format-nongpl]`.
 - Portal: `Ajv2020` with `strict: true` and `allErrors: true`, `ajv-formats`, and `x-visibility` added with
   `addKeyword` and an enum meta-schema (`client`, `id`, `portal`, `admin`), so a schema with any other value does

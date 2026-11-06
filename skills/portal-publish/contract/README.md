@@ -10,12 +10,14 @@ in `portal/contract/`, with a `SOURCE` file naming the ba-tools tag and each fil
 | `dashboard-1.md` | The same, readable |
 | `dashboard-2.schema.json` | The whole BA dashboard of one product (since 1.2.0), the list of its Clarification pages (since 1.3.0), and Item `hot`, Feature `stage_why` and `area_how`, open ticket `updated` (since 1.4.0, all optional), JSON Schema draft 2020-12 |
 | `dashboard-2.md` | The same, readable |
+| `timeline-1.schema.json` | Since 1.6.0. The BA's Timeline page data for one product, sent to the Dashboard endpoint (it replaces Map and Board), JSON Schema draft 2020-12 |
+| `timeline-1.md` | The same, readable |
 | `clarification-1.schema.json` | The Clarification page Publish (one Round), JSON Schema draft 2020-12 |
 | `clarification-1.md` | The same, readable |
-| `publish-reply-1.schema.json` | The Portal's reply to a Publish, Dashboard or page form by `kind` (and its dry run) |
+| `publish-reply-1.schema.json` | The Portal's reply to a Publish, Dashboard or page form by `kind` (and its dry run; since 1.6.0 also the view of a `timeline/1` send) |
 | `status-1.schema.json` | The Portal's reply to `GET /api/v1/status` |
 | `answers-1.schema.json` | The Portal's reply to `POST /api/v1/answers/reserve`: a batch of sent Answers |
-| `answers-2.schema.json` | Since 1.4.0. The reply to `POST /api/v1/answers/reserve` when the request accepts `answers/2`: `answers/1` plus `updates`, the Client's saves on Items (below) |
+| `answers-2.schema.json` | Since 1.4.0. The reply to `POST /api/v1/answers/reserve` when the request accepts `answers/2`: `answers/1` plus `updates`, the Client's saves on Items (below); since 1.6.0 an item's `kind` may be `todo` |
 | `reserve-request-1.schema.json` | Since 1.4.0. The optional body of `POST /api/v1/answers/reserve`: `{ accept: [...] }`, the batch versions the fetcher reads |
 | `ack-request-1.schema.json` | The body of `POST /api/v1/answers/ack`: `{ batch_id }`. One ack confirms a batch's Answers and updates together |
 | `ack-1.schema.json` | The Portal's reply to `POST /api/v1/answers/ack` |
@@ -45,13 +47,28 @@ Update box:
 | `id` | the save's id, UUID v7 |
 | `sent_at` | UTC time, exactly `YYYY-MM-DDTHH:MM:SS.sssZ` |
 | `person` | `{ name ≤ 100, email ≤ 254 }` |
-| `item` | `{ key, kind, title }`: `key` is the BA page's item key, the first 12 hex characters of `sha1("<kind>\|<title>")` (title trimmed, UTF-8), not the `dashboard/2` key; `kind` is `waiting` or `agenda`; `title` ≤ 500 (as on `dashboard/2` items) |
+| `item` | `{ key, kind, title }`: `key` is the BA page's item key, the first 12 hex characters of `sha1("<kind>\|<title>")` (title trimmed, UTF-8), not the `dashboard/2` key; `kind` is `waiting` or `agenda`, and since 1.6.0 also `todo` (the BA's own to-dos on a `timeline/1` send); `title` ≤ 500 (as on `dashboard/2` items) |
 | `note` | plain text, 1 to 2,000 characters, or `null` when only the tick changed |
 | `resolved` | yes/no: the Resolved tick at that save (the latest save of an Item wins) |
 
 Updates come in `sent_at` order, then `id`. With nothing to hand out (no Answers and no updates), `batch_id`
 and `reserved_until` are `null` and both lists are empty. A batch always holds at least one Answer or one
 update. The same `ack-request/1` (`batch_id`) confirms the Answers and the updates together.
+
+## The Timeline send (since 1.6.0)
+
+`timeline/1` (`timeline-1.md`) is the BA's Timeline page data: area groups → areas → rows, with their changes
+and bugs, to-dos, pins and releases. It goes to `POST /api/v1/publish/dashboard` like `dashboard/2`, and the
+latest send of either kind is the project's Dashboard version. So a `timeline/1` send replaces Map and Board, and
+a later `dashboard/2` send brings them back. `dashboard/1` and `dashboard/2` stay accepted.
+
+- The send is the build's data with every field kept (clients see what the BA sees), except the BA page's own
+  links: a feature's `clar` artifact link becomes `page`, the Portal page's slug; `pages`, `dashboardUrl` and
+  `pins[].decided[].url` are left out. The envelope, `client_contacts` and `clarification_pages` are added.
+- A Client may save a note or tick Resolved on any to-do of the latest send, including the BA's own (`todo`).
+  Its key is the BA page's item key, as before, so `answers/2` hands it out with `item.kind` `todo`.
+- An unknown version (`timeline/2`) is refused like any other, naming every accepted version:
+  `timeline/2 is not accepted. This Portal accepts dashboard/1, dashboard/2, timeline/1.`
 
 ## Connecting a repo with a one-time code (since 1.5.0)
 

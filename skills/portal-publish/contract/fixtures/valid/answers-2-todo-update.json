@@ -1,0 +1,24 @@
+{
+  "contract": "answers/2",
+  "batch_id": "019a2c45-2c3d-7d4e-8f50-b1c2d3e4f5a6",
+  "reserved_until": "2026-10-27T11:10:00.000Z",
+  "last_fetched_at": "2026-10-24T16:42:05.120Z",
+  "answers": [],
+  "updates": [
+    {
+      "id": "019a2b95-0a00-7c00-8a00-000000000004",
+      "sent_at": "2026-11-06T09:00:00.000Z",
+      "person": {
+        "name": "Sample Client",
+        "email": "sample.client@example.com"
+      },
+      "item": {
+        "key": "89a3fa8ba0e4",
+        "kind": "todo",
+        "title": "Write the collections note for the pilot"
+      },
+      "note": "We would like to read it before the call.",
+      "resolved": false
+    }
+  ]
+}

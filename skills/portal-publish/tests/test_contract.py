@@ -107,6 +107,13 @@ DASHBOARD_CASES = {
     "v2-duplicate-page-slug", "v2-bad-page-slug", "v2-too-many-pages",
     # the optional 1.4.0 fields
     "v2-hot-not-yes-no", "v2-stage-why-too-long", "v2-area-how-empty", "v2-ticket-updated-not-utc",
+    # timeline/1 (contract 1.6.0), sent to the Dashboard endpoint
+    "tl1-version-not-accepted", "tl1-artifact-link-left-in", "tl1-pages-left-in", "tl1-dashboard-url-left-in",
+    "tl1-decided-url-left-in", "tl1-work-url-http", "tl1-area-link-javascript", "tl1-work-link-http",
+    "tl1-missing-product", "tl1-null-field", "tl1-bad-stage", "tl1-bad-date", "tl1-bad-todo-key",
+    "tl1-bad-todo-kind", "tl1-bad-page-slug", "tl1-todo-title-too-long", "tl1-duplicate-feature-id",
+    "tl1-duplicate-todo-key", "tl1-duplicate-pin-id", "tl1-duplicate-page-slug", "tl1-unknown-pin",
+    "tl1-unknown-request-pin", "tl1-unknown-page", "tl1-html-entity",
 }
 PAGE_CASES = {
     "page-too-many-questions", "page-too-many-screenshots", "question-no-options",
@@ -147,7 +154,7 @@ REPLY_CASES = {
     "answers2-no-batch-with-updates": "answers/2",
     "answers2-batch-with-nothing": "answers/2",
     "answers2-update-bad-item-key": "answers/2",
-    "answers2-update-todo-item": "answers/2",
+    "answers2-update-unknown-kind": "answers/2",
     "answers2-update-note-too-long": "answers/2",
     "answers2-update-empty-note": "answers/2",
     "answers2-update-missing-resolved": "answers/2",
@@ -260,7 +267,7 @@ def test_version_message_lists_accepted():
     doc = small()
     doc["contract"] = "dashboard/3"
     (d,) = checks.check_publish(doc)["details"]
-    assert d["message"] == "dashboard/3 is not accepted. This Portal accepts dashboard/1, dashboard/2."
+    assert d["message"] == "dashboard/3 is not accepted. This Portal accepts dashboard/1, dashboard/2, timeline/1."
 
 
 # ---- page messages ----------------------------------------------------------------------------------
@@ -638,9 +645,10 @@ def test_limits_match_the_spec():
 
 def test_index_names_existing_schemas():
     idx = checks.index()
-    assert idx["contract_folder"] == "1.5.0"
-    assert idx["accepted"] == ["dashboard/1", "dashboard/2", "clarification/1"]
-    assert set(idx["schemas"]) == {"dashboard/1", "dashboard/2", "clarification/1", "publish-reply/1", "status/1",
+    assert idx["contract_folder"] == "1.6.0"
+    assert idx["accepted"] == ["dashboard/1", "dashboard/2", "timeline/1", "clarification/1"]
+    assert set(idx["schemas"]) == {"dashboard/1", "dashboard/2", "timeline/1", "clarification/1", "publish-reply/1",
+                                   "status/1",
                                    "answers/1", "answers/2", "reserve-request/1", "ack-request/1", "ack/1",
                                    "connect-request/1", "connect/1"}
     assert {p.name for p in SCHEMAS} == set(idx["schemas"].values())
@@ -1081,3 +1089,183 @@ def test_connect_errors_are_in_errors_json():
     assert errors["connect_code_invalid"] == {
         "status": 400, "message": "This code does not work. Ask an Admin for a new one."}
     assert errors["too_many_tries"]["status"] == 429
+
+
+# ---- timeline/1 (contract 1.6.0) --------------------------------------------------------------------
+
+def timeline_schema():
+    return checks.load_json("timeline-1.schema.json")
+
+
+def tl_small():
+    return read(FIXTURES / "valid" / "timeline-1-small.json")
+
+
+def tl_rows(doc: dict) -> list[dict]:
+    return [f for g in doc["groups"] for a in g["areas"] for f in a["features"]]
+
+
+def test_timeline_goes_to_the_dashboard_endpoint():
+    assert checks.accepted_for("dashboard") == ["dashboard/1", "dashboard/2", "timeline/1"]
+    assert checks.accepted_for("clarification") == ["clarification/1"]
+    assert checks.check_publish(tl_small()) is None
+    assert checks.check_publish(tl_small(), "clarification", [])["code"] == "contract_version_not_accepted"
+
+
+def test_timeline_version_message_lists_every_accepted_version():
+    doc = tl_small()
+    doc["contract"] = "timeline/2"
+    (d,) = checks.check_publish(doc)["details"]
+    assert d["message"] == "timeline/2 is not accepted. This Portal accepts dashboard/1, dashboard/2, timeline/1."
+
+
+def test_timeline_leaves_have_visibility_and_objects_are_closed():
+    assert visibility_problems(timeline_schema()) == []
+
+
+def test_timeline_visibility_levels_are_the_agreed_ones():
+    vis = {path: prop["x-visibility"] for path, prop in leaves(timeline_schema())}
+    assert sorted(p for p, v in vis.items() if v == "admin") == sorted(
+        ["#/contract", "#/sent_at", "#/sent_by", "#/ba_tools_version", "#/source_commit"])
+    assert sorted(p for p, v in vis.items() if v == "portal") == sorted(
+        ["#/client_contacts[]/name", "#/client_contacts[]/email", "#/client_contacts[]/slack",
+         "#/clarification_pages"])
+    # Clients see what the BA sees (Vadim, 6 Nov): the BA's own to-dos and every pin field are client.
+    for p in ("#/groups[]/areas[]/features[]/todos[]/who", "#/groups[]/areas[]/features[]/todos[]/l",
+              "#/pins[]/owes[]/text", "#/pins[]/people", "#/pins[]/summary", "#/pins[]/decided[]/title"):
+        assert vis[p] == "client", p
+
+
+def test_timeline_drops_the_ba_page_only_fields():
+    """clar, pages, dashboardUrl and pins[].decided[].url are not in timeline/1; a feature names its page by slug."""
+    paths = {path for path, _ in leaves(timeline_schema())}
+    for gone in ("#/pages", "#/dashboardUrl", "#/groups[]/areas[]/features[]/clar", "#/pins[]/decided[]/url"):
+        assert gone not in paths, gone
+    assert "#/groups[]/areas[]/features[]/page" in paths
+
+
+def test_timeline_small_file_holds_every_field():
+    """Every leaf of the schema is in the small file at least once, so both sides check every field."""
+    def walk(value, path, found):
+        if isinstance(value, dict):
+            for k, v in value.items():
+                walk(v, f"{path}/{k}", found)
+        elif isinstance(value, list):
+            found.add(path)
+            for v in value:
+                walk(v, path + "[]", found)
+        else:
+            found.add(path)
+    found: set[str] = set()
+    walk(tl_small(), "#", found)
+    missing = sorted(p for p, _ in leaves(timeline_schema()) if p not in found)
+    assert missing == []
+
+
+def test_timeline_todo_keys_are_the_ba_page_keys():
+    import hashlib
+    for doc in (tl_small(), read(FIXTURES / "valid" / "timeline-1-real-size.json")):
+        todos = [t for f in tl_rows(doc) for t in f.get("todos", [])]
+        assert {t["kind"] for t in todos} == {"waiting", "agenda", "todo"}
+        for t in todos:
+            assert t["key"] == hashlib.sha1(f'{t["kind"]}|{t["title"].strip()}'.encode("utf-8")).hexdigest()[:12]
+
+
+def test_timeline_real_size_is_easy_payday_shaped():
+    doc = read(FIXTURES / "valid" / "timeline-1-real-size.json")
+    rows = tl_rows(doc)
+    assert [len(g["areas"]) for g in doc["groups"]] == [2, 5, 3, 2, 3, 8, 5]
+    assert len(rows) == 336 and sum(len(f.get("requests", [])) for f in rows) == 13
+    assert sum(len(f.get("todos", [])) for f in rows) == 98 and sum(len(f["work"]) for f in rows) == 333
+    assert (len(doc["pins"]), len(doc["releases"]), len(doc["clarification_pages"])) == (58, 26, 16)
+    assert sum(1 for f in rows if "page" in f) == 14
+    assert max(len(f["desc"]) for f in rows) == 1076
+    assert checks.check_publish(doc) is None
+    body = json.dumps(doc, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    assert len(body) < 5 * 1024 * 1024
+
+
+def test_every_timeline_check_has_a_fixture():
+    checks_seen = set()
+    for case in INVALID:
+        if case.name.startswith("tl1-"):
+            checks_seen |= {d["check"] for d in read(case / "expected.json")["details"]}
+    assert checks_seen == {"schema", "contract_version", "unique_feature_id", "unique_item_key", "unique_pin_id",
+                           "unique_page_slug", "known_pin", "known_page", "no_html_entities"}
+
+
+def test_timeline_duplicate_feature_id_names_both_places():
+    doc = tl_small()
+    rows = tl_rows(doc)
+    rows[4]["id"] = rows[0]["id"]
+    (d,) = checks.check_publish(doc)["details"]
+    assert d["path"] == "/groups/0/areas/1/features/1/id"
+    assert "/groups/0/areas/0/features/0/id" in d["message"]
+
+
+def test_timeline_page_list_is_optional():
+    doc = tl_small()
+    del doc["clarification_pages"]
+    assert checks.check_publish(doc) is None
+
+
+def test_timeline_tracker_text_and_links_may_hold_entities():
+    doc = tl_small()
+    rows = tl_rows(doc)
+    rows[1]["work"][0]["title"] = "Fix &amp; ship"
+    rows[1]["work"][0]["url"] = "https://example.com/a?b=1&amp;c=2"
+    doc["releases"][0]["name"] = "6.0 &mdash; payouts"
+    assert checks.check_publish(doc) is None
+
+
+@pytest.mark.parametrize("bad", ["javascript:alert(1)", "http://example.com/x", "https://", "https://a b"])
+def test_timeline_links_must_be_https(bad):
+    doc = tl_small()
+    doc["groups"][0]["areas"][0]["link"]["url"] = bad
+    result = checks.check_publish(doc)
+    assert ("schema", "/groups/0/areas/0/link/url") in {(d["check"], d["path"]) for d in result["details"]}
+
+
+def test_answers2_takes_todo_updates():
+    batch = read(FIXTURES / "valid" / "answers-2-todo-update.json")
+    assert [u["item"]["kind"] for u in batch["updates"]] == ["todo"]
+    assert checks.check_reply(batch, "answers/2") == []
+
+
+def test_reply_to_a_timeline_dry_run_carries_its_client_view():
+    reply = read(FIXTURES / "valid" / "publish-reply-1-timeline-1-dry-run.json")
+    view = reply["client_view"]
+    for gone in ("contract", "sent_at", "sent_by", "client_contacts", "clarification_pages"):
+        assert gone not in view
+    assert checks.check_reply(reply, "publish-reply/1") == []
+    view["client_contacts"] = []
+    assert checks.check_reply(reply, "publish-reply/1") != []
+
+
+def test_reply_timeline_form_is_the_timeline_schema_without_the_server_fields():
+    """client_timeline_1 in publish-reply/1 is timeline-1.schema.json minus the envelope, client_contacts and
+    clarification_pages (descriptions and x-visibility aside), so the two cannot drift apart."""
+    def strip(s):
+        if isinstance(s, dict):
+            return {k: strip(v) for k, v in s.items() if k not in ("description", "x-visibility")}
+        if isinstance(s, list):
+            return [strip(v) for v in s]
+        return s
+    server = {"contract", "sent_at", "sent_by", "ba_tools_version", "source_commit", "client_contacts",
+              "clarification_pages"}
+    schema = timeline_schema()
+    expected = {"type": "object", "additionalProperties": False,
+                "required": [k for k in schema["required"] if k not in server],
+                "properties": {k: strip(v) for k, v in schema["properties"].items() if k not in server}}
+    form = read(checks.CONTRACT_DIR / "publish-reply-1.schema.json")["$defs"]["client_timeline_1"]
+    assert strip(form) == expected
+
+
+def test_timeline_small_file_uses_every_stage():
+    stages = set()
+    for f in tl_rows(tl_small()):
+        stages |= {f["stage"]} | {s["stage"] for s in f.get("stages", [])}
+        for q in f.get("requests", []):
+            stages |= {s["stage"] for s in q["stages"]}
+    assert stages == set(timeline_schema()["properties"]["groups"]["items"]["properties"]["areas"]["items"]
+                         ["properties"]["features"]["items"]["properties"]["stage"]["enum"])
