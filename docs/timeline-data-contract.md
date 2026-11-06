@@ -34,6 +34,8 @@ Dropped: `realNames` (the footer names no features any more), `prodDay` (not sho
 | `tagWord` | "Release", "Phase" | The filter and the row tags |
 | `workLink` | `https://example.atlassian.net/browse/` · `https://github.com/northwind/docs/blob/main/` | Base link for a work item's id |
 | `tracker` | "jira", "github-bmad" | Which plug-in built it (shown in the footer) |
+| `ba` | "Vadim" | The BA's first name: "BA" in the dashboard means them; "Vadim reviews every suggestion" |
+| `footer` | "the BA dashboard, Jira and the intake files." | What the page is built from (the footer, after "Built <date> from") — written by the plug-in |
 
 ## A feature (one row)
 
@@ -47,7 +49,8 @@ Dropped: `realNames` (the footer names no features any more), `prodDay` (not sho
 | `doneDate` | date | When it reached Done | P | same |
 | `origin` | text | **dashboard** · **spec** (a spec not on the dashboard) · **old-work** (an old Jira story or MVP story) | S/P | `fromSpec`, `earlier`, `mvpStory` |
 | `basis` | text | Where the stage dates come from: **recorded** (by hand) · **tracker** · **code** (commit list) · **none** (faded bar) | S/P | `real`, `fromJira`, `fromCode` |
-| `basisNote` | text | One line for the panel: "Story 2.1 of the MVP", "A Jira story in the epic …" | P | `mvpStory`, `epic` notes |
+| `originNote` | text | One line at the top of the panel for a row not on the dashboard: "Built in the MVP, before the BA specs.", "A Jira story from before the timeline starts, in the epic …" | P | `mvpStory`, `earlier` + `epic` notes |
+| `basisNote` | text | One line above the stage dates: "From the Jira history of its tickets." | P | `fromJira`, `newRound` notes |
 | `desc` | text | The dashboard's client text | S | same |
 | `about` | list of text | 2–3 plain bullets when there is no `desc` | C (descriptions file) | same |
 | `clar` · `clarLabel` | url · text | The clarification page button — **only a claude.ai artifact link** | S | same |
@@ -56,7 +59,7 @@ Dropped: `realNames` (the footer names no features any more), `prodDay` (not sho
 | `who` | list of text | Who asked for it | S | same |
 | `askedIn` · `askedBy` | pin id · text | Where it was first asked | C | same |
 | `tags` | list of text | Releases or phases | P/C | same |
-| `work` | list | `{id, title, status, url}` — the tickets or stories behind it | P | `tickets` |
+| `work` | list | `{id, title, status, url, done}` — the tickets or stories behind it; `done` = the day it was done (for "Hide done") | P | `tickets` |
 | `guess` | bool | Placed in this area by guess (`*` on the page) | S/C | same |
 | `changes` | feature id | For a change's own row: the feature it changes | C | same |
 | `requests` | list | Changes and bugs under it — see below | P/C | same |

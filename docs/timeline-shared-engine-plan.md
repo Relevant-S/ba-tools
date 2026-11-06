@@ -1,6 +1,6 @@
 # One timeline for every project — plan
 
-*5 Nov 2026 · Vadim (BA) with Claude · status: plan agreed, step 1 agreed, step 2 done (`skills/timeline/template.html`, checked with both projects' data on 5 Nov)*
+*5 Nov 2026 · Vadim (BA) with Claude · status: plan agreed, step 1 agreed, step 2 done (`skills/timeline/template.html`), step 3 done (`skills/timeline/scripts/build.py` + `trackers/__init__.py`, 6 Nov)*
 
 ## The problem
 
