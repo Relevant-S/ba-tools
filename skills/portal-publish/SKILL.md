@@ -42,15 +42,17 @@ the Portal's header. A repo with one product works as before, with one key.
 | Setting | Where | When it is missing |
 |---|---|---|
 | The Portal address | `tools.portal.url` in `docs/BA/specs/.ba-profile.yml` | stop: run `ba-setup project` |
-| The Publish key, one product | `PORTAL_PUBLISH_KEY=<key>` in `.env` at the repo root | stop: run `ba-setup project` |
+| The Publish key, one product | `PORTAL_PUBLISH_KEY` in `.env` at the repo root (`ba-setup project` puts it there from a connect code) | stop: run `ba-setup project` |
 | The Publish keys, two or more products | `tools.portal.products` in the profile names, per product, the `.env` variable that holds its key — for example `{AcmeLending: PORTAL_PUBLISH_KEY_ACME, Bond Portal: PORTAL_PUBLISH_KEY_BOND}` — and `.env` holds each one | stop before anything is sent, naming the product or the variable: run `ba-setup project` |
 | `.env` kept out of git | `.gitignore` lists `.env`, and `.env` is not committed | stop: add it to `.gitignore` (and `git rm --cached .env` if it was committed) |
 | The Jira site (ticket links) | the Jira search link of the first area on the BA page, else `jira.site` in the profile | stop: add `jira.site` to the profile |
 | Client contacts | `tools.client_contacts` in the profile (`name`, `email`, `slack`) | falls back to `client_owners` in `docs/BA/dashboard-slack.yaml` (names only); with neither, a warning |
 
 The script checks all of these itself, before it sends anything. **Never print, echo or paste a key.** Never
-open `.env` to show it. A Publish key is one per Portal project: an Admin sees it once in the Portal at
-Admin → Projects → the Project → Publishing, and "Regenerate key" there replaces it.
+open `.env` to show it. Never ask the BA for a key, or tell them to copy one into `.env`. When a key is missing
+or refused, the BA asks an Admin for a **connect code** (Admin → Projects → the project → Publishing → Connect a
+repo), one per product, and runs `ba-setup project`: it swaps the code for a new key and writes it into `.env`.
+Each connect adds a key; keys other repos use keep working.
 
 Two products never share a Portal project. Two products naming the same `.env` variable, or two keys that
 open the same Portal project, stop the run before anything is sent.
@@ -148,7 +150,7 @@ Show `error` as it is; it already says what to do. Nothing was sent in these cas
 | The build fails | "dashboard.py build failed: …" or "map/build.py failed: …" |
 | The local check fails (any product) | "The Bond Portal Dashboard does not match the contract …", then one line per problem, like `docs/BA/dashboard.yaml → features 'Sign-up' → area: …` or `Jira → the release '…' → its name: … (/releases/3/name)` |
 | No Jira site | "There is no Jira site address …": add `jira.site` to the profile |
-| The Portal refuses a key on `GET /status` | "The Portal refused the key in PORTAL_PUBLISH_KEY_… (invalid_key) …", then where to get the right key |
+| The Portal refuses a key on `GET /status` | "The Portal refused the key in PORTAL_PUBLISH_KEY_… (invalid_key) …", then: ask an Admin for a connect code and run `ba-setup project` (it replaces the key, after asking) |
 | The Portal does not accept `dashboard/2` yet | "The Portal at <url> does not accept dashboard/2 yet …" |
 | The Portal refuses | "The Portal refused the send (code): its message", each field it named, then the next step. Codes: `invalid_key` (wrong key), `project_archived`, `contract_invalid`, `contract_version_not_accepted`, `payload_too_large` |
 | The Portal is down or the address is wrong | "The Portal is not reachable at <url>" |

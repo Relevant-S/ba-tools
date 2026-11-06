@@ -1,5 +1,5 @@
 {
-  "contract_folder": "1.4.0",
+  "contract_folder": "1.5.0",
   "accepted": ["dashboard/1", "dashboard/2", "clarification/1"],
   "schemas": {
     "dashboard/1": "dashboard-1.schema.json",
@@ -11,6 +11,8 @@
     "answers/2": "answers-2.schema.json",
     "reserve-request/1": "reserve-request-1.schema.json",
     "ack-request/1": "ack-request-1.schema.json",
-    "ack/1": "ack-1.schema.json"
+    "ack/1": "ack-1.schema.json",
+    "connect-request/1": "connect-request-1.schema.json",
+    "connect/1": "connect-1.schema.json"
   }
 }

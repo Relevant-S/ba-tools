@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/connect-request-1.schema.json",
+  "title": "connect-request/1",
+  "description": "Since 1.5.0. The body of POST /api/v1/connect: a one-time connect code from the Admin, and a name for the repo. The request has no Authorization header: the code is the proof. It has no contract field, like ack-request/1. A good code gives connect/1: a new key for the code's project.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["code", "label"],
+  "properties": {
+    "code": {
+      "description": "The connect code the Admin made: 6 characters of 23456789ABCDEFGHJKMNPQRSTUVWXYZ, shown as XXX-XXX. The dash is optional and any case is fine (K7P4XM, K7P-4XM, k7p-4xm).",
+      "type": "string",
+      "minLength": 6,
+      "maxLength": 7,
+      "pattern": "^[2-9A-HJKMNP-Za-hjkmnp-z]{3}-?[2-9A-HJKMNP-Za-hjkmnp-z]{3}(?![\\s\\S])"
+    },
+    "label": {
+      "description": "The name the Admin sees under Connected repos: the repo folder name, \" · \", and the BA's git user.name (just the folder when git has no name), e.g. \"acme-docs · Vadim\".",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    }
+  }
+}

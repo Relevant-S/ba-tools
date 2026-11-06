@@ -12,6 +12,8 @@ it, and Dashboard replies that carry `pages_removed`.
 Contract 1.4.0 adds a small file with the optional 1.4.0 fields (Item `hot`, Feature `stage_why` and `area_how`,
 open ticket `updated`) and `v2-…` cases that break them; `answers/2` batches (Answers plus the Client's updates on
 Items) and the `reserve-request/1` body, with broken cases of both.
+Contract 1.5.0 adds the `connect-request/1` body (a one-time connect code and a repo name) and its `connect/1`
+reply (a new key for the code's project), with broken cases of both. The key is made up.
 
 Pages: the clarification-page skill's example-probate-decisions.yaml converted to clarification/1, and a
 synthetic page of Merchants V7 size (6 Questions, 18 options, 4 screens). A page's invalid case is the
@@ -898,6 +900,25 @@ def reply_invalid_cases() -> dict[str, tuple[str, dict, str]]:
     case("reserve-request-empty-accept", "reserve-request/1", {"accept": []}, "/accept")
     case("reserve-request-accept-twice", "reserve-request/1", {"accept": ["answers/2", "answers/2"]}, "/accept")
     case("reserve-request-with-contract", "reserve-request/1", {**req, "contract": "reserve-request/1"}, "/contract")
+    # connect-request/1 and connect/1 (contract 1.5.0)
+    creq, con = r["connect-request-1.json"], r["connect-1.json"]
+    case("connect-request-with-contract", "connect-request/1", {**creq, "contract": "connect-request/1"}, "/contract")
+    case("connect-request-missing-code", "connect-request/1", {"label": creq["label"]}, "/code")
+    case("connect-request-code-look-alike", "connect-request/1", {**creq, "code": "K0P-4XM"}, "/code")
+    case("connect-request-code-too-long", "connect-request/1", {**creq, "code": "K7P-4XMA"}, "/code")
+    case("connect-request-code-dash-in-wrong-place", "connect-request/1", {**creq, "code": "K7-P4XM"}, "/code")
+    case("connect-request-code-trailing-newline", "connect-request/1", {**creq, "code": "K7P4XM\n"}, "/code")
+    case("connect-request-empty-label", "connect-request/1", {**creq, "label": ""}, "/label")
+    case("connect-request-label-too-long", "connect-request/1", {**creq, "label": "x" * 101}, "/label")
+    case("connect-missing-key", "connect/1", {k: v for k, v in con.items() if k != "key"}, "/key")
+    case("connect-key-too-short", "connect/1", {**con, "key": con["key"][:-1]}, "/key")
+    case("connect-key-not-base64url", "connect/1", {**con, "key": "+" + con["key"][1:]}, "/key")
+    case("connect-last4-too-long", "connect/1", {**con, "key_last4": con["key"][-5:]}, "/key_last4")
+    case("connect-project-bad-id", "connect/1",
+         {**con, "project": {**con["project"], "id": "not-a-uuid-not-a-uuid-not-a-uuid-xxxx"}}, "/project/id")
+    case("connect-project-empty-name", "connect/1", {**con, "project": {**con["project"], "name": ""}},
+         "/project/name")
+    case("connect-unknown-field", "connect/1", {**con, "key_hash": "abc"}, "/key_hash")
     return cases
 
 
@@ -1079,6 +1100,11 @@ def replies() -> dict[str, dict]:
         "contract": "ack/1", "batch_id": answers["batch_id"], "handed_out": 2,
         "confirmed_at": "2026-10-27T11:00:31.007Z",
     }
+    # connect/1: a made-up key (43 characters of base64url), never a real one.
+    fake_key = "sample-connect-key-not-real-" + "0123456789abcde"
+    connect = {"contract": "connect/1",
+               "project": {"id": "019a2a6e-1b2c-7d3e-8f40-a1b2c3d4e5f6", "name": "Sample Project"},
+               "key": fake_key, "key_last4": fake_key[-4:]}
     # answers/2: the Client's saves on Items. Keys are the BA page's: sha1("<kind>|<title>").
     other = {"name": "Second Person", "email": "second.person@example.com"}
     wait_t, agenda_t = "Send the employer list for the pilot", "Agree the fee for early repayment"
@@ -1124,6 +1150,9 @@ def replies() -> dict[str, dict]:
         "reserve-request-1.json": {"accept": ["answers/1", "answers/2"]},
         "ack-request-1.json": {"batch_id": answers["batch_id"]},
         "ack-1.json": ack,
+        "connect-request-1.json": {"code": "K7P-4XM", "label": "acme-docs · Sample BA"},
+        "connect-request-1-no-dash-lower-case.json": {"code": "k7p4xm", "label": "acme-docs"},
+        "connect-1.json": connect,
     }
 
 

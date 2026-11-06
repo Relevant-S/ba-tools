@@ -234,9 +234,9 @@ characters), so two Items with one title under two parents do not clash. `dashbo
 
 - `fixtures/valid/*.json` must pass. A file whose `contract` is in `index.json` → `accepted` is a Publish:
   it is checked as that contract type, and a page uses its own file names as the parts. Any other file is a
-  reply or request, checked with the schema its `contract` names. A file with no `contract` field (the ack
-  and reserve requests) is matched by its file-name prefix: `ack-request-1…` → `ack-request/1`,
-  `reserve-request-1…` → `reserve-request/1`.
+  reply or request, checked with the schema its `contract` names. A file with no `contract` field (the ack,
+  reserve and connect requests) is matched by its file-name prefix: `ack-request-1…` → `ack-request/1`,
+  `reserve-request-1…` → `reserve-request/1`, `connect-request-1…` → `connect-request/1`.
 - `fixtures/invalid/<case>/input.json` must fail. `expected.json` gives the code and every (check, path) pair;
   both sides compare that exact set. It may say `"kind": "clarification"` (no `kind` means `dashboard`). A page
   case may hold `parts.json`, the list of part names sent with it; without it the page's own file names are the
@@ -261,6 +261,8 @@ characters), so two Items with one title under two parents do not clash. `dashbo
   rule (no HTML entities, check `no_html_entities`). `answers/2` (and its `updates`) is checked by its schema
   only; its "a batch holds at least one Answer or one update" rule is a `not`, so every checker reports it at
   one path: `""` (the whole reply).
+- Since 1.5.0 `connect-request/1` and `connect/1` (connect a repo with a one-time code) are checked by their
+  schemas only. The code's pattern ends in `(?![\s\S])` like the slug, since a code is 6 or 7 characters.
 - The reply to a `dashboard/2` send counts `areas`, `topics`, `cards` and `tickets` too. `tickets` counts the
   tickets on Board cards only (all `cards[].tickets` together), not the Feature, topic or area ticket lists.
 - Python: `Draft202012Validator(schema, format_checker=FormatChecker())` from `jsonschema[format-nongpl]`.

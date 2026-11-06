@@ -184,8 +184,9 @@ def refused(url: str, r: httpx.Response, doc, step: str) -> Stop:
                     f"Portal. {tail}")
     if code == "invalid_key":
         return Stop(f"This key is not valid for this Project. The key in .env ({key_name}) is not this "
-                    f"Project's Publish key. Ask an Admin for it ({KEY_PLACE} → Regenerate key), put it in .env, "
-                    f"and run again. {tail}")
+                    f"Project's Publish key. Ask an Admin for a connect code ({KEY_PLACE} → Connect a repo), say "
+                    f"\"connect the Portal\" with that code (ba-setup replaces the refused key in .env), and run "
+                    f"again. {tail}")
     return Stop(f"The Portal refused the {step} ({code}): {msg or 'no message'}. {tail}")
 
 

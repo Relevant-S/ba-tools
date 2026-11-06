@@ -1,6 +1,6 @@
 ---
 name: ba-setup
-description: Set up, check or repair the BA toolset — the BA's personal keys and connectors (Jira, Confluence, Fireflies, Gmail, Slack, Figma), the project's area in each tool (Jira projects, Slack channels, client emails, Figma files, Confluence space), and starter defaults for newcomers (simple-language instructions, read-only permissions). Four modes — `check` (a green/red table, changes nothing), `me` (personal, once per machine), `project` (shared, once per project), `design` (a product's Figma files and design system, once per product). Use when the BA says "set up", "ba-setup", "check my setup", "why does fetch fail", on a BA's first day, or when another ba-tools skill sends you here.
+description: Set up, check or repair the BA toolset — the BA's personal keys and connectors (Jira, Confluence, Fireflies, Gmail, Slack, Figma), the project's area in each tool (Jira projects, Slack channels, client emails, Figma files, Confluence space), and starter defaults for newcomers (simple-language instructions, read-only permissions). Four modes — `check` (a green/red table, changes nothing), `me` (personal, once per machine), `project` (shared, once per project), `design` (a product's Figma files and design system, once per product). Use when the BA says "set up", "ba-setup", "check my setup", "why does fetch fail", "connect the Portal" (a one-time code from an Admin puts the Portal key in .env; never ask for a key), on a BA's first day, or when another ba-tools skill sends you here.
 ---
 
 # ba-setup
@@ -24,11 +24,19 @@ The helper script does the calls; it never prints a key:
 uv run --with pyyaml python "<this skill>/scripts/setup.py" <command> [project-root]
 ```
 
+`connect` (a Portal key from a one-time code) needs two more packages:
+
+```
+uv run --with pyyaml --with httpx --with jsonschema python "<this skill>/scripts/setup.py" connect <project-root> --product "<product, or empty>" --code <code> [--replace]
+```
+
 ## Rules
 
 1. **Never ask the BA to paste a key, token or password into the chat.** Keys go into
    `~/.claude/settings.json` (the `env` block), which the BA edits themselves. Show them the exact lines
-   to add with a placeholder, and where to get the real value.
+   to add with a placeholder, and where to get the real value. The one exception is a **Portal key**: the
+   BA never sees it. They give you a one-time **connect code** from an Admin, and `connect` puts the key in
+   the repo's `.env` itself. A code is safe in chat: it works once, for 10 minutes.
 2. **Keys are personal; areas are shared.** A key never goes into the project profile or a repo. An
    area (a channel name, a Jira project, a client address) always goes into the profile.
 3. **After the BA changes `~/.claude/settings.json`, they must restart Claude Code** — a running session
@@ -48,7 +56,9 @@ uv run --with pyyaml python "<this skill>/scripts/setup.py" <command> [project-r
    - **Figma** — call `whoami`. Same rule.
    When the profile has `tools.portal`, `check-project` gives one row per Portal key ("Portal key: <product>",
    or "Portal key" with one product): ✅ when its `.env` variable is there, ❌ when it is missing. It reads only
-   the variable names, never a key.
+   the variable names, never a key. For a missing key, "what to do" is: *ask an Admin for a connect code
+   (Admin → Projects → the project → Publishing → Connect a repo), one per product, then run
+   `ba-setup project` — it puts the key in `.env`.* Never tell the BA to copy a key into `.env`.
 3. Show **one table**: tool · what it is for · state (✅ works · ⚠️ works with a warning · ❌ missing or
    broken · — not used here) · what to do. Group the rows under **You** and **This project**.
 4. Then suggest the next step, in one line:
@@ -105,7 +115,27 @@ Follow `references/project.md`. In short:
    `docs/BA/specs/_template.md`, and create the BA folders that are missing
    (`docs/BA/reference`, `docs/BA/intake`, `docs/BA/triage`, `docs/BA/specs`, `docs/BA/clarifications`),
    with the reference folder's index and `.gitignore` from `assets/`.
-5. Run `check-project` and show the result. If it says the project has a brief but no dashboard, offer
+5. **Portal keys** — when the profile has `tools.portal` and `check-project` shows a Portal key missing
+   (or the BA says "connect the Portal", or portal-publish or fetch-portal said the key was refused), connect
+   the repo with a code. Never ask for a key. For each product with a missing key, one at a time:
+   1. Ask: *"Please ask an Admin for a connect code for <product>'s Portal project: Admin → Projects → the
+      project → Publishing → Connect a repo. It looks like K7P-4XM and works once, for 10 minutes. Paste it
+      here."* (With one product, leave out "for <product>".) Each product's Portal project needs its own code.
+   2. Run `connect <project root> --product "<product>" --code <code>` (`--product ""` when the row says just
+      "Portal key").
+   3. Say what it printed: *"Connected to Portal project "<name>". The key is in .env as <variable> (it ends
+      in <last 4>)."* Show any warning and offer the fix. If it stops because `.env` is not ignored by git, offer to add `.env`
+      to `.gitignore`, then run it again (the code still works: nothing was sent).
+   4. If it says `.env` already has the variable, ask the BA: *"There is already a key for <product> in .env.
+      Replace it with the new one?"* Only on yes, run it again with the same code and `--replace`. (When the
+      Portal refused that key, it is already dead; otherwise an Admin can remove the old one under Connected
+      repos.)
+   5. If the code does not work, or there were too many wrong codes, say the message as it is and ask for a
+      new code (or to wait). If the Portal is not reachable, say so and stop.
+
+   Never print, open or show `.env`, and never repeat a key, even its middle part. Only the last 4
+   characters are shown.
+6. Run `check-project` and show the result. If it says the project has a brief but no dashboard, offer
    to start one now (`ba-dashboard` → *Starting one*). Do not commit — say what changed and ask.
 
 ## Mode: design

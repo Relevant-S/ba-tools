@@ -19,6 +19,8 @@ in `portal/contract/`, with a `SOURCE` file naming the ba-tools tag and each fil
 | `reserve-request-1.schema.json` | Since 1.4.0. The optional body of `POST /api/v1/answers/reserve`: `{ accept: [...] }`, the batch versions the fetcher reads |
 | `ack-request-1.schema.json` | The body of `POST /api/v1/answers/ack`: `{ batch_id }`. One ack confirms a batch's Answers and updates together |
 | `ack-1.schema.json` | The Portal's reply to `POST /api/v1/answers/ack` |
+| `connect-request-1.schema.json` | Since 1.5.0. The body of `POST /api/v1/connect`: `{ code, label }`, a one-time connect code and a name for the repo (below) |
+| `connect-1.schema.json` | Since 1.5.0. The Portal's reply to `POST /api/v1/connect`: the code's project and a new key for it |
 | `index.json` | The accepted Publish versions and which schema checks each `contract` value |
 | `checks.md` | Order of checks, result shape, and the named cross-field checks |
 | `errors.json` | Every API error code, its HTTP status and default message |
@@ -50,6 +52,38 @@ Update box:
 Updates come in `sent_at` order, then `id`. With nothing to hand out (no Answers and no updates), `batch_id`
 and `reserved_until` are `null` and both lists are empty. A batch always holds at least one Answer or one
 update. The same `ack-request/1` (`batch_id`) confirms the Answers and the updates together.
+
+## Connecting a repo with a one-time code (since 1.5.0)
+
+An Admin makes a connect code in the Portal (Admin → Projects → the project → Publishing → Connect a repo).
+ba-setup swaps it for a key with `POST /api/v1/connect`. The request has **no** `Authorization` header: the code
+is the proof.
+
+`connect-request/1` (no `contract` field, like the ack request):
+
+| Field | Type |
+|---|---|
+| `code` | 6 characters of `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (no 0/O, 1/I/L), shown as `XXX-XXX`. The dash is optional and any case is fine: `K7P4XM`, `K7P-4XM` and `k7p-4xm` are the same code |
+| `label` | 1 to 100 characters: the repo folder name, ` · `, and the BA's git `user.name` (just the folder when git has no name), e.g. `acme-docs · Vadim`. The Admin sees it under Connected repos |
+
+The 200 reply is `connect/1`:
+
+| Field | Type |
+|---|---|
+| `project` | `{ id, name }`: the project the code was made for (`id` is a UUID v7, `name` ≤ 200) |
+| `key` | the new key, 43 characters of base64url. It opens the project for publish, fetch and status, like the project's own key. It is in this reply once: the Portal keeps only its hash |
+| `key_last4` | the key's last 4 characters, as the Admin sees them under Connected repos |
+
+Each connect makes a new key. Keys already in use keep working. A code works once and dies after 10 minutes.
+
+Errors use the usual error envelope, `{ "error": { "code", "message" } }`:
+
+- `connect_code_invalid` (400): the code is unknown, used, expired, or its project is archived. One code for
+  all four, so a guesser learns nothing.
+- `too_many_tries` (429): too many wrong codes from this caller. The `error` object also has
+  `retry_after_s`, a whole number of seconds until the next try is allowed:
+  `{ "error": { "code": "too_many_tries", "message": "…", "retry_after_s": 540 } }`.
+- A body that is not `connect-request/1` → `bad_request` (400).
 
 The codes and statuses in `errors.json` are the contract. Its messages are only a guide: the Portal may send its
 own message text.

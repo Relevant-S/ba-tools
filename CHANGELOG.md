@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+- **`portal-publish` contract 1.5.0** (tag `portal-contract-1.5.0`, Story 3.12): connect a repo to a Portal
+  project with a one-time code, so no one copies a key by hand.
+  - New **`connect-request/1`** (`connect-request-1.schema.json`): the body of `POST /api/v1/connect`,
+    `{ code, label }`, with no `Authorization` header and no `contract` field. `code` is 6 characters of
+    `23456789ABCDEFGHJKMNPQRSTUVWXYZ`, dash optional, any case. `label` (1 to 100) is the repo folder and the
+    BA's git name.
+  - New **`connect/1`** (`connect-1.schema.json`): the reply, `{ contract, project {id, name}, key, key_last4 }`.
+    The key is 43 characters of base64url. Each connect makes a new key; keys already in use keep working.
+  - `errors.json` gains `connect_code_invalid` (400: unknown, used, expired, or its project archived) and
+    `too_many_tries` (429; the `error` object also carries `retry_after_s`).
+  - `index.json` lists both schemas; `contract_folder` is `1.5.0`. New fixtures: `connect-request-1`,
+    `connect-request-1-no-dash-lower-case`, `connect-1`, and 15 invalid `connect-…` cases. No change to
+    `dashboard/2`, the Answers or the Publish. Older fixtures are unchanged.
+- **`ba-setup connect`** swaps the code for a key and writes it into the repo's `.env` under the variable
+  `targets.py` names for the product (`PORTAL_PUBLISH_KEY`, or the product's own with two or more products). It
+  never prints the key: only the Portal project's name, the variable and the key's last 4 characters. It refuses
+  to replace a key already in `.env` without `--replace` (the skill asks the BA first). Before it uses the code it
+  stops when `.env` is not ignored by git, or cannot be read as UTF-8 or written, so the code is not wasted; a
+  rewritten `.env` keeps its permissions. `ba-setup project` now
+  asks the BA for a connect code from the Admin, one per product, instead of telling them to paste a key.
+  `portal-publish` and `fetch-portal` say the same when a key is missing or refused. ba-setup has tests now
+  (`uv run pytest` in `skills/ba-setup`).
+
 - **`portal-publish` contract 1.4.0** (tag `portal-contract-1.4.0`, Stories 3.11 and 4.11).
   - `dashboard/2` gains five optional fields, so the Portal can copy the BA page: an Item's **`hot`** (yes/no;
     missing = no), a Feature's **`stage_why`** (≤ 400, the BA page's "why this stage" line, word for word) and

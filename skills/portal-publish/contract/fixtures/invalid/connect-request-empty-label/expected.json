@@ -1,0 +1,9 @@
+{
+  "contract": "connect-request/1",
+  "details": [
+    {
+      "check": "schema",
+      "path": "/label"
+    }
+  ]
+}

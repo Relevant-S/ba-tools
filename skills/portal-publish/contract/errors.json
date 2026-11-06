@@ -3,6 +3,10 @@
     "status": 400,
     "message": "The request is not in the expected format."
   },
+  "connect_code_invalid": {
+    "status": 400,
+    "message": "This code does not work. Ask an Admin for a new one."
+  },
   "invalid_key": {
     "status": 401,
     "message": "This key is not valid for this Project."
@@ -38,6 +42,10 @@
   "screenshot_mismatch": {
     "status": 422,
     "message": "A named screenshot was not sent, or a sent file is not named in the page."
+  },
+  "too_many_tries": {
+    "status": 429,
+    "message": "Too many wrong codes. Try again in a few minutes."
   },
   "server_error": {
     "status": 500,

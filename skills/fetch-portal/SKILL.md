@@ -46,14 +46,16 @@ The same settings as `portal-publish`:
 | Setting | Where | When it is missing |
 |---|---|---|
 | The Portal address | `tools.portal.url` in `docs/BA/specs/.ba-profile.yml` | stop: run `ba-setup project` |
-| The Publish key, one product | `PORTAL_PUBLISH_KEY=<key>` in `.env` at the repo root | stop: run `ba-setup project` |
+| The Publish key, one product | `PORTAL_PUBLISH_KEY` in `.env` at the repo root (`ba-setup project` puts it there from a connect code) | stop: run `ba-setup project` |
 | The Publish keys, two or more products | `tools.portal.products` in the profile names, per product, the `.env` variable that holds its Portal project's key, and `.env` holds each one | stop before anything is fetched, naming the product and the variable: run `ba-setup project` |
 | `.env` kept out of git | `.gitignore` lists `.env`, and `.env` is not committed | stop: add it to `.gitignore` (and `git rm --cached .env` if it was committed) |
 
 `tools.portal.url` must start with `https://`. Plain `http://` is allowed only for localhost, 127.0.0.1,
 `*.localhost` and `*.test`. The script checks all of this itself before it asks the Portal anything. **Never
-print, echo or paste the key.** Never open `.env` to show it. An Admin finds the key in the Portal at
-Admin → Projects → the Project → Publishing.
+print, echo or paste the key.** Never open `.env` to show it. Never ask the BA for a key, or tell them to copy
+one into `.env`. When a key is missing or refused, the BA asks an Admin for a **connect code** (Admin → Projects →
+the project → Publishing → Connect a repo), one per product, and runs `ba-setup project`: it swaps the code for a
+new key and writes it into `.env`.
 
 **Two or more products.** Each product has its own Portal project, so fetch-portal fetches from every one, in
 `tools.portal.products` order, one key at a time: first that project's leftovers, then reserve, write and ack.
@@ -216,7 +218,7 @@ Show `error` as it is; it says what to do. In every case the Answers are safe in
 | git is not installed | "git is not installed (or not on PATH)" | nothing written |
 | The folder is not a git repository | "… is not a git repository … Run fetch-portal from the project repo" | nothing written |
 | `.env` not ignored by git | ".env is not ignored by git …" | nothing written |
-| Wrong key | "This key is not valid for this Project" and where to get the right one | nothing written |
+| Wrong key | "This key is not valid for this Project", then: ask an Admin for a connect code and run `ba-setup project` | nothing written |
 | Portal not running or wrong address | "The Portal is not reachable at <url>"; if it timed out, Answers it set aside come again after the hold (about 10 minutes) | nothing written |
 | A reply that does not match the contract | "The Portal's reply was not understood (HTTP <n>)" — maybe an older Portal | nothing written, nothing confirmed |
 | The ack got no reply (3 tries) | the files stay as `.tmp`; "the next fetch-portal run finishes them" | run again soon |

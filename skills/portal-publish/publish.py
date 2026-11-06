@@ -90,8 +90,9 @@ STAGE_ORDER = ["done", "qa", "dev", "ready", "spec", "concept"]   # the BA page'
 STAGE_WHY_MAX, AREA_HOW_MAX = 400, 200                           # dashboard/2 limits (contract 1.4.0)
 
 def invalid_key_step(key_name: str) -> str:
-    return (f"The key in .env ({key_name}) is not this Project's key. Ask an Admin for the key "
-            "(Admin → Projects → the Project → Publishing → Regenerate key), put it in .env, and run again.")
+    return (f"The key in .env ({key_name}) is not this Project's key. Ask an Admin for a connect code "
+            "(Admin → Projects → the project → Publishing → Connect a repo), say \"connect the Portal\" with that "
+            "code (ba-setup replaces the refused key in .env), and run again.")
 
 
 # What to do next, per Portal error code. The Portal's own message is shown first.
