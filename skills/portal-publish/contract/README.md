@@ -10,7 +10,7 @@ in `portal/contract/`, with a `SOURCE` file naming the ba-tools tag and each fil
 | `dashboard-1.md` | The same, readable |
 | `dashboard-2.schema.json` | The whole BA dashboard of one product (since 1.2.0), the list of its Clarification pages (since 1.3.0), and Item `hot`, Feature `stage_why` and `area_how`, open ticket `updated` (since 1.4.0, all optional), JSON Schema draft 2020-12 |
 | `dashboard-2.md` | The same, readable |
-| `timeline-1.schema.json` | Since 1.6.0. The BA's Timeline page data for one product, sent to the Dashboard endpoint (it replaces Map and Board), JSON Schema draft 2020-12; since 1.8.0 it may carry `suggestion_status`, the BA's Accepted or Declined on Client suggestions |
+| `timeline-1.schema.json` | Since 1.6.0. The BA's Timeline page data for one product, sent to the Dashboard endpoint (it replaces Map and Board), JSON Schema draft 2020-12; since 1.8.0 it may carry `suggestion_status`, the BA's Accepted or Declined on Client suggestions; since 1.9.0 `upcoming`, the planned deadlines, releases and steps ("Coming up") |
 | `timeline-1.md` | The same, readable |
 | `clarification-1.schema.json` | The Clarification page Publish (one Round), JSON Schema draft 2020-12; since 1.7.0 a screen may carry its `figma` link (the "Open in Figma" button) |
 | `clarification-1.md` | The same, readable |

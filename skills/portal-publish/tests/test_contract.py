@@ -116,6 +116,9 @@ DASHBOARD_CASES = {
     "tl1-unknown-request-pin", "tl1-unknown-page", "tl1-html-entity",
     # suggestion_status (contract 1.8.0)
     "tl1-suggestion-bad-status", "tl1-suggestion-bad-id", "tl1-suggestion-missing-reason",
+    # upcoming (contract 1.9.0)
+    "tl1-upcoming-duplicate-id", "tl1-upcoming-unknown-need", "tl1-upcoming-unknown-after",
+    "tl1-upcoming-date-and-after", "tl1-upcoming-bad-kind", "tl1-upcoming-title-too-long", "tl1-upcoming-bad-date",
 }
 PAGE_CASES = {
     "page-too-many-questions", "page-too-many-screenshots", "question-no-options",
@@ -699,7 +702,7 @@ def test_limits_match_the_spec():
 
 def test_index_names_existing_schemas():
     idx = checks.index()
-    assert idx["contract_folder"] == "1.8.0"
+    assert idx["contract_folder"] == "1.9.0"
     assert idx["accepted"] == ["dashboard/1", "dashboard/2", "timeline/1", "clarification/1"]
     assert set(idx["schemas"]) == {"dashboard/1", "dashboard/2", "timeline/1", "clarification/1", "publish-reply/1",
                                    "status/1",
@@ -1245,7 +1248,8 @@ def test_every_timeline_check_has_a_fixture():
         if case.name.startswith("tl1-"):
             checks_seen |= {d["check"] for d in read(case / "expected.json")["details"]}
     assert checks_seen == {"schema", "contract_version", "unique_feature_id", "unique_item_key", "unique_pin_id",
-                           "unique_page_slug", "known_pin", "known_page", "no_html_entities"}
+                           "unique_page_slug", "known_pin", "known_page", "unique_upcoming_id", "known_feature",
+                           "no_html_entities"}
 
 
 def test_timeline_duplicate_feature_id_names_both_places():
@@ -1255,6 +1259,28 @@ def test_timeline_duplicate_feature_id_names_both_places():
     (d,) = checks.check_publish(doc)["details"]
     assert d["path"] == "/groups/0/areas/1/features/1/id"
     assert "/groups/0/areas/0/features/0/id" in d["message"]
+
+
+def test_timeline_upcoming_is_optional_and_client_sees_it():
+    """Contract 1.9.0: upcoming may be left out; every field is client, the ids and feature references id."""
+    doc = tl_small()
+    del doc["upcoming"]
+    assert checks.check_publish(doc) is None
+    vis = {path: prop["x-visibility"] for path, prop in leaves(timeline_schema()) if path.startswith("#/upcoming")}
+    assert vis == {"#/upcoming[]/id": "id", "#/upcoming[]/title": "client", "#/upcoming[]/kind": "client",
+                   "#/upcoming[]/date": "client", "#/upcoming[]/after": "id", "#/upcoming[]/needs": "id",
+                   "#/upcoming[]/what": "client", "#/upcoming[]/who": "client"}
+
+
+def test_timeline_upcoming_feature_references_are_checked_in_order():
+    doc = tl_small()
+    doc["upcoming"][0]["needs"] = ["nope-1", tl_rows(doc)[0]["id"], "nope-2"]
+    doc["upcoming"][1]["after"] = "nope-3"
+    found = checks.check_publish(doc)["details"]
+    assert [(d["check"], d["path"]) for d in found] == [
+        ("known_feature", "/upcoming/0/needs/0"), ("known_feature", "/upcoming/0/needs/2"),
+        ("known_feature", "/upcoming/1/after")]
+    assert 'names a feature "nope-1"' in found[0]["message"]
 
 
 def test_timeline_page_list_is_optional():

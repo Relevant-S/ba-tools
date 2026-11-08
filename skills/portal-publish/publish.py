@@ -1322,8 +1322,17 @@ def timeline_where(path: str, doc: dict) -> str:
         except (KeyError, IndexError, TypeError):
             pass
     top = path.strip("/").split("/")[0] if path.strip("/") else ""
+    m = re.match(r"^/upcoming/(\d+)(/.*)?$", path)
+    if m:
+        try:
+            u = doc["upcoming"][int(m[1])]
+            return (f"the Timeline data file in {TIMELINE_DIR}/ → upcoming: → the item '{u.get('title') or u.get('id')}'"
+                    f" ({u.get('id')})" + (f" → {m[2].strip('/')}" if m[2] else ""))
+        except (KeyError, IndexError, TypeError):
+            pass
     return {"client_contacts": f"{PROFILE} → tools.client_contacts", "sent_by": "git config user.name",
             "suggestion_status": f"{TIMELINE_DIR}/…/{SUGGESTIONS_FILE} (the decisions on Client suggestions)",
+            "upcoming": f"the Timeline data file in {TIMELINE_DIR}/ → upcoming: (Coming up)",
             "clarification_pages": f"the page YAMLs in {CLARIFICATIONS}/ (their slug: lines)",
             "ba_tools_version": f"{PROFILE} → ba_tools_version"}.get(top, "the Timeline build")
 
@@ -1406,6 +1415,14 @@ def timeline_list(reply: dict, product: str = "", project: str = "") -> str:
         for x in decided:
             out_lines.append(f"- {x['id']}: {DECISION_NAME.get(x['status'], x['status'])}"
                              + (f" — {x['reason']}" if x.get("reason") else ""))
+    coming = view.get("upcoming") or []
+    out_lines += ["", f"Coming up ({len(coming)}). The Client sees every field:"]
+    if not coming:
+        out_lines.append("- none")
+    for u in coming:
+        when = u.get("date") or (f"after {u['after']}" if u.get("after") else "no date yet")
+        out_lines.append(f"- {u['title']} — {u['kind']}, {when}"
+                         + (f" · needs {', '.join(u['needs'])}" if u.get("needs") else ""))
     names = reply.get("client_contact_names") or []
     out_lines += ["", f"Client contacts ({len(names)}): " + (", ".join(names) if names else "none")]
     removed = removed_pages(reply)

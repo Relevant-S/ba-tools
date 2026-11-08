@@ -1647,6 +1647,10 @@ def test_timeline_plan_dry_runs_each_product_then_sends(capsys, project, timelin
     for words in ('App → Portal project "Sample App"', "new dashboard is on its way", "Rows by stage:",
                   "BA to-do (", "Waiting (", "Next-call agenda (", "Pins (7)", "Client contacts (2)"):
         assert words in shown, words
+    # contract 1.9.0: the Coming up list, one line per item
+    for words in ("Coming up (3)", "- Switch off the old chat on the website — deadline, 2026-12-17 · needs ",
+                  "- New agreement — every customer signs it — planned, after ", "planned, no date yet"):
+        assert words in shown, words
     payload_file = Path(got["App"]["payload"])
     assert read_saved_kind(payload_file) == "timeline"
     code, sent, _ = run(capsys, project, "timeline", "send", "--payload", str(payload_file))
@@ -1657,6 +1661,15 @@ def test_timeline_plan_dry_runs_each_product_then_sends(capsys, project, timelin
     assert not payload_file.exists()
     code, gone, _ = run(capsys, project, "timeline", "discard", "--payload", got["Admin"]["payload"])
     assert code == 0 and gone["sent"] is None and "for Admin" in gone["report"]
+
+
+def test_timeline_upcoming_problem_names_the_item():
+    doc = read(VALID / "timeline-1-small.json")
+    doc["upcoming"][1]["after"] = "no-such-feature"
+    lines = publish.timeline_problem_lines(checks.check_publish(doc)["details"], doc)
+    assert lines == ["the Timeline data file in docs/BA/timeline/ → upcoming: → the item 'New agreement — every customer "
+                     "signs it' (new-agreement) → after: names a feature \"no-such-feature\" that is "
+                     "not in this Publish. (/upcoming/1/after)"]
 
 
 def read_saved_kind(path: Path) -> str | None:

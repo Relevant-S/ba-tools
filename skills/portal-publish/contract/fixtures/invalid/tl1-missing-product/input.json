@@ -879,5 +879,39 @@
       "status": "declined",
       "reason": "Out of scope for the pilot."
     }
+  ],
+  "upcoming": [
+    {
+      "id": "switch-off-chat",
+      "title": "Switch off the old chat on the website",
+      "kind": "deadline",
+      "date": "2026-12-17",
+      "needs": [
+        "row-0",
+        "row-2"
+      ],
+      "what": [
+        "The client removes the old chat from the website.",
+        "Our own assistant must be live first."
+      ],
+      "who": "Sample · Relevant"
+    },
+    {
+      "id": "new-agreement",
+      "title": "New agreement — every customer signs it",
+      "kind": "planned",
+      "after": "row-1"
+    },
+    {
+      "id": "new-brand",
+      "title": "New landing page and style guide",
+      "kind": "planned",
+      "needs": [
+        "row-7"
+      ],
+      "what": [
+        "New fonts and colours everywhere."
+      ]
+    }
   ]
 }

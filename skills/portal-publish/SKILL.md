@@ -181,6 +181,14 @@ per product: **`suggestions.yaml` next to that product's Timeline data file** (e
   naming the file and the line; nothing is sent. No file: the send has no `suggestion_status`.
 - The dry-run list shows "Decisions on Client suggestions (N)", one line per decision with its reason.
 
+### Coming up (contract 1.9.0)
+
+The Timeline build's `upcoming` list (the data file's `upcoming:`, see `skills/timeline/SKILL.md`) goes into the
+send as it is: planned deadlines, releases and steps, which the Portal shows in its "Coming up" lane and tab.
+The build stops on most bad items. For the rest, the Portal's check refuses the send and the plan names the item
+(`unique_upcoming_id`, `known_feature`: `needs` and `after` name a feature of the send). The dry-run list shows "Coming up (N)", one line per item. Deploy a
+Portal on 1.9.0 first: an older one refuses a send that carries `upcoming`.
+
 ## When it stops
 
 Show `error` as it is; it already says what to do. Nothing was sent in these cases, except the "may have arrived" row.

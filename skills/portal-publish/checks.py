@@ -493,7 +493,8 @@ def check_unique_at(entries: list[tuple[str, object]], check: str, label: str) -
 
 
 def timeline_1_checks(doc: dict) -> list[dict]:
-    """The named checks of timeline/1 (contract 1.6.0), in checks.md order."""
+    """The named checks of timeline/1 (contract 1.6.0; unique_upcoming_id and known_feature since 1.9.0), in
+    checks.md order."""
     rows = timeline_rows(doc)
     pins = {p["id"] for p in doc["pins"]}
     out = check_unique_at([(f"{w}/id", f["id"]) for w, f in rows], "unique_feature_id", "Feature id")
@@ -514,6 +515,17 @@ def timeline_1_checks(doc: dict) -> list[dict]:
                 out.append(detail(f"{w}/page", "known_page",
                                   f'{w}/page names a Clarification page "{f["page"]}" that is not in '
                                   "clarification_pages."))
+    # upcoming (contract 1.9.0): ids unique; needs and after name a row of the send
+    ups = doc.get("upcoming") or []
+    out += check_unique(doc, "upcoming", "id", "unique_upcoming_id", "Upcoming id") if ups else []
+    ids = {f["id"] for _, f in rows}
+    for n, u in enumerate(ups):
+        named = [(f"/upcoming/{n}/needs/{j}", x) for j, x in enumerate(u.get("needs") or [])]
+        if "after" in u:
+            named.append((f"/upcoming/{n}/after", u["after"]))
+        for here, value in named:
+            if value not in ids:
+                out.append(detail(here, "known_feature", f'{here} names a feature "{value}" that is not in this Publish.'))
     return out + check_entities(doc, "timeline")
 
 

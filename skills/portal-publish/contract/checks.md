@@ -41,7 +41,8 @@ A failed check gives one error code and a list of details:
      `unique_page_slug` (since 1.3.0), `known_area` (Features, then topics, then cards), `known_parent`, `known_card_feature`, `known_release`,
      `card_kind_fields`, `answered_in_range`, `no_html_entities`.
    - `timeline/1` (since 1.6.0), in this order: `unique_feature_id`, `unique_item_key`, `unique_pin_id`,
-     `unique_page_slug`, `known_pin`, `known_page`, `no_html_entities`.
+     `unique_page_slug`, `known_pin`, `known_page`, `unique_upcoming_id` (since 1.9.0), `known_feature` (since
+     1.9.0), `no_html_entities`.
    - `clarification`: `unique_question_id`, `unique_option_v`, `one_rec_max`, `bare_file_names`,
      `one_hero_max`, `max_screenshots`, `unique_decision_id`, `figma_link` (since 1.7.0), `no_html_entities`.
 4. **Parts** (`screens_match_parts`) — pages only. Only on a page that passed steps 1 to 3, and only when the
@@ -141,6 +142,11 @@ path is `/groups/<g>/areas/<a>/features/<i>`.
   send. One detail per unknown one at that `askedIn`, naming the value.
 - **`known_page`:** only when `clarification_pages` is sent: a row's `page` is one of its slugs. One detail per
   unknown one at that `page`.
+- **`unique_upcoming_id`** (since 1.9.0): no two `upcoming` items share an `id`. One detail per repeat at the later
+  `upcoming/<n>/id`, naming both places (`Upcoming id "…" is used twice: …`).
+- **`known_feature`** (since 1.9.0): each `upcoming` item's `needs`, in order, then its `after`, names a row `id`
+  of the send. One detail per unknown one at that place (`/upcoming/<n>/needs/<j>` or `/upcoming/<n>/after`),
+  naming the value.
 - **`no_html_entities`:** below.
 - **Raises:** `contract_invalid`.
 
@@ -317,6 +323,10 @@ path is `/groups/<g>/areas/<a>/features/<i>`.
   suggestion's `link` is `https://` only (the `workLink` pattern). `timeline/1` may carry `suggestion_status`
   (`[{ id, status, reason }]`, the BA's Accepted or Declined); no named check is added, and `reason` follows the
   plain-text rule (`no_html_entities`). An id the Portal does not know is ignored, not refused.
+- Since 1.9.0 `timeline/1` may carry `upcoming` (planned deadlines, releases and steps: "Coming up"), and
+  `client_timeline_1` with it. Two named checks are added: `unique_upcoming_id` and `known_feature`. "Both `date`
+  and `after`" is a schema rule (a `not`), reported at the item. Its texts follow the plain-text rule
+  (`no_html_entities`).
 - Python: `Draft202012Validator(schema, format_checker=FormatChecker())` from `jsonschema[format-nongpl]`.
 - Portal: `Ajv2020` with `strict: true` and `allErrors: true`, `ajv-formats`, and `x-visibility` added with
   `addKeyword` and an enum meta-schema (`client`, `id`, `portal`, `admin`), so a schema with any other value does

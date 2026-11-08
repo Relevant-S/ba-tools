@@ -732,7 +732,8 @@ SUGGESTION_IDS = ["019a5a10-0b00-7c00-8a00-000000000001", "019a5a10-0b00-7c00-8a
 
 def timeline_small() -> dict:
     """The small timeline/1: every field the real builds use, at least once, and every stage (design on a row,
-    live on a request). Since 1.8.0 it decides two suggestions (suggestion_status)."""
+    live on a request). Since 1.8.0 it decides two suggestions (suggestion_status). Since 1.9.0 it carries three
+    upcoming items: a deadline with a date, one after a feature, one with no date."""
     d = timeline([[3, 2], [4]], 7, 9, 6, 7, 3, TL_PAGES, 2)
     d["suggestion_status"] = [
         {"id": SUGGESTION_IDS[0], "status": "accepted", "reason": "Planned for the next release."},
@@ -743,6 +744,16 @@ def timeline_small() -> dict:
     rows[1]["stage"] = "design"
     q = next(q for f in rows for q in f.get("requests", []) if q["stages"][-1]["stage"] == "done")
     q["stages"].append({"stage": "live", "from": day(150)})
+    d["upcoming"] = [
+        {"id": "switch-off-chat", "title": "Switch off the old chat on the website", "kind": "deadline",
+         "date": "2026-12-17", "needs": [rows[0]["id"], rows[2]["id"]],
+         "what": ["The client removes the old chat from the website.", "Our own assistant must be live first."],
+         "who": "Sample · Relevant"},
+        {"id": "new-agreement", "title": "New agreement — every customer signs it", "kind": "planned",
+         "after": rows[1]["id"]},
+        {"id": "new-brand", "title": "New landing page and style guide", "kind": "planned", "needs": [rows[7]["id"]],
+         "what": ["New fonts and colours everywhere."]},
+    ]
     return d
 
 
@@ -832,6 +843,21 @@ def tl_invalid_cases() -> dict[str, tuple[dict, dict]]:
     case("tl1-suggestion-bad-id", d, "contract_invalid", "schema", "/suggestion_status/1/id")
     d = timeline_small(); del d["suggestion_status"][0]["reason"]
     case("tl1-suggestion-missing-reason", d, "contract_invalid", "schema", "/suggestion_status/0/reason")
+    # upcoming (contract 1.9.0)
+    d = timeline_small(); d["upcoming"][2]["id"] = d["upcoming"][0]["id"]
+    case("tl1-upcoming-duplicate-id", d, "contract_invalid", "unique_upcoming_id", "/upcoming/2/id")
+    d = timeline_small(); d["upcoming"][0]["needs"].append("no-such-feature")
+    case("tl1-upcoming-unknown-need", d, "contract_invalid", "known_feature", "/upcoming/0/needs/2")
+    d = timeline_small(); d["upcoming"][1]["after"] = "no-such-feature"
+    case("tl1-upcoming-unknown-after", d, "contract_invalid", "known_feature", "/upcoming/1/after")
+    d = timeline_small(); d["upcoming"][1]["date"] = "2027-01-04"
+    case("tl1-upcoming-date-and-after", d, "contract_invalid", "schema", "/upcoming/1")
+    d = timeline_small(); d["upcoming"][0]["kind"] = "milestone"
+    case("tl1-upcoming-bad-kind", d, "contract_invalid", "schema", "/upcoming/0/kind")
+    d = timeline_small(); d["upcoming"][2]["title"] = "T" * 301
+    case("tl1-upcoming-title-too-long", d, "contract_invalid", "schema", "/upcoming/2/title")
+    d = timeline_small(); d["upcoming"][0]["date"] = "17 Dec"
+    case("tl1-upcoming-bad-date", d, "contract_invalid", "schema", "/upcoming/0/date")
     return cases
 
 

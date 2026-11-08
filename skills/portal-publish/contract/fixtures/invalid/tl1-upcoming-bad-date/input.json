@@ -1,0 +1,925 @@
+{
+  "contract": "timeline/1",
+  "sent_at": "2026-11-06T10:00:00.000Z",
+  "sent_by": "Sample BA",
+  "ba_tools_version": "0.9.0",
+  "source_commit": "0123456789abcdef0123456789abcdef01234567",
+  "product": {
+    "name": "Sample",
+    "tagWord": "Release",
+    "tracker": "jira",
+    "workLink": "https://example.atlassian.net/browse/",
+    "ba": "Sample",
+    "footer": "the BA dashboard, the timeline data file, Jira and the intake files."
+  },
+  "today": "2026-11-06",
+  "start": "2026-05-01",
+  "from": "2026-03-02",
+  "built": "06 Nov 2026, 10:00",
+  "groups": [
+    {
+      "name": "Account calendar group",
+      "areas": [
+        {
+          "name": "Account Calendar 0.0",
+          "features": [
+            {
+              "id": "row-0",
+              "label": "Account calendar import 0",
+              "stage": "concept",
+              "stages": [
+                {
+                  "stage": "concept",
+                  "from": "2026-05-01"
+                }
+              ],
+              "since": "2026-05-01",
+              "origin": "dashboard",
+              "basis": "tracker",
+              "desc": "",
+              "work": [],
+              "guess": false,
+              "who": [
+                "Maria"
+              ],
+              "tags": [
+                "6.0"
+              ],
+              "about": [
+                "Account calendar import limit payout reminder search.",
+                "Invoice login profile review status transfer widget."
+              ],
+              "basisNote": "From the Jira history of its tickets.",
+              "page": "sign-up-questions",
+              "clarLabel": "Clarification page — V2, 3 questions",
+              "askedIn": "2026-05-01-call",
+              "askedBy": "Maria",
+              "requests": [
+                {
+                  "id": "req-0",
+                  "kind": "sub-feature",
+                  "title": "Account calendar import limit payout (0)",
+                  "stages": [
+                    {
+                      "stage": "concept",
+                      "from": "2026-05-01"
+                    }
+                  ],
+                  "work": [],
+                  "askedIn": "2026-05-01-call",
+                  "askedBy": "Tom",
+                  "asked": "Account calendar import limit payout reminder?"
+                }
+              ],
+              "todos": [
+                {
+                  "key": "9aec65ae918c",
+                  "id": "W0",
+                  "kind": "waiting",
+                  "title": "Confirm the wording for account calendar import 0 (0)",
+                  "who": "Maria Lopez",
+                  "since": "2026-05-01",
+                  "age": 0,
+                  "status": "open",
+                  "prod": "Sample",
+                  "s": "Account calendar import limit payout reminder.",
+                  "l": "Invoice login profile review status transfer widget billing.\n- report schedule summary upload."
+                }
+              ],
+              "openQ": [
+                "Status transfer widget billing export ledger message?"
+              ]
+            },
+            {
+              "id": "row-1",
+              "label": "Invoice login profile 1",
+              "stage": "design",
+              "stages": [
+                {
+                  "stage": "concept",
+                  "from": "2026-05-02"
+                },
+                {
+                  "stage": "design",
+                  "from": "2026-05-11"
+                }
+              ],
+              "since": "2026-05-02",
+              "origin": "spec",
+              "basis": "recorded",
+              "desc": "Invoice login profile review status transfer widget billing export ledger message report.",
+              "work": [
+                {
+                  "id": "ABC-1010",
+                  "title": "Search template wallet batch (10)",
+                  "status": "Done",
+                  "done": "2026-06-20",
+                  "url": "https://github.com/example/docs/blob/main/stories/story-1.md"
+                }
+              ],
+              "guess": false,
+              "who": [
+                "Tom"
+              ],
+              "tags": [
+                "6.1"
+              ],
+              "requests": [
+                {
+                  "id": "req-4",
+                  "kind": "sub-feature",
+                  "title": "Billing export ledger message report (4)",
+                  "stages": [
+                    {
+                      "stage": "concept",
+                      "from": "2026-05-05"
+                    },
+                    {
+                      "stage": "spec",
+                      "from": "2026-05-14"
+                    },
+                    {
+                      "stage": "ready",
+                      "from": "2026-05-23"
+                    },
+                    {
+                      "stage": "dev",
+                      "from": "2026-06-01"
+                    },
+                    {
+                      "stage": "qa",
+                      "from": "2026-06-10"
+                    }
+                  ],
+                  "work": [],
+                  "splitOff": "later-4"
+                }
+              ],
+              "todos": [
+                {
+                  "key": "c1c3711eede1",
+                  "id": "T2",
+                  "kind": "todo",
+                  "title": "Approve the screen for invoice login profile 1 (2)",
+                  "who": "Sample BA",
+                  "since": "2026-05-11",
+                  "age": 2,
+                  "status": "old",
+                  "prod": "Sample",
+                  "s": "Report schedule summary upload account calendar.",
+                  "l": "Template wallet batch consent invoice login profile review.\n- billing export ledger message."
+                }
+              ],
+              "openQ": [
+                "Export ledger message report schedule summary upload?"
+              ],
+              "changes": "row-0"
+            },
+            {
+              "id": "row-2",
+              "label": "Report schedule summary 2",
+              "stage": "ready",
+              "stages": [
+                {
+                  "stage": "concept",
+                  "from": "2026-05-03"
+                },
+                {
+                  "stage": "spec",
+                  "from": "2026-05-12"
+                },
+                {
+                  "stage": "ready",
+                  "from": "2026-05-21"
+                }
+              ],
+              "since": "2026-05-03",
+              "origin": "old-work",
+              "basis": "code",
+              "desc": "",
+              "work": [
+                {
+                  "id": "ABC-1020",
+                  "title": "Login profile review status (20)",
+                  "status": "Done",
+                  "done": "2026-06-30"
+                },
+                {
+                  "id": "ABC-1021",
+                  "title": "Schedule summary upload account (21)",
+                  "status": "To Do"
+                }
+              ],
+              "guess": false,
+              "who": [
+                "Priya"
+              ],
+              "tags": [
+                "6.2"
+              ],
+              "about": [
+                "Report schedule summary upload account calendar import.",
+                "Template wallet batch consent invoice login profile."
+              ],
+              "originNote": "A Jira story from before 1 May 2026.",
+              "todos": [
+                {
+                  "key": "67d7ffcaa1a6",
+                  "id": "A4",
+                  "kind": "agenda",
+                  "title": "Share the test account for report schedule summary 2 (4)",
+                  "who": "Anna",
+                  "since": "2026-05-21",
+                  "age": 4,
+                  "status": "hot",
+                  "prod": "Sample",
+                  "s": "Billing export ledger message report schedule.",
+                  "l": "Limit payout reminder search template wallet batch consent.\n- review status transfer widget."
+                }
+              ],
+              "openQ": [
+                "Status transfer widget billing export ledger message?"
+              ],
+              "startedBefore": "2026-03-02"
+            }
+          ],
+          "link": {
+            "label": "See all in Jira",
+            "url": "https://example.atlassian.net/issues/?jql=component%20%3D%20%22Account%20Calendar%200.0%22"
+          }
+        },
+        {
+          "name": "Invoice Login 0.1",
+          "features": [
+            {
+              "id": "row-3",
+              "label": "Template wallet batch 3",
+              "stage": "dev",
+              "stages": [
+                {
+                  "stage": "concept",
+                  "from": "2026-05-04"
+                },
+                {
+                  "stage": "spec",
+                  "from": "2026-05-13"
+                },
+                {
+                  "stage": "ready",
+                  "from": "2026-05-22"
+                },
+                {
+                  "stage": "dev",
+                  "from": "2026-05-31"
+                }
+              ],
+              "since": "2026-05-04",
+              "origin": "dashboard",
+              "basis": "none",
+              "desc": "Template wallet batch consent invoice login profile review status transfer widget billing.",
+              "work": [],
+              "guess": false,
+              "who": [
+                "Dev"
+              ],
+              "tags": [
+                "6.3"
+              ],
+              "page": "advance-limits",
+              "clarLabel": "Clarification page — V2, 3 questions",
+              "requests": [
+                {
+                  "id": "req-3",
+                  "kind": "bug",
+                  "title": "Template wallet batch consent invoice (3)",
+                  "stages": [
+                    {
+                      "stage": "concept",
+                      "from": "2026-05-04"
+                    },
+                    {
+                      "stage": "spec",
+                      "from": "2026-05-13"
+                    },
+                    {
+                      "stage": "ready",
+                      "from": "2026-05-22"
+                    },
+                    {
+                      "stage": "dev",
+                      "from": "2026-05-31"
+                    }
+                  ],
+                  "work": [
+                    {
+                      "id": "ABC-8003",
+                      "title": "Message report schedule summary (7003)",
+                      "status": "To Do"
+                    }
+                  ],
+                  "askedIn": "2026-05-10-doc",
+                  "askedBy": "Tom",
+                  "asked": "Template wallet batch consent invoice login?",
+                  "note": "QA bug BUG-003 · High · found 2026-05-04",
+                  "guess": true
+                }
+              ],
+              "todos": [
+                {
+                  "key": "072bb3944243",
+                  "id": "W6",
+                  "kind": "waiting",
+                  "title": "Agree the copy for template wallet batch 3 (6)",
+                  "who": "Maria Lopez",
+                  "since": "2026-05-31",
+                  "age": 6,
+                  "status": "open",
+                  "prod": "Sample",
+                  "s": "Review status transfer widget billing export.",
+                  "l": "Upload account calendar import limit payout reminder search.\n- consent invoice login profile."
+                }
+              ]
+            },
+            {
+              "id": "row-4",
+              "label": "Billing export ledger 4",
+              "stage": "qa",
+              "stages": [
+                {
+                  "stage": "concept",
+                  "from": "2026-05-05"
+                },
+                {
+                  "stage": "spec",
+                  "from": "2026-05-14"
+                },
+                {
+                  "stage": "ready",
+                  "from": "2026-05-23"
+                },
+                {
+                  "stage": "dev",
+                  "from": "2026-06-01"
+                },
+                {
+                  "stage": "qa",
+                  "from": "2026-06-10"
+                }
+              ],
+              "since": "2026-05-05",
+              "origin": "spec",
+              "basis": "tracker",
+              "desc": "",
+              "work": [
+                {
+                  "id": "ABC-1040",
+                  "title": "Summary upload account calendar (40)",
+                  "status": "Done",
+                  "done": "2026-07-20"
+                }
+              ],
+              "guess": true,
+              "who": [
+                "Anna"
+              ],
+              "tags": [
+                "6.4"
+              ],
+              "about": [
+                "Billing export ledger message report schedule summary.",
+                "Limit payout reminder search template wallet batch."
+              ],
+              "basisNote": "From the Jira history of its tickets.",
+              "askedIn": "2026-05-13-page",
+              "askedBy": "Maria",
+              "todos": [
+                {
+                  "key": "4ad9e0b40c2f",
+                  "id": "T8",
+                  "kind": "todo",
+                  "title": "Confirm the wording for billing export ledger 4 (8)",
+                  "who": "Sample BA",
+                  "since": "2026-06-10",
+                  "age": 8,
+                  "status": "old",
+                  "prod": "Sample",
+                  "s": "Consent invoice login profile review status.",
+                  "l": "Message report schedule summary upload account calendar import.\n- search template wallet batch."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Invoice login group",
+      "areas": [
+        {
+          "name": "Search Template 1.0",
+          "features": [
+            {
+              "id": "row-5",
+              "label": "Limit payout reminder 5",
+              "stage": "done",
+              "stages": [
+                {
+                  "stage": "concept",
+                  "from": "2026-05-06"
+                },
+                {
+                  "stage": "spec",
+                  "from": "2026-05-15"
+                },
+                {
+                  "stage": "ready",
+                  "from": "2026-05-24"
+                },
+                {
+                  "stage": "dev",
+                  "from": "2026-06-02"
+                },
+                {
+                  "stage": "qa",
+                  "from": "2026-06-11"
+                },
+                {
+                  "stage": "done",
+                  "from": "2026-06-20"
+                }
+              ],
+              "since": "2026-05-06",
+              "origin": "old-work",
+              "basis": "recorded",
+              "desc": "Limit payout reminder search template wallet batch consent invoice login profile review.",
+              "work": [
+                {
+                  "id": "ABC-1050",
+                  "title": "Payout reminder search template (50)",
+                  "status": "Done",
+                  "done": "2026-07-30"
+                },
+                {
+                  "id": "ABC-1051",
+                  "title": "Status transfer widget billing (51)",
+                  "status": "To Do"
+                }
+              ],
+              "guess": false,
+              "who": [
+                "Jonas"
+              ],
+              "tags": [
+                "6.0"
+              ],
+              "doneDate": "2026-06-20",
+              "originNote": "A Jira story from before 1 May 2026.",
+              "requests": [
+                {
+                  "id": "req-2",
+                  "kind": "improvement",
+                  "title": "Report schedule summary upload account (2)",
+                  "stages": [
+                    {
+                      "stage": "concept",
+                      "from": "2026-05-03"
+                    },
+                    {
+                      "stage": "spec",
+                      "from": "2026-05-12"
+                    },
+                    {
+                      "stage": "ready",
+                      "from": "2026-05-21"
+                    }
+                  ],
+                  "work": [],
+                  "merged": "2026-07-02"
+                }
+              ],
+              "todos": [
+                {
+                  "key": "d4576a6b8cb2",
+                  "id": "A1",
+                  "kind": "agenda",
+                  "title": "Send the sample file for limit payout reminder 5 (1)",
+                  "who": "Tom Baker",
+                  "since": "2026-05-06",
+                  "age": 1,
+                  "status": "hot",
+                  "prod": "Sample",
+                  "s": "Invoice login profile review status transfer.",
+                  "l": "Report schedule summary upload account calendar import limit.\n- template wallet batch consent."
+                }
+              ]
+            },
+            {
+              "id": "row-6",
+              "label": "Review status transfer 6",
+              "stage": "concept",
+              "stages": [
+                {
+                  "stage": "concept",
+                  "from": "2026-05-07"
+                }
+              ],
+              "since": "2026-05-07",
+              "origin": "dashboard",
+              "basis": "code",
+              "desc": "",
+              "work": [],
+              "guess": false,
+              "who": [
+                "Maria"
+              ],
+              "tags": [
+                "6.1"
+              ],
+              "about": [
+                "Review status transfer widget billing export ledger.",
+                "Upload account calendar import limit payout reminder."
+              ],
+              "requests": [
+                {
+                  "id": "req-6",
+                  "kind": "improvement",
+                  "title": "Review status transfer widget billing (6)",
+                  "stages": [
+                    {
+                      "stage": "concept",
+                      "from": "2026-05-07"
+                    }
+                  ],
+                  "work": [],
+                  "askedIn": "2026-05-19-call",
+                  "askedBy": "Tom",
+                  "asked": "Review status transfer widget billing export?",
+                  "about": [
+                    "Review status transfer widget billing export."
+                  ],
+                  "tags": [
+                    "7.0"
+                  ],
+                  "self": "row-0"
+                }
+              ],
+              "todos": [
+                {
+                  "key": "148cd3fe7ddd",
+                  "id": "W3",
+                  "kind": "waiting",
+                  "title": "Decide the limit for review status transfer 6 (3)",
+                  "who": "Dev team",
+                  "since": "2026-05-16",
+                  "age": 3,
+                  "status": "open",
+                  "prod": "Sample",
+                  "s": "Template wallet batch consent invoice login.",
+                  "l": "Billing export ledger message report schedule summary upload.\n- limit payout reminder search."
+                }
+              ]
+            },
+            {
+              "id": "row-7",
+              "label": "Upload account calendar 7",
+              "stage": "spec",
+              "stages": [
+                {
+                  "stage": "concept",
+                  "from": "2026-05-08"
+                },
+                {
+                  "stage": "spec",
+                  "from": "2026-05-17"
+                }
+              ],
+              "since": "2026-05-08",
+              "origin": "spec",
+              "basis": "none",
+              "desc": "Upload account calendar import limit payout reminder search template wallet batch consent.",
+              "work": [],
+              "guess": false,
+              "who": [
+                "Tom"
+              ],
+              "tags": [
+                "6.2"
+              ],
+              "requests": [
+                {
+                  "id": "req-1",
+                  "kind": "change",
+                  "title": "Invoice login profile review status (1)",
+                  "stages": [
+                    {
+                      "stage": "concept",
+                      "from": "2026-05-02"
+                    },
+                    {
+                      "stage": "spec",
+                      "from": "2026-05-11"
+                    }
+                  ],
+                  "work": [
+                    {
+                      "id": "ABC-8001",
+                      "title": "Upload account calendar import (7001)",
+                      "status": "To Do"
+                    }
+                  ],
+                  "about": [
+                    "Invoice login profile review status transfer."
+                  ],
+                  "tags": [
+                    "7.0"
+                  ],
+                  "self": "row-0"
+                }
+              ],
+              "todos": [
+                {
+                  "key": "032d34893ee0",
+                  "id": "T5",
+                  "kind": "todo",
+                  "title": "Review the flow for upload account calendar 7 (5)",
+                  "who": "Sample BA",
+                  "since": "2026-05-26",
+                  "age": 5,
+                  "status": "old",
+                  "prod": "Sample",
+                  "s": "Limit payout reminder search template wallet.",
+                  "l": "Review status transfer widget billing export ledger message.\n- upload account calendar import."
+                }
+              ]
+            },
+            {
+              "id": "row-8",
+              "label": "Consent invoice login 8",
+              "stage": "ready",
+              "stages": [
+                {
+                  "stage": "concept",
+                  "from": "2026-05-09"
+                },
+                {
+                  "stage": "spec",
+                  "from": "2026-05-18"
+                },
+                {
+                  "stage": "ready",
+                  "from": "2026-05-27"
+                }
+              ],
+              "since": "2026-05-09",
+              "origin": "old-work",
+              "basis": "tracker",
+              "desc": "",
+              "work": [],
+              "guess": false,
+              "who": [
+                "Priya"
+              ],
+              "tags": [
+                "6.3"
+              ],
+              "about": [
+                "Consent invoice login profile review status transfer.",
+                "Message report schedule summary upload account calendar."
+              ],
+              "originNote": "A Jira story from before 1 May 2026.",
+              "basisNote": "From the Jira history of its tickets.",
+              "askedIn": "2026-05-04-email",
+              "askedBy": "Maria",
+              "requests": [
+                {
+                  "id": "req-5",
+                  "kind": "change",
+                  "title": "Limit payout reminder search template (5)",
+                  "stages": [
+                    {
+                      "stage": "concept",
+                      "from": "2026-05-06"
+                    },
+                    {
+                      "stage": "spec",
+                      "from": "2026-05-15"
+                    },
+                    {
+                      "stage": "ready",
+                      "from": "2026-05-24"
+                    },
+                    {
+                      "stage": "dev",
+                      "from": "2026-06-02"
+                    },
+                    {
+                      "stage": "qa",
+                      "from": "2026-06-11"
+                    },
+                    {
+                      "stage": "done",
+                      "from": "2026-06-20"
+                    },
+                    {
+                      "stage": "live",
+                      "from": "2026-09-28"
+                    }
+                  ],
+                  "work": [
+                    {
+                      "id": "ABC-8005",
+                      "title": "Widget billing export ledger (7005)",
+                      "status": "Done",
+                      "done": "2026-06-22",
+                      "url": "https://github.com/example/docs/blob/main/stories/request-5.md"
+                    }
+                  ]
+                }
+              ],
+              "todos": [
+                {
+                  "key": "de3af0e48759",
+                  "id": "A7",
+                  "kind": "agenda",
+                  "title": "Check the numbers in consent invoice login 8 (7)",
+                  "who": "Tom Baker",
+                  "since": "2026-06-05",
+                  "age": 7,
+                  "status": "hot",
+                  "prod": "Sample",
+                  "s": "Upload account calendar import limit payout.",
+                  "l": "Consent invoice login profile review status transfer widget.\n- message report schedule summary."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "pins": [
+    {
+      "id": "2026-05-01-call",
+      "date": "2026-05-01",
+      "kind": "call",
+      "title": "Client call",
+      "people": [
+        "Maria",
+        "Tom"
+      ],
+      "staff": 2,
+      "minutes": 45,
+      "summary": [
+        "Account calendar import limit payout reminder search template wallet.",
+        "Invoice login profile review status transfer widget billing export.",
+        "Report schedule summary upload account calendar import limit payout."
+      ],
+      "owes": [
+        {
+          "who": "Maria → Sample BA",
+          "text": "Account calendar import limit payout."
+        }
+      ]
+    },
+    {
+      "id": "2026-05-04-email",
+      "date": "2026-05-04",
+      "kind": "email",
+      "title": "Email · invoice login",
+      "people": [
+        "Priya"
+      ],
+      "subject": "Re: invoice login profile"
+    },
+    {
+      "id": "2026-05-07-comments",
+      "date": "2026-05-07",
+      "kind": "comments",
+      "title": "Slack · 2 messages"
+    },
+    {
+      "id": "2026-05-10-doc",
+      "date": "2026-05-10",
+      "kind": "doc",
+      "title": "Document · template wallet",
+      "ref": "doc-3"
+    },
+    {
+      "id": "2026-05-13-page",
+      "date": "2026-05-13",
+      "kind": "page",
+      "title": "Answers on 1 clarification page",
+      "decided": [
+        {
+          "title": "Billing export ledger message report schedule.",
+          "page": "Sign-up questions",
+          "how": "on the client Portal"
+        }
+      ]
+    },
+    {
+      "id": "2026-05-16-idea",
+      "date": "2026-05-16",
+      "kind": "idea",
+      "title": "Suggestion · limit payout"
+    },
+    {
+      "id": "2026-05-19-call",
+      "date": "2026-05-19",
+      "kind": "call",
+      "title": "Client call",
+      "people": [
+        "Maria",
+        "Tom"
+      ],
+      "staff": 2,
+      "minutes": 51,
+      "summary": [
+        "Review status transfer widget billing export ledger message report.",
+        "Upload account calendar import limit payout reminder search template.",
+        "Consent invoice login profile review status transfer widget billing."
+      ],
+      "owes": [
+        {
+          "who": "Maria → Sample BA",
+          "text": "Review status transfer widget billing."
+        }
+      ]
+    }
+  ],
+  "releases": [
+    {
+      "name": "6.0",
+      "date": "2026-05-01"
+    },
+    {
+      "name": "6.1",
+      "date": "2026-05-08"
+    },
+    {
+      "name": "6.2",
+      "date": "2026-05-15"
+    }
+  ],
+  "client_contacts": [
+    {
+      "name": "Maria Lopez",
+      "email": "maria@example.com"
+    },
+    {
+      "name": "Tom Baker",
+      "slack": "tom.baker"
+    }
+  ],
+  "clarification_pages": [
+    "sign-up-questions",
+    "advance-limits",
+    "payday-repayment"
+  ],
+  "suggestion_status": [
+    {
+      "id": "019a5a10-0b00-7c00-8a00-000000000001",
+      "status": "accepted",
+      "reason": "Planned for the next release."
+    },
+    {
+      "id": "019a5a10-0b00-7c00-8a00-000000000002",
+      "status": "declined",
+      "reason": "Out of scope for the pilot."
+    }
+  ],
+  "upcoming": [
+    {
+      "id": "switch-off-chat",
+      "title": "Switch off the old chat on the website",
+      "kind": "deadline",
+      "date": "17 Dec",
+      "needs": [
+        "row-0",
+        "row-2"
+      ],
+      "what": [
+        "The client removes the old chat from the website.",
+        "Our own assistant must be live first."
+      ],
+      "who": "Sample · Relevant"
+    },
+    {
+      "id": "new-agreement",
+      "title": "New agreement — every customer signs it",
+      "kind": "planned",
+      "after": "row-1"
+    },
+    {
+      "id": "new-brand",
+      "title": "New landing page and style guide",
+      "kind": "planned",
+      "needs": [
+        "row-7"
+      ],
+      "what": [
+        "New fonts and colours everywhere."
+      ]
+    }
+  ]
+}

@@ -12,7 +12,8 @@ not on the dashboard, changes and bugs, releases, the area link. See trackers/__
 
 Reads, read only (paths from the project's docs/BA folder):
   <data file>                          the timeline data file: product settings, area groups, placements,
-                                       recorded features, pins, tags, plus whatever the tracker needs
+                                       recorded features, pins, tags, `upcoming` (planned deadlines,
+                                       releases and steps; checked here), plus whatever the tracker needs
   mind-map/mind-map.html               the dashboard's built data (areas, features, stage, tickets, releases)
   dashboard.yaml                       client text, clarification links, to-dos
   clarifications/*-decisions.yaml      the Clarification pages tab and "Decided" on pins
@@ -160,6 +161,101 @@ def pin_details(m, product):
                 out["summary"].append(line)
     out["summary"] = out["summary"][:6]
     return out
+
+
+# ---------- upcoming: planned events after today (deadlines, releases, planned steps)
+UPCOMING_KINDS = ("deadline", "release", "planned")
+
+
+class DataError(Exception):
+    """A plain one-line problem in the data file. The build stops with it."""
+
+
+def check_upcoming(items, feature_ids):
+    """The data file's `upcoming:` list, checked and tidied for the page.
+
+    Each item: id (unique), title (up to 300), kind (deadline · release · planned); then `date`, or `after`
+    (a feature id), or neither ("no date yet"); optional `what` (up to 20 lines), `needs` (feature ids),
+    `who` (up to 200). Raises DataError with one plain line naming the item."""
+    if items is None:
+        return []
+    if not isinstance(items, list):
+        raise DataError("upcoming: must be a list of items (each starts with \"- id: …\").")
+    out, seen = [], set()
+    for n, u in enumerate(items, 1):
+        if not isinstance(u, dict):
+            raise DataError("upcoming item %d: must be a block with id, title and kind." % n)
+        uid = str(u.get("id") or "").strip()
+        name = "upcoming item \"%s\"" % uid if uid else "upcoming item %d" % n
+        if not uid:
+            raise DataError("%s: has no id." % name)
+        if uid in seen:
+            raise DataError("%s: the id is used twice — give each item its own id." % name)
+        seen.add(uid)
+        extra = sorted(set(u) - {"id", "title", "kind", "date", "after", "what", "needs", "who"})
+        if extra:
+            raise DataError("%s: unknown field %s (use id, title, kind, date, after, what, needs, who)." % (name, ", ".join(extra)))
+        title = str(u.get("title") or "").strip()
+        if not title:
+            raise DataError("%s: has no title." % name)
+        if len(title) > 300:
+            raise DataError("%s: the title is longer than 300 characters." % name)
+        kind = str(u.get("kind") or "").strip()
+        if kind not in UPCOMING_KINDS:
+            raise DataError("%s: kind must be deadline, release or planned (it is \"%s\")." % (name, kind))
+        item = {"id": uid, "title": title, "kind": kind}
+        if u.get("date") is not None and u.get("after") is not None:
+            raise DataError("%s: has both a date and \"after\" — keep one." % name)
+        if u.get("date") is not None:
+            day = u["date"]
+            if isinstance(day, dt.datetime):
+                day = day.date()
+            if not isinstance(day, dt.date):
+                try:
+                    day = dt.date.fromisoformat(str(day).strip())
+                except ValueError:
+                    raise DataError("%s: the date \"%s\" is not a date like 2026-12-17." % (name, u["date"]))
+            item["date"] = day.isoformat()
+        if u.get("after") is not None:
+            after = str(u["after"]).strip()
+            if after not in feature_ids:
+                raise DataError("%s: \"after: %s\" is not a feature on this timeline." % (name, after))
+            item["after"] = after
+        what = u.get("what")
+        if what is not None:
+            lines = [str(x).strip() for x in what] if isinstance(what, list) else str(what).splitlines()
+            lines = [x[2:].strip() if x.startswith("- ") else x for x in (y.strip() for y in lines)]
+            lines = [x for x in lines if x]
+            if len(lines) > 20:
+                raise DataError("%s: \"what\" has more than 20 lines." % name)
+            if lines:
+                item["what"] = lines
+        needs = u.get("needs")
+        if needs is not None:
+            needs = needs if isinstance(needs, list) else [needs]
+            needs = [str(x).strip() for x in needs if str(x).strip()]
+            bad = [x for x in needs if x not in feature_ids]
+            if bad:
+                raise DataError("%s: \"needs\" names %s, not a feature on this timeline." % (name, ", ".join(bad)))
+            if needs:
+                item["needs"] = list(dict.fromkeys(needs))
+        who = u.get("who")
+        if who is not None:
+            who = ", ".join(str(x).strip() for x in who) if isinstance(who, list) else str(who).strip()
+            if len(who) > 200:
+                raise DataError("%s: \"who\" is longer than 200 characters." % name)
+            if who:
+                item["who"] = who
+        out.append(item)
+    return out
+
+
+def release_lines(releases, today):
+    """The release lines: every released release with a date, and the unreleased ones dated today or later
+    (future releases show after today; one whose date has passed without a release is left out)."""
+    keep = [{"name": r["name"], "date": iso(r["date"])} for r in releases
+            if r.get("date") and (r.get("released") or iso(r["date"]) >= today.isoformat())]
+    return sorted(keep, key=lambda r: r["date"])
 
 
 def load_dashboard_data(ba):
@@ -371,9 +467,13 @@ def main():
             f["requests"].sort(key=lambda q: q["stages"][0]["from"] if q.get("stages") else "")
     pins.sort(key=lambda m: (m["date"], m["kind"]))
 
-    releases = tracker.releases(sorted(
-        [{"name": r["name"], "date": r["date"]} for r in data["board"]["releases"].get(PROD, []) if r.get("released") and r.get("date")],
-        key=lambda r: r["date"]))
+    # released releases, and the dated ones still to come (they draw after today)
+    releases = tracker.releases(release_lines(data["board"]["releases"].get(PROD, []), TODAY))
+    # ---- upcoming: deadlines, releases and planned steps from the data file
+    try:
+        upcoming = check_upcoming(tl.get("upcoming"), set(rows_by_id))
+    except DataError as e:
+        sys.exit("Stopped: " + str(e))
 
     # ---- the Clarification pages tab
     by_clar = {f["clar"]: f["id"] for f in rows_by_id.values() if f.get("clar")}
@@ -400,6 +500,8 @@ def main():
         "groups": groups, "pins": pins, "releases": releases, "pages": pages,
         "dashboardUrl": data.get("mapUrl"),
     }
+    if upcoming:
+        payload["upcoming"] = upcoming
     if args.json:
         out = Path(args.json).resolve()
         out.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
@@ -408,9 +510,9 @@ def main():
         page = tpl.replace("/*__DATA__*/null", json.dumps(payload, ensure_ascii=False)).replace("__PRODUCT__", product["name"])
         out = Path(args.out).resolve() if args.out else data_file.with_suffix(".html")
         out.write_text(page, encoding="utf-8")
-    print("Built %s: %d areas, %d rows (%d not on the dashboard), %d pins, %d releases, %d clarification pages · tracker: %s" % (
+    print("Built %s: %d areas, %d rows (%d not on the dashboard), %d pins, %d releases, %d coming up, %d clarification pages · tracker: %s" % (
         out.name, sum(len(g["areas"]) for g in groups), len(rows_by_id),
-        sum(1 for f in rows_by_id.values() if f["origin"] != "dashboard"), len(pins), len(releases), len(pages), tracker.name))
+        sum(1 for f in rows_by_id.values() if f["origin"] != "dashboard"), len(pins), len(releases), len(upcoming), len(pages), tracker.name))
 
 
 if __name__ == "__main__":

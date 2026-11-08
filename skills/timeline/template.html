@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>__PRODUCT__ Timeline</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -197,6 +198,49 @@ a{color:var(--fg)}
 .li .pills{margin-left:auto;flex-wrap:nowrap;padding-left:8px}
 .p-open{background:var(--red-t);color:var(--red)}
 .tagsel .menu .clear{border:0;background:none;color:var(--muted-fg);font-size:12px;padding:6px;cursor:pointer;text-decoration:underline}
+/* Coming up: planned events after today — a lane at the top, deadline lines, a "No date yet" column, flags on features */
+:root{--deadline:#c42b1c; --deadline-t:#fde8e5; --deadline-b:#f0b6ae; --planned:#2f5bea; --planned-t:#ebf0fc; --planned-b:#b9c7f6; --nodate:#8a8a8a}
+.future{position:absolute;top:96px;bottom:0;left:calc(var(--s) * 100%);width:calc(var(--w) * 100%);background:rgba(47,91,234,.045)}
+.nodatecol{position:absolute;top:96px;bottom:0;left:calc(var(--s) * 100%);right:0;border-left:1px solid var(--border);background:repeating-linear-gradient(135deg,#fafafa 0 6px,#f3f3f1 6px 12px)}
+.nodatehead{position:absolute;top:0;bottom:0;left:calc(var(--s) * 100%);right:0;border-left:1px solid var(--border);background:repeating-linear-gradient(135deg,#fafafa 0 6px,#f3f3f1 6px 12px)}
+.nodatehead span{position:absolute;left:10px;top:14px;font-size:12px;font-weight:600;color:var(--muted-fg)}
+.rl.dl{border-left:2px dashed var(--deadline)}
+.rl.dl.past{border-left-color:#d4d4d8}
+.dlx{position:absolute;top:38px;left:calc(var(--s) * 100%);margin-left:-1px;font-size:12px;line-height:16px;font-weight:600;color:var(--deadline);background:var(--card);border:1px solid var(--deadline-b);border-left:2px solid var(--deadline);border-radius:0 4px 4px 0;padding:1px 6px;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.dlx.left{transform:translateX(-100%);margin-left:1px;border-left-width:1px;border-right:2px solid var(--deadline);border-radius:4px 0 0 4px}
+.dlx.past{color:var(--muted-fg);border-color:var(--border)}
+.row.up{background:var(--card)}
+.row.up .lab{font-weight:600;align-items:flex-start;padding-top:12px}
+.row.up .lab small{font-weight:400;color:var(--muted-fg);margin-left:6px}
+.row.up:hover .lab{background:var(--card)}
+.um{position:absolute;display:flex;align-items:center;gap:6px;white-space:nowrap;border:0;background:none;padding:0;cursor:pointer;z-index:2;left:calc(var(--s) * 100%);margin-left:-7px}
+.um.left{flex-direction:row-reverse;margin-left:0;transform:translateX(calc(-100% + 7px))}
+.um.col{left:calc(var(--s) * 100% + 10px);margin-left:0}
+.dia{width:14px;height:14px;transform:rotate(45deg);border-radius:2px;flex:none;display:inline-block;background:var(--planned)}
+.dia.deadline{background:var(--deadline)}
+.dia.after{background:var(--card);border:2px solid var(--planned)}
+.dia.nodate{background:var(--card);border:2px dashed var(--nodate)}
+.dia.sm{width:10px;height:10px}
+.um .t{font-size:12px;line-height:16px;font-weight:600;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:3px 8px;box-shadow:0 1px 3px var(--shadow);overflow:hidden;text-overflow:ellipsis}
+.um.col .t{max-width:calc(var(--colw) - 40px)}
+.um .t em{font-style:normal;font-weight:400;color:var(--muted-fg);margin-left:4px}
+.um.k-deadline .t{border-color:var(--deadline-b)}
+.um.past{opacity:.5}
+.upedge{position:absolute;inset:0;pointer-events:none}
+.uchip{position:absolute;z-index:3;pointer-events:auto;transform:translateX(-100%);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;line-height:16px;font-weight:600;color:var(--planned);background:var(--card);border:1px solid var(--planned-b);border-radius:10px;padding:2px 9px;cursor:pointer;box-shadow:0 1px 3px var(--shadow)}
+.uchip.l{transform:none}
+.uchip.k-deadline{color:var(--deadline);border-color:var(--deadline-b)}
+.uchip.past{color:var(--muted-fg);border-color:var(--border)}
+.um.on .t{outline:2px solid var(--fg);outline-offset:1px}
+.flag{position:absolute;top:8px;z-index:2;font-size:11px;line-height:16px;font-weight:600;color:var(--deadline);background:var(--card);border:1px solid var(--deadline-b);border-radius:10px;padding:1px 8px;white-space:nowrap;cursor:pointer;left:calc(var(--s) * 100%);max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.flag.need{transform:translateX(-100%);margin-left:-8px}
+.flag.then{margin-left:6px;color:var(--planned);border-color:var(--planned-b)}
+.flag.blue{color:var(--planned);border-color:var(--planned-b)}
+.flag.for{margin-left:10px;color:var(--muted-fg);border-color:var(--border);max-width:calc(var(--colw) - 24px)}
+.flag.past{color:var(--muted-fg);border-color:var(--border)}
+.p-deadline{background:var(--deadline-t);color:var(--deadline)} .p-release{background:var(--done-t);color:var(--done)} .p-planned{background:var(--planned-t);color:var(--planned)}
+.p-late{background:var(--deadline-t);color:var(--deadline)}
+.li.past{opacity:.55}
 
 </style>
 
@@ -281,15 +325,126 @@ const F = {}, A = {}, Q = {}, M = {};
 DATA.groups.forEach(g => g.areas.forEach(a => { a.group = g.name; A[a.name] = a; a.features.forEach(f => { f.area = a.name; F[f.id] = f; (f.requests||[]).forEach(q => { q.feature = f.id; Q[f.id+"/"+q.id] = q; }); }); }));
 DATA.pins.forEach(m => M[m.id] = m);
 
+// ---------- Coming up: the data file's `upcoming:` list (deadlines, releases, planned steps)
+const UP = (DATA.upcoming || []).filter(u => u && u.id);
+const U = {}; UP.forEach(u => U[u.id] = u);
+const UP_KIND = {deadline:"Deadline", release:"Release", planned:"Planned"};
+const upPast = u => !!u.date && d(u.date) < TODAY;
+const upDays = u => Math.round((d(u.date) - TODAY) / DAY);
+const upWhen = u => { const n = upDays(u); return n === 0 ? "today" : n > 0 ? `in ${n} day${n>1?"s":""}` : `${-n} day${n<-1?"s":""} late`; };
+const upFeat = id => F[id] ? F[id].label : id;
+const upCol = () => UP.some(u => !u.date);           // undated and "after" items sit in the "No date yet" column
+const COLW = 240;
+function upSorted(){
+  const dated = UP.filter(u => u.date && !upPast(u)).sort((a,b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
+  return {dated, after: UP.filter(u => !u.date && u.after), none: UP.filter(u => !u.date && !u.after),
+          past: UP.filter(upPast).sort((a,b) => b.date.localeCompare(a.date))};
+}
+// the flags an item puts on a feature: "Needed by …" / "For: …" (needs) and "Then: … →" (after)
+function upFlags(fid){
+  const out = [];
+  UP.forEach(u => {
+    if ((u.needs||[]).includes(fid)) out.push(u.date ? {u, kind:"need", text:`Needed by ${fmt(u.date)} · ${upWhen(u)}`} : {u, kind:"for", text:`For: ${u.title}`});
+    if (u.after === fid) out.push({u, kind:"then", text:`Then: ${u.title} →`});
+  });
+  return out;
+}
+function flagsHtml(list, w){
+  return list.map(({u, kind, text}) => {
+    let s, cls = "flag " + kind;
+    if (kind === "need") { s = pos(d(u.date) + DAY/2, w); if (d(u.date) < w.start || d(u.date) > w.end) return ""; if (u.kind !== "deadline") cls += " blue"; if (upPast(u)) cls += " past"; }
+    else if (kind === "then") s = pos(TODAY + DAY, w);
+    else s = pos(w.end, w);
+    return `<button class="${cls}" style="--s:${s}" data-u="${esc(u.id)}" title="${esc(u.title)}">${esc(text)}</button>`;
+  }).join("");
+}
+// the "Coming up" lane: one marker per item, set in rows so the labels do not overlap
+let UP_MARKS = [];
+function upLane(w){
+  const width = w.tw, endX = pos(w.end, w) * width, lanes = [], colRows = [];
+  const est = u => 14 + 6 + 18 + Math.min(u.title.length, 60) * 6.4 + 90;
+  const marks = [];
+  UP.forEach(u => {
+    if (u.date) {
+      const t = d(u.date); if (t < w.start || t > w.end) return;
+      const x = pos(t + DAY/2, w) * width, wd = est(u), left = x + wd > endX - 4 && x - wd >= 0;
+      const a = left ? x - wd : x, b = left ? x : x + wd;
+      let r = lanes.findIndex(l => l.every(([p,q]) => b + 8 < p || a > q + 8)); if (r < 0) { lanes.push([]); r = lanes.length - 1; }
+      lanes[r].push([a, b]);
+      marks.push({u, r, s:pos(t + DAY/2, w), x, cls: left ? " left" : ""});
+    } else { colRows.push(u); marks.push({u, r: colRows.length - 1, s: pos(w.end, w), x: endX + 10, cls: " col"}); }
+  });
+  UP_MARKS = marks.map(m => ({u: m.u, x: m.x, r: m.r, col: m.cls === " col"}));
+  const rows = Math.max(1, lanes.length, colRows.length);
+  const html = marks.map(({u, r, s, cls}) => {
+    const shape = u.date ? (u.kind === "deadline" ? "deadline" : "") : u.after ? "after" : "nodate";
+    const meta = u.date ? `${fmt(u.date)} · ${upPast(u) ? "passed" : UP_KIND[u.kind].toLowerCase()}` : u.after ? `after ${upFeat(u.after)}` : "no date";
+    const on = st.sel?.t === "u" && st.sel.id === u.id ? " on" : "";
+    return `<button class="um k-${u.kind}${cls}${upPast(u) ? " past" : ""}${on}" style="--s:${s};top:${28 + r * 28}px" data-u="${esc(u.id)}" title="${esc(u.title)} — ${esc(meta)}" aria-label="${esc(UP_KIND[u.kind])}: ${esc(u.title)}, ${esc(meta)}"><i class="dia ${shape}"></i><span class="t">${esc(u.title)}<em>${esc(meta)}</em></span></button>`;
+  }).join("");
+  // markers outside the visible part show as chips pinned to that edge (placeEdges, on every scroll)
+  return {html: html + '<div class="upedge" id="upedge"></div>', height: 28 + rows * 28 + 2};
+}
+
+function placeEdges(){
+  const chart = document.getElementById("chart"), box = document.getElementById("upedge");
+  const w = win(), visL = chart.scrollLeft, visR = visL + chart.clientWidth - w.label;
+  if (box) {
+    // each chip goes in its marker's row, or the next row free of visible markers and other chips
+    const tr = box.parentElement.getBoundingClientRect(), taken = [];
+    const take = (row, a, b) => (taken[row] = taken[row] || []).push([a, b]);
+    const free = (row, a, b) => !(taken[row] || []).some(([p, q]) => a < q + 6 && b > p - 6);
+    box.parentElement.querySelectorAll(".um").forEach(el => { const r = el.getBoundingClientRect(); take(Math.round((parseFloat(el.style.top) - 28) / 28), r.left - tr.left, r.right - tr.left); });
+    let h = "";
+    UP_MARKS.forEach(m => {
+      const side = m.x < visL + 4 ? "l" : m.x + 14 > visR - 4 ? "r" : null;
+      if (!side) return;
+      const u = m.u, when = u.date ? fmt(u.date) : u.after ? "After " + upFeat(u.after) : "No date";
+      const text = side === "l" ? `← ${when} · ${u.title}` : `${when} · ${u.title} →`;
+      const wd = Math.min(280, text.length * 6.6 + 20), a = side === "l" ? visL + 6 : visR - 6 - wd, b = a + wd;
+      let row = m.r; while (!free(row, a, b)) row++;
+      take(row, a, b);
+      h += `<button class="uchip k-${u.kind}${side === "l" ? " l" : ""}${upPast(u) ? " past" : ""}" style="left:${side === "l" ? visL + 6 : visR - 6}px;top:${30 + row * 28}px" data-ue="${esc(u.id)}" title="${esc(u.title)} — show it on the chart">${esc(text)}</button>`;
+    });
+    box.innerHTML = h;
+    // the lane grows (never shrinks while scrolling) when the chips need more rows than the markers
+    const need = 28 + (taken.length) * 28 + 2, track = box.parentElement;
+    if (need > track.offsetHeight) track.style.height = need + "px";
+  }
+  // a deadline's date label in the axis goes to the left of its line when it would be cut off on the right
+  const endX = w.col ? pos(w.end, w) * w.tw : w.tw;
+  chart.querySelectorAll(".dlx").forEach(el => {
+    el.classList.remove("left");
+    const x = parseFloat(el.style.getPropertyValue("--s")) * w.tw, wd = el.offsetWidth;
+    if (x + wd > Math.min(visR, endX) && x - wd >= 0) el.classList.add("left");
+  });
+}
+// a click on an edge chip: scroll the chart to the item and open its panel
+function goToUp(id){
+  st.sel = {t:"u", id}; render();
+  const chart = document.getElementById("chart"), w = win(), m = UP_MARKS.find(x => x.u.id === id);
+  if (!m) return;
+  const vis = chart.clientWidth - w.label;
+  chart.scrollLeft = m.col ? m.x + COLW - vis : m.x - vis / 3;
+  placeEdges();
+}
 function win(){
   // finished work before the start date shows only with "Hide done" off or while searching or filtering
-  const start = d(DATA.from && (!st.hideDone || filtering()) ? DATA.from : DATA.start), end = TODAY + 2*DAY, span = end - start;
-  const p = PERIODS.find(x=>x[0]===st.period), days = p[2] || span/DAY;
+  // the end: today + 2 days, or past the last dated upcoming item and the last future release (+ 7 days, at most a year)
+  const start = d(DATA.from && (!st.hideDone || filtering()) ? DATA.from : DATA.start);
+  const ahead = UP.filter(u => u.date).map(u => d(u.date)).concat(DATA.releases.map(r => d(r.date))).filter(t => t > TODAY);
+  const end = ahead.length ? Math.min(Math.max(TODAY + 2*DAY, ...ahead) + 7*DAY, TODAY + 365*DAY) : TODAY + 2*DAY;
+  const time = end - start, col = upCol() ? COLW : 0;
+  const p = PERIODS.find(x=>x[0]===st.period);
   const chart = document.getElementById("chart");
   const label = parseFloat(getComputedStyle(chart).getPropertyValue("--label")) || 300;
   const visible = Math.max(200, (chart.clientWidth || 900) - label);
-  const ppd = visible / days, tw = Math.max(visible, ppd * span / DAY);
-  return {start, end, span, ppd, tw, label};
+  // the "No date yet" column is extra room after the end; positions are fractions of the whole track
+  let ppd = p[2] ? visible / p[2] : Math.max(1, visible - col) / (time / DAY);
+  const timePx = Math.max(visible - col, ppd * time / DAY);
+  ppd = timePx / (time / DAY);
+  const tw = timePx + col, span = time + col / ppd * DAY;
+  return {start, end, span, ppd, tw, label, col};
 }
 const pos = (t,w) => (t-w.start)/w.span;
 
@@ -356,12 +511,13 @@ function ring(fs){
 }
 
 // ---------- the four views: tabs above the card, like Map and Board on the old dashboard
-const VIEWS = [["tl","Timeline"],["pages","Clarification pages"],["todos","To-dos"],["agenda","Next meeting agenda"]];
+const VIEWS = [["tl","Timeline"],["pages","Clarification pages"],["todos","To-dos"],["agenda","Next meeting agenda"],["coming","Coming up"]];
 const INTRO = {
   tl: "How each area grew, and where every request is now. Open an area to see its features, and a feature to see what was added to it later. Click anything for the details.",
   pages: `Every clarification page for ${P.name || "this product"}. The ones still waiting for answers come first. Each page opens in a new tab.`,
   todos: "Every open to-do and everything waiting on someone. Yours come first; the others are greyed out below. Click one to read it and leave an update.",
-  agenda: "Everything marked for the next client call. Click one to read it and leave an update."};
+  agenda: "Everything marked for the next client call. Click one to read it and leave an update.",
+  coming: "Deadlines, releases and planned steps, soonest first; past ones stay at the end, greyed. Click one for what has to happen and the features it needs."};
 const PAGES = DATA.pages || [];
 const itemsOf = kinds => { const out = []; Object.values(F).forEach(f => (f.todos||[]).forEach(x => { if (kinds.includes(x.kind)) out.push({f, x}); })); return out.sort((a,b) => String(a.x.since).localeCompare(String(b.x.since))); };
 const openCount = l => l.filter(o => !isResolved(o.x)).length;
@@ -373,7 +529,7 @@ function syncView(){
   document.getElementById("h1").textContent = (P.name || "") + " — dashboard";
   document.querySelector(".card").dataset.view = st.view;
   document.getElementById("intro").textContent = INTRO[st.view];
-  const n = {pages: PAGES.length, todos: openCount(itemsOf(["todo","waiting"])), agenda: openCount(itemsOf(["agenda"]))};
+  const n = {pages: PAGES.length, todos: openCount(itemsOf(["todo","waiting"])), agenda: openCount(itemsOf(["agenda"])), coming: UP.filter(u => !upPast(u)).length};
   document.getElementById("tabs").innerHTML = VIEWS.map(([k,v]) => `<button role="tab" data-view="${k}" aria-selected="${st.view===k}" aria-pressed="${st.view===k}">${v}${n[k]!=null?`<span class="n">${n[k]}</span>`:""}</button>`).join("");
 }
 function renderView(){
@@ -423,6 +579,16 @@ function renderView(){
   } else if (st.view === "agenda") {
     const all = itemsOf(["agenda"]);
     h = all.length ? `<div class="sh">For the next call · ${all.length}</div>${all.map(o => itemRow(o)).join("")}` : '<p class="empty-msg">Nothing on the agenda for the next call.</p>';
+  } else if (st.view === "coming") {
+    const g = upSorted();
+    const row = (u, past) => {
+      const when = u.date ? `${fmt(u.date, true)} · ${upWhen(u)}` : u.after ? `After ${upFeat(u.after)}${F[u.after] ? " · now " + (STAGE[F[u.after].stage] || F[u.after].stage) : ""}` : "No date yet";
+      const needs = (u.needs||[]).map(id => upFeat(id) + (F[id] ? " (" + (STAGE[F[id].stage] || F[id].stage) + ")" : "")).join(", ");
+      const sub = [when, needs ? "Needs: " + needs : ""].filter(Boolean).map(esc).join(" · ");
+      return `<button class="li click${past ? " past" : ""}${st.sel?.t === "u" && st.sel.id === u.id ? " sel" : ""}" data-u="${esc(u.id)}"><span class="nm"><b>${esc(u.title)}</b><small>${sub}</small>${u.what && u.what.length ? `<small>${esc(u.what[0])}</small>` : ""}${u.who ? `<small>Who: ${esc(u.who)}</small>` : ""}</span><span class="pills"><span class="pill p-${u.kind}">${UP_KIND[u.kind]}</span>${past ? `<span class="pill p-late">${upWhen(u)}</span>` : ""}</span></button>`;
+    };
+    const part = (name, list, past) => list.length ? `<div class="sh">${name} · ${list.length}</div>${list.map(u => row(u, past)).join("")}` : "";
+    h = UP.length ? part("With a date", g.dated) + part("After a feature", g.after) + part("No date yet", g.none) + part("Passed", g.past, true) : '<p class="empty-msg">Nothing planned yet.</p>';
   }
   const list = document.getElementById("list"), top = list.scrollTop;
   list.innerHTML = h; list.scrollTop = top;
@@ -459,7 +625,11 @@ function render(){
   const keep = {y: chart.scrollTop, right: st.lastPpd ? (st.lastStart ?? w0.start) + (chart.scrollLeft + chart.clientWidth - w0.label) / st.lastPpd * DAY : null};
   renderSide();                // the panel changes the chart's width, so place it first
   const w = win();
-  let h = `<div class="inner" style="width:${w.label + w.tw}px"><div class="axis"><div class="lab">Area · feature · request</div><div class="scale"><div class="pins" id="pins"></div><div class="ticks">${ticks(w)}</div></div></div>`;
+  let h = `<div class="inner" style="width:${w.label + w.tw}px"><div class="axis"><div class="lab">Area · feature · request</div><div class="scale">${w.col ? `<div class="nodatehead" style="--s:${pos(w.end,w)}"><span>No date yet</span></div>` : ""}<div class="pins" id="pins"></div><div class="ticks">${ticks(w)}</div>${UP.filter(u => u.kind === "deadline" && u.date && d(u.date) >= w.start && d(u.date) <= w.end).map(u => `<button class="dlx${upPast(u) ? " past" : ""}" style="--s:${pos(d(u.date)+DAY/2,w)}" data-u="${esc(u.id)}" title="${esc(u.title)} · ${fmt(u.date, true)}">${fmt(u.date)} · ${esc(u.title)}</button>`).join("")}</div></div>`;
+  if (UP.length) {
+    const lane = upLane(w), n = UP.filter(u => !upPast(u)).length;
+    h += `<div class="row up" style="--colw:${COLW}px"><div class="lab">Coming up<small>· ${n}</small></div><div class="track" style="height:${lane.height}px">${lane.html}</div></div>`;
+  }
   let shown = 0;
   DATA.groups.forEach(g => {
     const rows = [];
@@ -469,10 +639,12 @@ function render(){
       if ((st.hideDone || filtering()) && !fs.length && !sn.length) return;
       shown++;
       const open = (fs.length || sn.length) && (filtering() || (st.openAll ? !st.open.has("-"+a.name) : st.open.has(a.name)));
-      const stripes = fs.map((f,i) => bars(featureSpans(f).list, w, "st", `--i:${Math.min(i,5)};`)).join("");
+      let stripes = fs.map((f,i) => bars(featureSpans(f).list, w, "st", `--i:${Math.min(i,5)};`)).join("");
+      // one flag per item and kind on the area row (an item that needs two of its features shows once)
+      if (!open) { const seen = new Set(); stripes += flagsHtml(fs.flatMap(f => upFlags(f.id)).filter(x => { const k = x.u.id + "|" + x.kind; return seen.has(k) ? false : seen.add(k); }), w); }
       rows.push(`<div class="row area${fs.length?"":" empty"}${st.sel?.t==="a"&&st.sel.id===a.name?" sel":""}" data-a="${esc(a.name)}" tabindex="0" role="button" aria-expanded="${!!open}">
         <div class="lab">${(fs.length||sn.length)?`<span class="caret">${open?"▾":"▸"}</span>`:'<span class="caret"></span>'}${ring(fs)}<span class="nm">${esc(a.name)}</span><span class="cnt">${fs.length?fs.length+" feature"+(fs.length>1?"s":""):"no open features"}</span></div>
-        <div class="track">${stripes}</div></div>`);
+        <div class="track" style="--colw:${COLW}px">${stripes}</div></div>`);
       if (!open) return;
       fs.forEach(f => {
         const sp = featureSpans(f), reqs = visibleReqs(f), fo = st.openF.has(f.id) || reqs.some(reqMatch);
@@ -482,11 +654,12 @@ function render(){
         if (startedEarly !== null && startedEarly < w.start && sp.list.length) tr += `<span class="early">◂ since ${fmt(new Date(startedEarly).toISOString().slice(0,10), new Date(startedEarly).getUTCFullYear()!==new Date(TODAY).getUTCFullYear())}</span>`;
         if (sp.doneAt && sp.doneAt >= w.start) tr += `<span class="mark donec" style="--s:${pos(sp.doneAt,w)}">✓ done ${fmt(f.doneDate)}</span>`;
         if (f.askedIn && M[f.askedIn]) { const t=d(M[f.askedIn].date); if (t>=w.start) tr += `<span class="ask" style="--s:${pos(t+DAY/2,w)}" title="First asked: ${esc(M[f.askedIn].title)}, ${fmt(M[f.askedIn].date)}"></span>`; }
+        tr += flagsHtml(upFlags(f.id), w);
         const qn = (f.openQ||[]).length, wo = todosOld(f);
         const badges = (qn?`<span class="badge q" title="${qn} open question${qn>1?"s":""} for the client">${qn}</span>`:"") + (wo?`<span class="badge w" title="${wo} to-do${wo>1?"s":""} open over 30 days">${wo}</span>`:"");
         rows.push(`<div class="row feature${st.sel?.t==="f"&&st.sel.id===f.id?" sel":""}" data-f="${esc(f.id)}" tabindex="0" role="button">
           <div class="lab">${(reqs.length||sugFor(f.id).length)?`<button class="caret" data-tf="${esc(f.id)}" aria-label="Show what was added">${fo?"▾":"▸"}</button>`:'<span class="caret"></span>'}<i class="dot" style="background:${COL[f.stage]}"></i><span class="nm" title="${esc(f.label)}">${esc(f.label)}${f.guess?`<span class="guess" title="${esc(guessWhy(f))}">*</span>`:""}</span>${tagChips(f.tags)}${badges}<span class="stg"${badges?' style="margin-left:6px"':""}>${STAGE[f.stage]||f.stage}</span></div>
-          <div class="track" title="${sp.approx?"Stage history not recorded yet: the bar starts when the dashboard first lists it":""}">${tr}</div></div>`);
+          <div class="track" style="--colw:${COLW}px" title="${sp.approx?"Stage history not recorded yet: the bar starts when the dashboard first lists it":""}">${tr}</div></div>`);
         if (!fo) return;
         reqs.filter(q => !st.q || reqMatch(q) || featureText(f).includes(st.q)).forEach(q => {
           const key = f.id+"/"+q.id, end = q.merged ? d(q.merged) : TODAY+DAY;
@@ -512,18 +685,23 @@ function render(){
     const name = `${esc(r.name.split(" - ")[0].replace(/\.$/,""))} · ${fmt(r.date, new Date(d(r.date)).getUTCFullYear() !== new Date(TODAY).getUTCFullYear())}`;
     return `<div class="rl" style="--s:${pos(d(r.date)+DAY/2,w)}" title="${esc(r.name)} · ${fmt(r.date, true)}">${room ? `<span title="${esc(r.name)}">${name}</span>` : ""}</div>`;
   }).join("");
-  h += `<div class="lines" style="left:var(--label)">${relLines}<div class="rl today" style="--s:${pos(TODAY+DAY,w)}"><span>Today · ${fmt(DATA.today)}</span></div></div></div>`;
+  const shade = w.end > TODAY + DAY ? `<div class="future" style="--s:${pos(TODAY+DAY,w)};--w:${(w.end-TODAY-DAY)/w.span}"></div>` : "";
+  const col = w.col ? `<div class="nodatecol" style="--s:${pos(w.end,w)}"></div>` : "";
+  const dlLines = UP.filter(u => u.kind === "deadline" && u.date && d(u.date) >= w.start && d(u.date) <= w.end).map(u =>
+    `<div class="rl dl${upPast(u) ? " past" : ""}" style="--s:${pos(d(u.date)+DAY/2,w)}"></div>`).join("");
+  h += `<div class="lines" style="left:var(--label)">${shade}${col}${relLines}${dlLines}<div class="rl today" style="--s:${pos(TODAY+DAY,w)}"><span>Today · ${fmt(DATA.today)}</span></div></div></div>`;
   chart.innerHTML = h;
-  if (st.toToday) { chart.scrollLeft = chart.scrollWidth; chart.scrollTop = keep.y; st.toToday = false; }
+  if (st.toToday) { chart.scrollLeft = (TODAY + DAY - w.start) / DAY * w.ppd - (chart.clientWidth - w.label) / 3; chart.scrollTop = keep.y; st.toToday = false; }
   else { if (keep.right !== null) chart.scrollLeft = (keep.right - w.start) / DAY * w.ppd - (chart.clientWidth - w.label); chart.scrollTop = keep.y; }
   st.lastPpd = w.ppd; st.lastStart = w.start;
   placePins();
+  placeEdges();
   rw = chart.clientWidth;
   document.getElementById("foot").textContent = `Built ${DATA.built} from ${P.footer || "the BA dashboard"}`;
 }
 
 function ticks(w){
-  const days = Math.round(w.span/DAY), ppd = w.ppd; let out="";
+  const days = Math.round((w.end - w.start)/DAY), ppd = w.ppd; let out="";
   for (let i=0;i<days;i++){
     const t = w.start + i*DAY, x = new Date(t), first = x.getUTCDate()===1, isMon = x.getUTCDay()===1;
     // the year on January and on the first label, so a chart that spans years stays readable
@@ -544,7 +722,7 @@ function placePins(){
   const cl = [];
   ms.forEach(p => { const c = cl[cl.length-1]; if (c && p.x - c[c.length-1].x < GAP) c.push(p); else cl.push([p]); });
   let last = -1e9;
-  document.querySelectorAll(".rl:not(.today) span").forEach(sp => { const x = parseFloat(sp.parentNode.style.getPropertyValue("--s"))*width; sp.hidden = x - last < 110; if (!sp.hidden) last = x; });
+  document.querySelectorAll(".rl:not(.today):not(.dl) span").forEach(sp => { const x = parseFloat(sp.parentNode.style.getPropertyValue("--s"))*width; sp.hidden = x - last < 110; if (!sp.hidden) last = x; });
   box.innerHTML = cl.map(c => {
     const ids = c.map(p=>p.m.id).join(","), x = c.reduce((s,p)=>s+p.x,0)/c.length/width;
     const on = st.sel?.t==="m" && st.sel.id===ids ? " on" : "";
@@ -692,6 +870,18 @@ function renderSide(){
         <label>Link <small>Optional — Figma, a sheet, a document</small><input id="s-link" type="url" placeholder="https://"></label>
         <div class="urow"><button class="btn" type="submit" id="s-send">Send</button><span class="note" id="s-msg">${DB ? "" : "Suggestions can be sent on the published page only."}</span></div>
       </form>`;
+  } else if (s.t==="u"){
+    const u = U[s.id];
+    if (!u) { st.sel = null; side.hidden = true; return; }
+    const featLine = id => F[id] ? `<button class="li click" data-f="${esc(id)}"><i class="dot" style="background:${COL[F[id].stage]}"></i><span class="nm">${esc(F[id].label)}</span>${stagePill(F[id].stage)}</button>` : "";
+    h += `<div class="pills"><span class="pill p-${u.kind}">${UP_KIND[u.kind]}</span>${u.date ? `<span class="pill${upPast(u) ? " p-late" : ""}">${upWhen(u)}</span>` : ""}</div><h2>${esc(u.title)}</h2>`;
+    if (u.date) { const x = new Date(d(u.date)); h += `<p class="note" style="font-size:14px">${["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][x.getUTCDay()]} ${fmt(u.date, true)}</p>`; }
+    else if (u.after) h += `<p class="note" style="font-size:14px">After ${esc(upFeat(u.after))} goes live</p>`;
+    else h += `<p class="note" style="font-size:14px">No date yet</p>`;
+    if (u.what && u.what.length) h += `<div class="sh">What has to happen</div><ul class="bul">${u.what.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    if (u.after) h += `<div class="sh">Comes after</div>${featLine(u.after)}`;
+    if (u.needs && u.needs.length) h += `<div class="sh">Features it needs</div>${u.needs.map(featLine).join("")}`;
+    if (u.who) h += `<div class="sh">Who</div><p style="margin:0">${esc(u.who)}</p>`;
   } else if (s.t==="sg"){
     const x = SUG.find(y => y.id === s.id);
     if (!x) { st.sel = null; side.hidden = true; return; }
@@ -782,6 +972,7 @@ function show(){
   const attr = {f:"data-f", q:"data-q", a:"data-a", sg:"data-sg"}[s.t];
   if (attr) chart.querySelectorAll(".row[" + attr + "]").forEach(r => { if (r.getAttribute(attr) === s.id) r.classList.add("sel"); });
   if (s.t === "m") chart.querySelectorAll("#pins [data-m]").forEach(r => { if (r.dataset.m === s.id) r.classList.add("on"); });
+  chart.querySelectorAll(".um[data-u]").forEach(r => r.classList.toggle("on", s.t === "u" && r.dataset.u === s.id));
   if (side.hidden) render();   // the panel had nothing to show
 }
 function select(t,id){ st.sel = (st.sel && st.sel.t===t && st.sel.id===id) ? null : {t,id}; show(); }
@@ -789,7 +980,7 @@ function select(t,id){ st.sel = (st.sel && st.sel.t===t && st.sel.id===id) ? nul
 document.addEventListener("click", e => {
   const tab = e.target.closest("#tabs button");
   if (tab) return setView(tab.dataset.view);
-  const el = e.target.closest("#legendBtn,#suggestBtn,[data-suggest],[data-sg],[data-close],[data-tf],[data-i],[data-m],[data-q],[data-f],[data-a],#period button,#hideDone,#openAll");
+  const el = e.target.closest("#legendBtn,#suggestBtn,[data-suggest],[data-ue],[data-u],[data-sg],[data-close],[data-tf],[data-i],[data-m],[data-q],[data-f],[data-a],#period button,#hideDone,#openAll");
   if (!el) return;
   if (el.matches("[data-close]")) { st.sel=null; return render(); }
   if (el.matches("#period button")) { st.period = el.dataset.p; st.toToday = true; try{localStorage.setItem("epd-tl-period",st.period);}catch(err){} syncToolbar(); return render(); }
@@ -815,6 +1006,8 @@ document.addEventListener("click", e => {
     st.sel = {t:"new", id:target}; return show();
   }
   if (el.dataset.suggest) { st.sel = {t:"new", id:el.dataset.suggest}; return show(); }
+  if (el.dataset.ue) return goToUp(el.dataset.ue);
+  if (el.dataset.u) return select("u", el.dataset.u);
   if (el.dataset.sg) { st.sel = {t:"sg", id:el.dataset.sg}; return show(); }
   if (el.dataset.m && el.dataset.m.startsWith("sg:") && !el.dataset.m.includes(",")) { st.sel = {t:"sg", id:el.dataset.m.slice(3)}; return show(); }
   if (el.dataset.i) { st.sel = {t:"i", id:el.dataset.i}; return show(); }
@@ -839,7 +1032,8 @@ document.getElementById("legend").innerHTML =
   `<span><i class="sw c-spec" style="opacity:.45"></i>no stage history yet</span><span style="color:var(--done)">┆ release</span>` +
   Object.entries(MK).map(([k,v])=>`<span><span class="pin sm k-${k}">${ICON[k]}</span>${v.toLowerCase()}</span>`).join("") +
   `<span><span class="pin sm grp">3</span>several close together</span><span>▼ where it was asked</span>` +
-  `<span><span class="badge q" style="margin:0">2</span>open questions</span><span><span class="badge w" style="margin:0">1</span>to-dos open over 30 days</span>`;
+  `<span><span class="badge q" style="margin:0">2</span>open questions</span><span><span class="badge w" style="margin:0">1</span>to-dos open over 30 days</span>` +
+  `<span><i class="dia sm deadline"></i>deadline</span><span><i class="dia sm"></i>release or planned, on its date</span><span><i class="dia sm after"></i>after a feature</span><span><i class="dia sm nodate"></i>no date yet</span>`;
 (function people(){
   const req = new Set(), wait = new Set();
   Object.values(F).forEach(f => { (f.who||[]).forEach(n=>req.add(n)); (f.requests||[]).forEach(q=>q.askedBy&&req.add(q.askedBy.split(" ")[0])); (f.todos||[]).forEach(x=>wait.add(whoKey(x.who))); });
@@ -897,5 +1091,6 @@ if (window.claude && typeof window.claude.use === "function") {
     if (st.sel && st.sel.t === "i") render();
   }, () => {});
 }
+{ let raf = 0; document.getElementById("chart").addEventListener("scroll", () => { if (st.view !== "tl" || raf) return; raf = requestAnimationFrame(() => { raf = 0; placeEdges(); }); }, {passive:true}); }
 new ResizeObserver(() => { const c = document.getElementById("chart"); if (Math.abs(c.clientWidth - rw) > 4) { rw = c.clientWidth; render(); } }).observe(document.getElementById("chart"));
 </script>

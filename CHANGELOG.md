@@ -1,6 +1,24 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 — 2026-11-09
+
+- **`portal-publish` contract 1.9.0** (tag `portal-contract-1.9.0`): "Coming up" — planned deadlines, releases
+  and steps on the Timeline, on the BA page and the Portal (Timeline slice 4b, Vadim, 8 Nov 2026).
+  - **Deploy the Portal first, then update ba-tools in the BA repos.** A Portal still on 1.8.0 refuses a Timeline
+    send that carries `upcoming` (its top level takes no unknown field).
+  - `timeline/1` gains an optional **`upcoming`** (≤ 500 `{ id, title ≤ 300, kind deadline · release · planned,
+    date?, after?, needs?, what? (≤ 20 lines), who? (≤ 200) }`; never both `date` and `after`), and
+    `publish-reply/1`'s `client_timeline_1` with it. Clients see every field. New named checks
+    **`unique_upcoming_id`** and **`known_feature`** (`needs` and `after` name a row of the send).
+  - `index.json`: `contract_folder` `1.9.0`; `accepted` is unchanged. `timeline-1-small` carries three items (a
+    deadline, one after a feature, one with no date); new invalid cases `tl1-upcoming-…` (7).
+  - `portal-publish timeline plan`: the dry run lists "Coming up (N)"; a problem in an item names it.
+- **`timeline`**: the data file's new **`upcoming:`** list (see `skills/timeline/SKILL.md`). The page draws a
+  "Coming up" lane (with edge chips for items out of view), deadline lines, a "No date yet" column, flags on the
+  features named, a panel and a "Coming up" tab; the chart runs past today to the last dated item or future
+  release, plus 7 days. The build stops with one plain line on a bad item, and keeps dated future releases (the
+  dashboard's unreleased ones dated today or later). `milestones:` stays the old name for pins. First tests:
+  `skills/timeline/tests` (`uv run pytest`).
 
 - **`portal-publish` contract 1.8.0** (tag `portal-contract-1.8.0`): Client suggestions from the Portal Timeline
   (Timeline slice 4, Vadim, 6 Nov 2026).

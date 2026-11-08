@@ -52,6 +52,7 @@ optional.
 | `client_contacts` | ≤ 200 `{ name ≤ 100, email?, slack? }`, as in `dashboard/2` | yes (may be empty) | portal |
 | `clarification_pages` | ≤ 1,000 page slugs, as in `dashboard/2`; unique (`unique_page_slug`). Missing: no page is touched | no | portal |
 | `suggestion_status` | since 1.8.0: ≤ 100,000 decisions on Client suggestions, below | no | client |
+| `upcoming` | since 1.9.0: ≤ 500 planned events ("Coming up"), below | no | client |
 
 `product`: `name` (≤ 200), `tagWord` ("Release" or "Phase", ≤ 40), `tracker` ("jira", "github-bmad", ≤ 40), `ba`
 (the BA's first name, ≤ 100), `footer` (≤ 5,000, may be empty), all required; `workLink` (`https://` link ≤ 2,000),
@@ -138,10 +139,33 @@ suggestion in once (`answers/3`). The BA marks it Accepted or Declined in the pr
   suggestion of another product).
 - The Client view (`client_timeline_1`) carries the list as sent.
 
+## Coming up (`upcoming`, since 1.9.0)
+
+Planned events, from the data file's `upcoming:` list (ba-tools `skills/timeline`): a hard deadline, a
+step that waits for a feature, a change with no date yet. The Portal shows them in the "Coming up" lane at the
+top of the chart, in the "Coming up" tab, and as flags on the features they name. Clients see every field (Vadim,
+6 Nov: the Client sees the same as the BA).
+
+| Field | Type | Required | Who sees |
+|---|---|---|---|
+| `id` | text ≤ 100, unique in the send (`unique_upcoming_id`) | yes | id |
+| `title` | text ≤ 300 | yes | client |
+| `kind` | `deadline` · `release` · `planned` | yes | client |
+| `date` | date `YYYY-MM-DD` | no | client |
+| `after` | a row `id` of the send (`known_feature`): it comes after that feature goes live | no | id |
+| `needs` | ≤ 50 row `id`s of the send (`known_feature`) | no | id |
+| `what` | ≤ 20 lines, each text ≤ 2,000: what has to happen | no | client |
+| `who` | text ≤ 200 | no | client |
+
+- An item has `date`, or `after`, or neither ("No date yet") — never both (a schema rule: a `not`, reported at the
+  item, `/upcoming/<n>`).
+- An item whose `date` has passed stays, greyed, with "N days late", until the BA removes it from the list.
+- Each send replaces the whole list. Without the field there is nothing coming up.
+
 ## Named checks
 
 In this order (see `checks.md`): `unique_feature_id`, `unique_item_key`, `unique_pin_id`, `unique_page_slug`,
-`known_pin`, `known_page`, `no_html_entities`. `no_html_entities` skips the links (`product.workLink`, area
+`known_pin`, `known_page`, `unique_upcoming_id` and `known_feature` (both since 1.9.0), `no_html_entities`. `no_html_entities` skips the links (`product.workLink`, area
 `link.url`, work `url`), the Client contacts' emails and the text copied from the tracker (work `title` and
 `status`, `releases[].name`).
 
@@ -149,5 +173,5 @@ In this order (see `checks.md`): `unique_feature_id`, `unique_item_key`, `unique
 
 The Portal replies `publish-reply/1` (kind `dashboard`). `counts`: `features` = every row plus their changes and
 bugs, `items` = the to-dos, `client_contacts`, `areas`, `pins`. A dry run carries `client_view` in the
-`client_timeline_1` form: the send without the envelope, `client_contacts` and `clarification_pages`, and
+`client_timeline_1` form (with `suggestion_status` and `upcoming` as sent): the send without the envelope, `client_contacts` and `clarification_pages`, and
 `client_contact_names`. With `clarification_pages`, `pages_removed` comes as for `dashboard/2`.

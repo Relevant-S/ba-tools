@@ -3,7 +3,7 @@
 # `ba-setup project` fills most of it in for you. What each key means: profile/README.md in ba-tools.
 
 profile_version: 2
-ba_tools_version: 0.7.0
+ba_tools_version: 0.8.0
 project: '<display name>'
 
 products:
