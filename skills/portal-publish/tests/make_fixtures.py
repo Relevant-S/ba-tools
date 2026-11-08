@@ -19,6 +19,9 @@ every field the real builds use, a real-size one shaped like Acme Lending's real
 that break the small one, the replies to a Timeline send, and an `answers/2` batch with an update on a `todo`.
 Contract 1.7.0 adds a screen's optional `figma` link (the Open in Figma button) to both pages, to the page replies'
 Client view, and `figma-…` cases that break it (check figma_link).
+Contract 1.8.0 adds Client suggestions: `answers/3` batches (`answers/2` plus the suggestions sent on the Portal
+Timeline) with `answers3-…` cases that break them, and the optional `suggestion_status` of `timeline/1` (the BA's
+Accepted or Declined, in the small file) with `tl1-suggestion-…` cases.
 
 Pages: the clarification-page skill's example-probate-decisions.yaml converted to clarification/1, and a
 synthetic page of Merchants V7 size (6 Questions, 18 options, 4 screens). A page's invalid case is the
@@ -722,10 +725,19 @@ def timeline(features_by_area: list[list[int]], n_requests: int, n_todos: int, n
     }
 
 
+# The suggestions of the answers/3 fixtures; the small timeline/1 decides two of them (contract 1.8.0).
+SUGGESTION_IDS = ["019a5a10-0b00-7c00-8a00-000000000001", "019a5a10-0b00-7c00-8a00-000000000002",
+                  "019a5a10-0b00-7c00-8a00-000000000003"]
+
+
 def timeline_small() -> dict:
     """The small timeline/1: every field the real builds use, at least once, and every stage (design on a row,
-    live on a request)."""
+    live on a request). Since 1.8.0 it decides two suggestions (suggestion_status)."""
     d = timeline([[3, 2], [4]], 7, 9, 6, 7, 3, TL_PAGES, 2)
+    d["suggestion_status"] = [
+        {"id": SUGGESTION_IDS[0], "status": "accepted", "reason": "Planned for the next release."},
+        {"id": SUGGESTION_IDS[1], "status": "declined", "reason": "Out of scope for the pilot."},
+    ]
     rows = tl_rows(d)
     rows[1]["stages"] = [{"stage": "concept", "from": day(1)}, {"stage": "design", "from": day(10)}]
     rows[1]["stage"] = "design"
@@ -813,6 +825,13 @@ def tl_invalid_cases() -> dict[str, tuple[dict, dict]]:
     case("tl1-unknown-page", d, "contract_invalid", "known_page", f0 + "/page")
     d = timeline_small(); tl_rows(d)[0]["label"] = "Fees &amp; limits"
     case("tl1-html-entity", d, "contract_invalid", "no_html_entities", f0 + "/label")
+    # suggestion_status (contract 1.8.0)
+    d = timeline_small(); d["suggestion_status"][0]["status"] = "maybe"
+    case("tl1-suggestion-bad-status", d, "contract_invalid", "schema", "/suggestion_status/0/status")
+    d = timeline_small(); d["suggestion_status"][1]["id"] = "suggestion-2"
+    case("tl1-suggestion-bad-id", d, "contract_invalid", "schema", "/suggestion_status/1/id")
+    d = timeline_small(); del d["suggestion_status"][0]["reason"]
+    case("tl1-suggestion-missing-reason", d, "contract_invalid", "schema", "/suggestion_status/0/reason")
     return cases
 
 
@@ -1204,6 +1223,23 @@ def reply_invalid_cases() -> dict[str, tuple[str, dict, str]]:
     a = copy.deepcopy(b2); del a["updates"][0]["resolved"]
     case("answers2-update-missing-resolved", "answers/2", a, "/updates/0/resolved")
     case("answers2-sent-as-answers1", "answers/1", b2, "/contract")
+    # answers/3 (contract 1.8.0): answers/2 plus the Client's suggestions
+    b3, e3 = r["answers-3-batch.json"], r["answers-3-nothing-to-fetch.json"]
+    case("answers3-missing-suggestions", "answers/3", {k: v for k, v in b3.items() if k != "suggestions"},
+         "/suggestions")
+    case("answers3-no-batch-with-suggestions", "answers/3", {**e3, "suggestions": b3["suggestions"]}, "/suggestions")
+    case("answers3-batch-with-nothing", "answers/3", {**b3, "answers": [], "updates": [], "suggestions": []}, "")
+    a = copy.deepcopy(b3); a["suggestions"][0]["type"] = "wish"
+    case("answers3-suggestion-bad-type", "answers/3", a, "/suggestions/0/type")
+    a = copy.deepcopy(b3); a["suggestions"][0]["title"] = "T" * 121
+    case("answers3-suggestion-title-too-long", "answers/3", a, "/suggestions/0/title")
+    a = copy.deepcopy(b3); a["suggestions"][1]["link"] = "http://example.com/sheet"
+    case("answers3-suggestion-link-http", "answers/3", a, "/suggestions/1/link")
+    a = copy.deepcopy(b3); a["suggestions"][1]["urgency"] = "urgent"
+    case("answers3-suggestion-bad-urgency", "answers/3", a, "/suggestions/1/urgency")
+    a = copy.deepcopy(b3); del a["suggestions"][0]["area"]
+    case("answers3-suggestion-missing-area", "answers/3", a, "/suggestions/0/area")
+    case("answers3-sent-as-answers2", "answers/2", b3, "/contract")
     req = r["reserve-request-1.json"]
     case("reserve-request-empty", "reserve-request/1", {}, "/accept")
     case("reserve-request-empty-accept", "reserve-request/1", {"accept": []}, "/accept")
@@ -1458,7 +1494,26 @@ def replies() -> dict[str, dict]:
         "id": "019a2b95-0a00-7c00-8a00-000000000004", "sent_at": "2026-11-06T09:00:00.000Z", "person": person,
         "item": {"key": item_key("todo", todo_t), "kind": "todo", "title": todo_t},
         "note": "We would like to read it before the call.", "resolved": False}]}
+    # answers/3 (contract 1.8.0): the Client's suggestions from the Portal Timeline.
+    suggestions = [
+        {"id": SUGGESTION_IDS[0], "sent_at": "2026-11-06T12:00:00.000Z", "person": person, "type": "change",
+         "feature": "sign-up-with-phone-number", "feature_name": "Sign-up with phone number", "area": "Onboarding", "title": "Let people sign up with email too",
+         "what": "Some staff have no work phone.\nThey cannot finish sign-up today.", "urgency": "soon",
+         "link": None},
+        {"id": SUGGESTION_IDS[1], "sent_at": "2026-11-06T12:30:00.000Z", "person": other, "type": "feature",
+         "feature": None, "feature_name": None, "area": "Back office", "title": "A monthly report of advances by employer",
+         "what": "", "urgency": "nice", "link": "https://example.com/sheets/report-sample"},
+        {"id": SUGGESTION_IDS[2], "sent_at": "2026-11-06T13:15:00.000Z", "person": person, "type": "problem",
+         "feature": "advance-request", "feature_name": "Advance request", "area": "Loans", "title": "The fee shows twice on the confirm screen",
+         "what": "Seen on Android.", "urgency": "blocking", "link": None},
+    ]
+    answers3 = {**answers2, "contract": "answers/3", "batch_id": "019a5a20-3d4e-7e5f-8a60-c1d2e3f4a5b6",
+                "suggestions": suggestions}
     return {
+        "answers-3-batch.json": answers3,
+        "answers-3-suggestions-only.json": {**answers3, "answers": [], "updates": [], "suggestions": suggestions[1:2]},
+        "answers-3-nothing-to-fetch.json": {**answers_empty, "contract": "answers/3", "updates": [],
+                                            "suggestions": []},
         "publish-reply-1-sent.json": base,
         "publish-reply-1-timeline-1-dry-run.json": tl_dry,
         "publish-reply-1-timeline-1-sent.json": tl_sent,
@@ -1476,6 +1531,7 @@ def replies() -> dict[str, dict]:
         "answers-2-updates-only.json": updates_only,
         "answers-2-nothing-to-fetch.json": {**answers_empty, "contract": "answers/2", "updates": []},
         "reserve-request-1.json": {"accept": ["answers/1", "answers/2"]},
+        "reserve-request-1-answers-3.json": {"accept": ["answers/1", "answers/2", "answers/3"]},
         "ack-request-1.json": {"batch_id": answers["batch_id"]},
         "ack-1.json": ack,
         "connect-request-1.json": {"code": "K7P-4XM", "label": "acme-docs · Sample BA"},

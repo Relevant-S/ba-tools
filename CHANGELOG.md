@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- **`portal-publish` contract 1.8.0** (tag `portal-contract-1.8.0`): Client suggestions from the Portal Timeline
+  (Timeline slice 4, Vadim, 6 Nov 2026).
+  - **Deploy the Portal first, then update ba-tools in the BA repos.** A Portal still on 1.7.0 refuses a Timeline
+    send that carries `suggestion_status` (its top level takes no unknown field), and never hands out suggestions.
+  - New **`answers/3`** (`answers-3.schema.json`): `answers/2` plus `suggestions[]` (`id`, `sent_at`, `person`,
+    `type` feature · change · problem, `feature` id or null, `feature_name` (its label when sent) or null, `area`, `title` ≤ 120, `what`, `urgency` nice · soon ·
+    blocking, `link` https:// or null). Given only to a fetcher whose `accept` list holds `answers/3`; each
+    suggestion once, with the same hold and ack as Answers.
+  - `timeline/1` gains an optional **`suggestion_status`** (`[{ id, status: accepted | declined, reason }]`), up to 100,000 entries, and
+    `publish-reply/1`'s `client_timeline_1` view with it. An id the Portal does not know is ignored.
+  - `index.json`: `contract_folder` `1.8.0`, `schemas` adds `answers/3`; `accepted` is unchanged. New fixtures:
+    `answers-3-batch`, `answers-3-suggestions-only`, `answers-3-nothing-to-fetch`, `reserve-request-1-answers-3`;
+    `timeline-1-small` decides two suggestions; invalid cases `answers3-…` (9) and `tl1-suggestion-…` (3).
+- **`fetch-portal`** asks for `answers/3` and writes each suggestion as
+  `docs/BA/intake/YYYY-MM-DD-portal-suggestion-<slug>.md` (`source: portal`, `channel: "Portal suggestion"`,
+  `suggestion_id`), in the same two-step reserve and ack; no file is overwritten.
+- **`portal-publish timeline plan`** fills `suggestion_status` from the product's `docs/BA/timeline/…/suggestions.yaml`
+  (next to its Timeline data file); a bad line stops it with a plain message; the dry run lists every decision.
+
 - **`portal-publish` contract 1.7.0** (tag `portal-contract-1.7.0`): "Open in Figma" on each screen of a Portal
   Clarification page, as on the claude.ai page (Vadim, 6 Nov 2026).
   - **Deploy the Portal first, then update ba-tools in the BA repos.** A Portal still on 1.6.0 refuses a page that

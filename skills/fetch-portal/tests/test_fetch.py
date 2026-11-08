@@ -199,7 +199,7 @@ def test_one_page_writes_one_file_after_the_ack(capsys, project, portal):
     assert "(Merchant payouts, 2 answers)" in res["message"]
     assert portal.paths() == [fetch.RESERVE, fetch.ACK]
     assert json.loads(portal.requests[1].content) == {"batch_id": BATCH["batch_id"]}
-    assert json.loads(portal.requests[0].content) == {"accept": ["answers/1", "answers/2"]}   # reserve-request/1
+    assert json.loads(portal.requests[0].content) == {"accept": ["answers/1", "answers/2", "answers/3"]}   # reserve-request/1
     assert portal.requests[0].headers["Content-Type"] == "application/json"
 
 
@@ -1180,3 +1180,103 @@ def test_sync_twice_adds_nothing_and_an_untick_reopens(capsys, project, portal):
     later.write_text(json.dumps(unticked), encoding="utf-8")
     wait = sync(later)["awaiting"][0]
     assert "done" not in wait and wait["s"] == once["awaiting"][0]["s"]
+
+
+# ---- answers/3: the Client's suggestions from the Portal Timeline (contract 1.8.0, Timeline slice 4) ----------
+
+BATCH3 = read(VALID / "answers-3-batch.json")
+SUGGESTIONS_ONLY = read(VALID / "answers-3-suggestions-only.json")
+NOTHING3 = read(VALID / "answers-3-nothing-to-fetch.json")
+SUG_FILES = ["2026-11-06-portal-suggestion-a-monthly-report-of-advances-by-employer.md",
+             "2026-11-06-portal-suggestion-let-people-sign-up-with-email-too.md",
+             "2026-11-06-portal-suggestion-the-fee-shows-twice-on-the-confirm-screen.md"]
+
+
+def test_answers3_writes_one_intake_file_per_suggestion_after_the_ack(capsys, project, portal):
+    portal.batches = [copy.deepcopy(BATCH3)]
+    code, res = run(capsys, project)
+    assert code == 0 and res["ok"] is True, res
+    assert intake(project) == sorted(["2026-10-27-1100-portal-merchant-payouts.md", *SUG_FILES]), "no .tmp left"
+    assert updates_dir(project) == [UPD_NAME]
+    assert portal.acked == [BATCH3["batch_id"]], "one ack confirms Answers, updates and suggestions"
+    assert ("  - docs/BA/intake/2026-11-06-portal-suggestion-let-people-sign-up-with-email-too.md "
+            "(suggestion: Let people sign up with email too)") in res["message"]
+
+
+def test_suggestion_intake_file_header_and_body(capsys, project, portal):
+    portal.batches = [copy.deepcopy(BATCH3)]
+    run(capsys, project)
+    path = project / fetch.INTAKE / SUG_FILES[1]
+    x = BATCH3["suggestions"][0]
+    assert header(path) == {"source": "portal", "date": "2026-11-06", "channel": "Portal suggestion",
+                            "suggestion_id": x["id"],
+                            "participants": ["Sample Client <sample.client@example.com>"], "processed": False}
+    body = path.read_text(encoding="utf-8").split("---\n", 2)[2]
+    assert body.startswith("# Let people sign up with email too\n")
+    assert "**Type:** Change to a feature  " in body
+    assert "**For:** Sign-up with phone number (`sign-up-with-phone-number`), in Onboarding  " in body
+    assert "**How urgent:** Soon  " in body
+    assert "**Link:**" not in body
+    assert body.endswith("## What and why\n\n- Some staff have no work phone.\n- They cannot finish sign-up today.\n")
+    other = (project / fetch.INTAKE / SUG_FILES[0]).read_text(encoding="utf-8")
+    assert "**For:** a new feature in Back office  " in other
+    assert "**Link:** https://example.com/sheets/report-sample  " in other
+    assert other.endswith("## What and why\n\n- (nothing written)\n")
+
+
+def test_suggestions_come_once_and_no_file_is_overwritten(capsys, project, portal):
+    portal.batches = [copy.deepcopy(SUGGESTIONS_ONLY)]
+    code, res = run(capsys, project)
+    assert code == 0 and intake(project) == [SUG_FILES[0]]
+    code, res = run(capsys, project)                  # the Portal hands it out once: nothing new
+    assert code == 0 and res["message"] == "No new answers since 2026-10-27 11:00 UTC."
+    assert intake(project) == [SUG_FILES[0]]
+    # The same title again (another suggestion): a new file next to it, never over it.
+    again = copy.deepcopy(SUGGESTIONS_ONLY)
+    again["suggestions"][0]["id"] = "019a5a10-0b00-7c00-8a00-000000000009"
+    portal.batches = [again]
+    run(capsys, project)
+    assert intake(project) == sorted([SUG_FILES[0], SUG_FILES[0].replace(".md", "-2.md")])
+
+
+def test_two_suggestions_with_one_title_in_one_batch(capsys, project, portal):
+    b = copy.deepcopy(SUGGESTIONS_ONLY)
+    twin = copy.deepcopy(b["suggestions"][0])
+    twin["id"] = "019a5a10-0b00-7c00-8a00-000000000008"
+    b["suggestions"].append(twin)
+    portal.batches = [b]
+    code, res = run(capsys, project)
+    assert code == 0 and len(intake(project)) == 2, res
+
+
+def test_nothing_new_on_answers3_names_suggestions_too(capsys, project, portal):
+    portal.batches = [copy.deepcopy(NOTHING3)]
+    code, res = run(capsys, project)
+    assert code == 0 and res["message"] == "No new answers, updates or suggestions since 2026-10-27 11:00 UTC."
+
+
+def test_ack_no_reply_keeps_the_suggestion_tmp_then_the_next_run_finishes_it(capsys, project, portal):
+    portal.batches = [copy.deepcopy(SUGGESTIONS_ONLY)]
+    portal.ack_mode = "noreply"
+    code, res = run(capsys, project)
+    assert code == 1
+    tmp = f"portal-{SUGGESTIONS_ONLY['batch_id']}--suggestion-a-monthly-report-of-advances-by-employer.md.tmp"
+    assert intake(project) == sorted([tmp, f"portal-{SUGGESTIONS_ONLY['batch_id']}.complete"])
+    portal.ack_mode = "ok"
+    code, res = run(capsys, project)
+    assert code == 0, res
+    assert intake(project) == [SUG_FILES[0]], "the leftover is acked and renamed to the day it was sent"
+
+
+def test_what_and_why_loses_at_most_one_bullet_mark():
+    assert fetch.bullet_text("-5% fee") == "-5% fee"
+    assert fetch.bullet_text("- -5% fee") == "-5% fee"
+    assert fetch.bullet_text("• • two") == "• two"
+    assert fetch.bullet_text("  plain  ") == "plain"
+    x = {**BATCH3["suggestions"][0], "what": "-5% fee\n- point"}
+    assert fetch.render_suggestion("Sample", x).endswith("## What and why\n\n- -5% fee\n- point\n")
+
+
+def test_feature_name_falls_back_to_the_id():
+    x = {**BATCH3["suggestions"][0], "feature_name": None}
+    assert "**For:** sign-up-with-phone-number (`sign-up-with-phone-number`), in Onboarding  " in fetch.render_suggestion("Sample", x)

@@ -1,0 +1,58 @@
+{
+  "contract": "answers/3",
+  "batch_id": null,
+  "reserved_until": null,
+  "last_fetched_at": "2026-10-27T11:00:31.007Z",
+  "answers": [],
+  "updates": [],
+  "suggestions": [
+    {
+      "id": "019a5a10-0b00-7c00-8a00-000000000001",
+      "sent_at": "2026-11-06T12:00:00.000Z",
+      "person": {
+        "name": "Sample Client",
+        "email": "sample.client@example.com"
+      },
+      "type": "change",
+      "feature": "sign-up-with-phone-number",
+      "feature_name": "Sign-up with phone number",
+      "area": "Onboarding",
+      "title": "Let people sign up with email too",
+      "what": "Some staff have no work phone.\nThey cannot finish sign-up today.",
+      "urgency": "soon",
+      "link": null
+    },
+    {
+      "id": "019a5a10-0b00-7c00-8a00-000000000002",
+      "sent_at": "2026-11-06T12:30:00.000Z",
+      "person": {
+        "name": "Second Person",
+        "email": "second.person@example.com"
+      },
+      "type": "feature",
+      "feature": null,
+      "feature_name": null,
+      "area": "Back office",
+      "title": "A monthly report of advances by employer",
+      "what": "",
+      "urgency": "nice",
+      "link": "https://example.com/sheets/report-sample"
+    },
+    {
+      "id": "019a5a10-0b00-7c00-8a00-000000000003",
+      "sent_at": "2026-11-06T13:15:00.000Z",
+      "person": {
+        "name": "Sample Client",
+        "email": "sample.client@example.com"
+      },
+      "type": "problem",
+      "feature": "advance-request",
+      "feature_name": "Advance request",
+      "area": "Loans",
+      "title": "The fee shows twice on the confirm screen",
+      "what": "Seen on Android.",
+      "urgency": "blocking",
+      "link": null
+    }
+  ]
+}

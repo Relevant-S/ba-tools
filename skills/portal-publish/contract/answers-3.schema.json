@@ -1,0 +1,657 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/answers-3.schema.json",
+  "title": "answers/3",
+  "description": "Since 1.8.0. The 200 reply to POST /api/v1/answers/reserve when the request's accept list holds answers/3 (reserve-request/1). answers/2 plus suggestions: the Client's suggestions sent with the Suggest button on the Portal Timeline (a new feature, a change, or something wrong). Each suggestion is handed out once, like an Answer: the Portal puts every sent Answer, update and suggestion not yet handed out into one new batch, held until reserved_until. With nothing to hand out, batch_id and reserved_until are null, all three lists are empty and nothing is written. Order of suggestions: sent_at, then id. One ack (ack-request/1) confirms all three. The BA's Accepted or Declined goes back in the next timeline/1 send (suggestion_status).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "batch_id",
+    "reserved_until",
+    "last_fetched_at",
+    "answers",
+    "updates",
+    "suggestions"
+  ],
+  "properties": {
+    "contract": {
+      "type": "string",
+      "const": "answers/3"
+    },
+    "batch_id": {
+      "description": "The batch to acknowledge (UUID v7), or null when there is nothing to hand out.",
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reserved_until": {
+      "description": "Until when the batch is held, UTC, exactly YYYY-MM-DDTHH:MM:SS.sssZ; null with no batch.",
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 24,
+          "maxLength": 24,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "last_fetched_at": {
+      "description": "When Answers were last handed out (a batch acknowledged), UTC; null if never.",
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 24,
+          "maxLength": 24,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "answers": {
+      "description": "The sent Answers in the batch.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "sent_at",
+          "person",
+          "page",
+          "round",
+          "question",
+          "option",
+          "note",
+          "replaces"
+        ],
+        "description": "One sent Answer. It has an option, a note, or both.",
+        "not": {
+          "required": [
+            "option",
+            "note"
+          ],
+          "properties": {
+            "option": {
+              "type": "null"
+            },
+            "note": {
+              "type": "null"
+            }
+          }
+        },
+        "properties": {
+          "id": {
+            "description": "The Answer's id (UUID v7).",
+            "type": "string",
+            "format": "uuid",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "sent_at": {
+            "description": "When the person sent it, UTC.",
+            "type": "string",
+            "minLength": 24,
+            "maxLength": 24,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+            "format": "date-time"
+          },
+          "person": {
+            "description": "Who sent it. A removed person's Answers still come, with name and email.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "email"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "email": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 254,
+                "format": "email"
+              }
+            }
+          },
+          "page": {
+            "description": "The Clarification page.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "slug",
+              "title"
+            ],
+            "properties": {
+              "slug": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?![\\s\\S])"
+              },
+              "title": {
+                "description": "The page name, from the Round's newest version.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              }
+            }
+          },
+          "round": {
+            "description": "The Round the Answer was sent on.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "label",
+              "published_at"
+            ],
+            "properties": {
+              "key": {
+                "description": "The Round's store_key.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "published_at": {
+                "description": "When the Round was first published, UTC.",
+                "type": "string",
+                "minLength": 24,
+                "maxLength": 24,
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+                "format": "date-time"
+              }
+            }
+          },
+          "question": {
+            "description": "The Question, from the Round's newest version.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "position"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "position": {
+                "description": "The Question's place on the page, counting from 1.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 50
+              }
+            }
+          },
+          "option": {
+            "description": "The chosen option, or null when the person sent only a note.",
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "v",
+                  "text"
+                ],
+                "properties": {
+                  "v": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "description": "The person's note, or null.",
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "replaces": {
+            "description": "The same person's newest earlier sent Answer on the same Round and Question, or null.",
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "sent_at",
+                  "person_name",
+                  "option",
+                  "note"
+                ],
+                "not": {
+                  "required": [
+                    "option",
+                    "note"
+                  ],
+                  "properties": {
+                    "option": {
+                      "type": "null"
+                    },
+                    "note": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  "sent_at": {
+                    "type": "string",
+                    "minLength": 24,
+                    "maxLength": 24,
+                    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+                    "format": "date-time"
+                  },
+                  "person_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "option": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "v",
+                          "text"
+                        ],
+                        "properties": {
+                          "v": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "text": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "note": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 5000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "updates": {
+      "description": "The Client's saves on Items in the batch. One entry per save; the latest save of an Item says whether it is resolved.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "sent_at",
+          "person",
+          "item",
+          "note",
+          "resolved"
+        ],
+        "description": "One save on one Item's Update box.",
+        "properties": {
+          "id": {
+            "description": "The save's id (UUID v7).",
+            "type": "string",
+            "format": "uuid",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "sent_at": {
+            "description": "When the person saved it, UTC.",
+            "type": "string",
+            "minLength": 24,
+            "maxLength": 24,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+            "format": "date-time"
+          },
+          "person": {
+            "description": "Who saved it. A removed person's saves still come, with name and email.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "email"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "email": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 254,
+                "format": "email"
+              }
+            }
+          },
+          "item": {
+            "description": "The Item, as the BA page names it.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "kind",
+              "title"
+            ],
+            "properties": {
+              "key": {
+                "description": "The BA page's item key: the first 12 hex characters of sha1(\"<kind>|<title>\") (title trimmed, UTF-8). Not the dashboard/2 key, which holds the parent too.",
+                "type": "string",
+                "minLength": 12,
+                "maxLength": 12,
+                "pattern": "^[0-9a-f]{12}$"
+              },
+              "kind": {
+                "description": "waiting or agenda; since 1.6.0 also todo (a to-do of a timeline/1 send).",
+                "type": "string",
+                "enum": [
+                  "waiting",
+                  "agenda",
+                  "todo"
+                ]
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            }
+          },
+          "note": {
+            "description": "The note, plain text, or null when the person only changed the tick.",
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolved": {
+            "description": "The Resolved tick as it was at this save.",
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "suggestions": {
+      "description": "The Client's suggestions in the batch, one entry per suggestion. A suggestion cannot be changed or withdrawn once sent.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "sent_at",
+          "person",
+          "type",
+          "feature",
+          "feature_name",
+          "area",
+          "title",
+          "what",
+          "urgency",
+          "link"
+        ],
+        "description": "One suggestion.",
+        "properties": {
+          "id": {
+            "description": "The suggestion's id (UUID v7). The BA's decision names it (timeline/1 suggestion_status).",
+            "type": "string",
+            "format": "uuid",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "sent_at": {
+            "description": "When the person sent it, UTC.",
+            "type": "string",
+            "minLength": 24,
+            "maxLength": 24,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+            "format": "date-time"
+          },
+          "person": {
+            "description": "Who sent it. A removed person's suggestions still come, with name and email.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "email"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "email": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 254,
+                "format": "email"
+              }
+            }
+          },
+          "type": {
+            "description": "feature (a new feature), change (a change to a feature) or problem (something's wrong).",
+            "type": "string",
+            "enum": [
+              "feature",
+              "change",
+              "problem"
+            ]
+          },
+          "feature": {
+            "description": "The id of the Timeline row (feature) it is for, as the latest timeline/1 send named it; null when it is for an area (a new feature there).",
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "feature_name": {
+            "description": "The feature's label on the Timeline when the suggestion was sent; null when it is for an area.",
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "area": {
+            "description": "The area it is for: the area chosen, or the feature's area.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "title": {
+            "description": "The title, plain text.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "what": {
+            "description": "What and why, plain text, one point per line. May be empty.",
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 5000
+          },
+          "urgency": {
+            "description": "nice (Nice to have), soon (Soon) or blocking (Blocking us).",
+            "type": "string",
+            "enum": [
+              "nice",
+              "soon",
+              "blocking"
+            ]
+          },
+          "link": {
+            "description": "An optional https:// link (Figma, a sheet, a document), or null.",
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 9,
+                "maxLength": 2000,
+                "pattern": "^https://[^\\s]+(?![\\s\\S])",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "if": {
+    "properties": {
+      "batch_id": {
+        "type": "null"
+      }
+    },
+    "required": [
+      "batch_id"
+    ]
+  },
+  "then": {
+    "properties": {
+      "reserved_until": {
+        "type": "null"
+      },
+      "answers": {
+        "type": "array",
+        "maxItems": 0
+      },
+      "updates": {
+        "type": "array",
+        "maxItems": 0
+      },
+      "suggestions": {
+        "type": "array",
+        "maxItems": 0
+      }
+    }
+  },
+  "else": {
+    "description": "A batch holds at least one Answer, one update or one suggestion. Written as not (all empty), so the error has one path (the whole reply) in every checker.",
+    "properties": {
+      "reserved_until": {
+        "type": "string"
+      }
+    },
+    "not": {
+      "properties": {
+        "answers": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "updates": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "suggestions": {
+          "type": "array",
+          "maxItems": 0
+        }
+      },
+      "required": [
+        "answers",
+        "updates",
+        "suggestions"
+      ]
+    }
+  }
+}

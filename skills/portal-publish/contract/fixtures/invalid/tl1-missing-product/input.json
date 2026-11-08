@@ -867,5 +867,17 @@
     "sign-up-questions",
     "advance-limits",
     "payday-repayment"
+  ],
+  "suggestion_status": [
+    {
+      "id": "019a5a10-0b00-7c00-8a00-000000000001",
+      "status": "accepted",
+      "reason": "Planned for the next release."
+    },
+    {
+      "id": "019a5a10-0b00-7c00-8a00-000000000002",
+      "status": "declined",
+      "reason": "Out of scope for the pilot."
+    }
   ]
 }

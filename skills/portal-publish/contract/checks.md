@@ -312,6 +312,11 @@ path is `/groups/<g>/areas/<a>/features/<i>`.
   null field. Its reply counts (each up to 1,000,000) `features` (rows plus their changes and bugs), `items` (to-dos),
   `client_contacts`, `areas` and `pins`, and a dry run's `client_view` is `client_timeline_1`. `answers/2` takes
   the item kind `todo` (a to-do of a `timeline/1` send).
+- Since 1.8.0 `answers/3` (Client suggestions from the Portal Timeline) is checked by its schema only, like
+  `answers/2`; its "a batch holds at least one Answer, update or suggestion" rule is a `not` at path `""`. A
+  suggestion's `link` is `https://` only (the `workLink` pattern). `timeline/1` may carry `suggestion_status`
+  (`[{ id, status, reason }]`, the BA's Accepted or Declined); no named check is added, and `reason` follows the
+  plain-text rule (`no_html_entities`). An id the Portal does not know is ignored, not refused.
 - Python: `Draft202012Validator(schema, format_checker=FormatChecker())` from `jsonschema[format-nongpl]`.
 - Portal: `Ajv2020` with `strict: true` and `allErrors: true`, `ajv-formats`, and `x-visibility` added with
   `addKeyword` and an enum meta-schema (`client`, `id`, `portal`, `admin`), so a schema with any other value does

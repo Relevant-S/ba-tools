@@ -1,5 +1,6 @@
-"""fetch-portal — bring the Client's Answers from the Relevant Clients Portal into docs/BA/intake/, and the Client's
-updates on dashboard items into docs/BA/portal-updates/. Prints one JSON line.
+"""fetch-portal — bring the Client's Answers from the Relevant Clients Portal into docs/BA/intake/, the Client's
+updates on dashboard items into docs/BA/portal-updates/, and the Client's suggestions from the Portal Timeline into
+docs/BA/intake/ (one file each). Prints one JSON line.
 
     uv run --project <skills>/fetch-portal python <skills>/fetch-portal/fetch.py [--root <project>]
 
@@ -7,15 +8,18 @@ Run from the project root, or pass --root. What it does, in order:
   1. Leftover .tmp files from an earlier run (docs/BA/intake/portal-<batch_id>-<slug>.md.tmp, and
      docs/BA/portal-updates/portal-<batch_id>-<product>.json.tmp): ack that batch.
      200 → rename to the real name; batch_expired or batch_unknown → delete; no reply → keep them and stop.
-  2. Reserve a batch: POST /api/v1/answers/reserve with {"accept": ["answers/1", "answers/2"]}. The Portal replies
-     answers/2 (Answers plus the Client's updates: notes and Resolved ticks on Waiting and agenda items), or
-     answers/1 (an older Portal: Answers only). Nothing new → say so, write nothing.
-  3. Write one file per Clarification page under a .tmp name, and one updates file per product when there are
+  2. Reserve a batch: POST /api/v1/answers/reserve with {"accept": ["answers/1", "answers/2", "answers/3"]}. The
+     Portal replies answers/3 (Answers, the Client's updates — notes and Resolved ticks on Waiting and agenda items —
+     and the Client's suggestions from the Timeline), or answers/2 or answers/1 (an older Portal: no suggestions, or
+     Answers only). Nothing new → say so, write nothing.
+  3. Write one file per Clarification page under a .tmp name, one file per suggestion
+     (docs/BA/intake/portal-<batch_id>--suggestion-<slug>.md.tmp), and one updates file per product when there are
      updates, then a marker portal-<batch_id>.complete once every file is on disk, then ack:
      POST /api/v1/answers/ack (3 tries). A leftover batch with no marker was cut off mid-write: its .tmp files are
      deleted, never acked, and its Answers and updates come again after the hold.
-  4. On 200, rename each to docs/BA/intake/YYYY-MM-DD-HHMM-portal-<slug>.md, and the updates file to
-     docs/BA/portal-updates/YYYY-MM-DD-HHMM-<product>.json (-2, -3 … if taken).
+  4. On 200, rename each to docs/BA/intake/YYYY-MM-DD-HHMM-portal-<slug>.md, each suggestion to
+     docs/BA/intake/YYYY-MM-DD-portal-suggestion-<slug>.md (the day it was sent), and the updates file to
+     docs/BA/portal-updates/YYYY-MM-DD-HHMM-<product>.json (-2, -3 … if taken: no file is overwritten).
 
 The updates file is in the shape of the BA page's own `resolutions` store, one entry per item:
 {key, kind, title, resolved, notes: [{at, text, by}], updatedAt}, notes oldest first. ba-dashboard's
@@ -26,7 +30,7 @@ must ignore: PORTAL_PUBLISH_KEY in a repo with one product. A repo with two or m
 per product: tools.portal.products names each product's .env variable, and the steps above run for every product, in
 that order, each with its own key. One product's failure does not stop the others. Keys are never printed. The
 settings are read by portal-publish's targets.py (one copy for both skills). Every reply is checked against the
-portal-publish contract (answers/1 or answers/2, ack/1); a reply that fails stops that product's run: nothing
+portal-publish contract (answers/1, answers/2 or answers/3, ack/1); a reply that fails stops that product's run: nothing
 written, no ack.
 """
 from __future__ import annotations
@@ -51,7 +55,7 @@ TARGETS_PY = SKILLS / "portal-publish" / "targets.py"
 PROFILE = "docs/BA/specs/.ba-profile.yml"
 INTAKE = "docs/BA/intake"
 UPDATES = "docs/BA/portal-updates"
-ACCEPT = ["answers/1", "answers/2"]   # the batch versions this fetcher reads (reserve-request/1)
+ACCEPT = ["answers/1", "answers/2", "answers/3"]   # the batch versions this fetcher reads (reserve-request/1)
 RESERVE = "/api/v1/answers/reserve"
 ACK = "/api/v1/answers/ack"
 STATUS = "/api/v1/status"
@@ -66,6 +70,10 @@ key_name = DEFAULT_KEY            # the .env variable of the product being fetch
 TMP_NAME = re.compile(r"^portal-([0-9a-fA-F-]{36})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md\.tmp$")
 DONE_NAME = re.compile(r"^portal-([0-9a-fA-F-]{36})\.complete$")
 UPD_TMP_NAME = re.compile(r"^portal-([0-9a-fA-F-]{36})-([a-z0-9]+(?:-[a-z0-9]+)*)\.json\.tmp$")
+# A suggestion's .tmp file (answers/3). The double hyphen keeps it apart from a page's: a page slug never has one.
+SUG_TMP_NAME = re.compile(r"^portal-([0-9a-fA-F-]{36})--suggestion-([a-z0-9]+(?:-[a-z0-9]+)*)\.md\.tmp$")
+SUG_TYPE = {"feature": "New feature", "change": "Change to a feature", "problem": "Something's wrong"}
+SUG_URGENCY = {"nice": "Nice to have", "soon": "Soon", "blocking": "Blocking us"}
 HOLD = "about 10 minutes"
 update_counts: dict[Path, int] = {}   # an updates file -> how many Client saves it holds (for the summary)
 
@@ -212,8 +220,9 @@ def call(url: str, key: str, path: str, body: bytes | None):
 
 
 def reserve(url: str, key: str) -> dict:
-    """Reserve a batch, saying this fetcher reads answers/1 and answers/2. An older Portal replies answers/1: its
-    batch gets an empty `updates` list here, so the rest of the run treats both the same."""
+    """Reserve a batch, saying this fetcher reads answers/1, answers/2 and answers/3. An older Portal replies
+    answers/2 or answers/1: its batch gets empty `updates` and `suggestions` lists here, so the rest of the run
+    treats them all the same."""
     body = {"accept": ACCEPT}
     if checks.check_reply(body, "reserve-request/1"):
         raise Stop("fetch-portal's reserve request does not match the portal-publish contract (reserve-request/1). "
@@ -230,6 +239,7 @@ def reserve(url: str, key: str) -> dict:
         raise Stop(f"The Portal's reply was not understood (HTTP {r.status_code}). It may be an older Portal. "
                    "Nothing was written and nothing was confirmed.")
     doc.setdefault("updates", [])
+    doc.setdefault("suggestions", [])
     return doc
 
 
@@ -349,6 +359,75 @@ def by_page(answers: list[dict]) -> list[tuple[str, list[dict]]]:
     return list(groups.items())
 
 
+# ---------------------------------------------------------------- a suggestion's intake file (answers/3)
+
+def suggestion_slug(title: str) -> str:
+    """A suggestion's title as a file-name part, as the projects' suggestions_to_intake.py makes it."""
+    return re.sub(r"[^a-z0-9]+", "-", str(title).lower()).strip("-")[:50].strip("-") or "suggestion"
+
+
+def bullet_text(line: str) -> str:
+    """A line of "What and why" as a bullet's text: at most one leading "- " or "• " comes off ("-5% fee" stays)."""
+    s = line.strip()
+    for mark in ("- ", "• "):
+        if s.startswith(mark):
+            return s[len(mark):].strip()
+    return s
+
+
+def render_suggestion(project: str, x: dict, product: str = "") -> str:
+    """One suggestion as an intake file, in the shape of the projects' suggestions_to_intake.py (source portal)."""
+    date = str(x["sent_at"])[:10]
+    who = f"{one_line(x['person']['name'])} <{one_line(x['person']['email'])}>"
+    where = f"{product} " if product else (f"{project} " if project else "")
+    if x.get("feature"):
+        name = one_line(x.get("feature_name") or x["feature"])
+        target = f"{name} (`{one_line(x['feature'])}`), in {one_line(x['area'])}"
+    else:
+        target = f"a new feature in {one_line(x['area'])}"
+    points = [bullet_text(ln) for ln in str(x.get("what") or "").replace("\r\n", "\n").split("\n") if ln.strip()]
+    lines = ["---", "source: portal", f"date: '{date}'", 'channel: "Portal suggestion"',
+             f"suggestion_id: '{x['id']}'", *([f"product: {quoted(product)}"] if product else []),
+             "participants:", f"  - {quoted(who)}", "processed: false", "---",
+             f"# {one_line(x['title'])}", "",
+             f"**From:** {who}, on the {where}Portal Timeline  ",
+             f"**Sent:** {utc(x['sent_at'])}  ",
+             f"**Type:** {SUG_TYPE.get(x['type'], one_line(x['type']))}  ",
+             f"**For:** {target}  ",
+             f"**How urgent:** {SUG_URGENCY.get(x['urgency'], one_line(x['urgency']))}  "]
+    if x.get("link"):
+        lines.append(f"**Link:** {one_line(x['link'])}  ")
+    lines.append(f"**Suggestion id:** {x['id']}  ")
+    lines += ["", "## What and why", "", *(["- " + p for p in points] or ["- (nothing written)"]), ""]
+    return "\n".join(lines)
+
+
+def suggestion_tmp_path(root: Path, batch_id: str, slug: str) -> Path:
+    return root / INTAKE / f"portal-{batch_id}--suggestion-{slug}.md.tmp"
+
+
+def is_suggestion(path: Path) -> bool:
+    return bool(SUG_TMP_NAME.match(path.name)) or "-portal-suggestion-" in path.name
+
+
+def suggestion_final_name(root: Path, slug: str, tmp: Path) -> Path:
+    """docs/BA/intake/<the day it was sent>-portal-suggestion-<slug>.md; -2, -3 … if taken (never overwritten)."""
+    day = None
+    try:
+        m = re.search(r"^date: '(\d{4}-\d{2}-\d{2})'$", tmp.read_text(encoding="utf-8"), flags=re.M)
+        day = m[1] if m else None
+    except (OSError, UnicodeDecodeError):
+        pass
+    day = day or fetched_of(tmp).strftime("%Y-%m-%d")
+    folder = root / INTAKE
+    base = f"{day}-portal-suggestion-{slug}"
+    target, n = folder / f"{base}.md", 1
+    while target.exists():
+        n += 1
+        target = folder / f"{base}-{n}.md"
+    return target
+
+
 # ---------------------------------------------------------------- the updates file
 
 def resolutions(updates: list[dict]) -> list[dict]:
@@ -421,8 +500,11 @@ def rename_all(root: Path, tmps: list[tuple[Path, str]]) -> list[Path]:
     product), an intake file in docs/BA/intake/."""
     done = []
     for tmp, slug in tmps:
-        name = updates_final_name if is_updates(tmp) else final_name
-        target = name(root, slug, fetched_of(tmp))
+        if is_suggestion(tmp):
+            target = suggestion_final_name(root, slug, tmp)
+        else:
+            name = updates_final_name if is_updates(tmp) else final_name
+            target = name(root, slug, fetched_of(tmp))
         tmp.rename(target)
         if tmp in update_counts:
             update_counts[target] = update_counts.pop(tmp)
@@ -474,7 +556,8 @@ def leftovers(root: Path) -> tuple[dict[str, list[tuple[Path, str]]], list[Path]
         if not where.is_dir():
             continue
         for p in sorted(where.glob(pattern)):
-            m = name.match(p.name)
+            m = SUG_TMP_NAME.match(p.name) if pattern.endswith(".md.tmp") else None
+            m = m or name.match(p.name)
             if m:
                 batches.setdefault(m[1].lower(), []).append((p, m[2]))
             else:
@@ -577,8 +660,8 @@ def finish_leftovers(root: Path, url: str, key: str, first: bool = True, known: 
 
 
 def write_batch(root: Path, project: str, batch: dict, product: str = "", label: str = "") -> list[tuple[Path, str]]:
-    """Write one .tmp file per page, and one updates .tmp file (named by `label`, the product) when the batch has
-    updates. On any write error delete what this batch wrote, ack nothing."""
+    """Write one .tmp file per page, one per suggestion, and one updates .tmp file (named by `label`, the product)
+    when the batch has updates. On any write error delete what this batch wrote, ack nothing."""
     fetched = now()
     written: list[tuple[Path, str]] = []
     updates = batch.get("updates") or []
@@ -589,6 +672,17 @@ def write_batch(root: Path, project: str, batch: dict, product: str = "", label:
             path = tmp_path(root, batch["batch_id"], slug)
             path.write_text(render(project, slug, answers, fetched, product), encoding="utf-8", newline="\n")
             written.append((path, slug))
+        taken: set[str] = set()
+        for x in batch.get("suggestions") or []:
+            base = slug_ = suggestion_slug(x["title"])
+            n = 1
+            while slug_ in taken:                      # two suggestions with one title in one batch
+                n += 1
+                slug_ = f"{base}-{n}"
+            taken.add(slug_)
+            path = suggestion_tmp_path(root, batch["batch_id"], slug_)
+            path.write_text(render_suggestion(project, x, product), encoding="utf-8", newline="\n")
+            written.append((path, slug_))
         if updates:
             (root / UPDATES).mkdir(parents=True, exist_ok=True)
             path = updates_tmp_path(root, batch["batch_id"], label)
@@ -607,8 +701,10 @@ def write_batch(root: Path, project: str, batch: dict, product: str = "", label:
                 partial += folder.glob(f"portal-{batch['batch_id']}-{pattern}")
         drop([*partial, done_marker(root, batch["batch_id"])])   # a half-written file too: never ack this batch
         why = getattr(e, "strerror", None) or e
+        kinds = ["Answers", *(["updates"] if updates else []), *(["suggestions"] if batch.get("suggestions") else [])]
+        held = kinds[0] if len(kinds) == 1 else ", ".join(kinds[:-1]) + " and " + kinds[-1]
         raise Stop(f"Could not write the intake files ({why}). Nothing was written and nothing was "
-                   f"confirmed: the Answers{' and updates' if updates else ''} wait in the Portal and come again "
+                   f"confirmed: the {held} wait in the Portal and come again "
                    f"in a fetch after {utc(batch['reserved_until'])}.") from None
     return written
 
@@ -635,6 +731,12 @@ def summary(root: Path, files: list[Path]) -> str:
     for f in intake:
         try:
             head = f.read_text(encoding="utf-8")
+            if 'channel: "Portal suggestion"' in head:
+                t = re.search(r"^# (.*)$", head, flags=re.M)
+                p = re.search(r"^product: '(.*)'$", head, flags=re.M)
+                product = f"{p[1].replace(chr(39) * 2, chr(39))}: " if p else ""
+                lines.append(f"  - {rel(root, f)} ({product}suggestion: {t[1] if t else '?'})")
+                continue
             n = re.search(r"^answer_count: (\d+)$", head, flags=re.M)
             t = re.search(r"^page_title: '(.*)'$", head, flags=re.M)
             p = re.search(r"^product: '(.*)'$", head, flags=re.M)
@@ -781,7 +883,8 @@ def fetch_new(root: Path, url: str, key: str, project: str, files: list[Path], n
     batch = reserve(url, key)
     if batch["batch_id"] is None:
         last = batch["last_fetched_at"]
-        what = "answers or updates" if batch["contract"] == "answers/2" else "answers"
+        what = {"answers/2": "answers or updates", "answers/3": "answers, updates or suggestions"}.get(
+            batch["contract"], "answers")
         nothing = (f"No new {what} since {utc(last)}." if last else f"No new {what}. None have been fetched yet.")
         msg = "\n".join([*notes, *([summary(root, files)] if files else []), nothing])
         return {"ok": True, "files": [rel(root, f) for f in files], "message": msg}

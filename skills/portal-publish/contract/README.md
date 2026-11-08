@@ -10,7 +10,7 @@ in `portal/contract/`, with a `SOURCE` file naming the ba-tools tag and each fil
 | `dashboard-1.md` | The same, readable |
 | `dashboard-2.schema.json` | The whole BA dashboard of one product (since 1.2.0), the list of its Clarification pages (since 1.3.0), and Item `hot`, Feature `stage_why` and `area_how`, open ticket `updated` (since 1.4.0, all optional), JSON Schema draft 2020-12 |
 | `dashboard-2.md` | The same, readable |
-| `timeline-1.schema.json` | Since 1.6.0. The BA's Timeline page data for one product, sent to the Dashboard endpoint (it replaces Map and Board), JSON Schema draft 2020-12 |
+| `timeline-1.schema.json` | Since 1.6.0. The BA's Timeline page data for one product, sent to the Dashboard endpoint (it replaces Map and Board), JSON Schema draft 2020-12; since 1.8.0 it may carry `suggestion_status`, the BA's Accepted or Declined on Client suggestions |
 | `timeline-1.md` | The same, readable |
 | `clarification-1.schema.json` | The Clarification page Publish (one Round), JSON Schema draft 2020-12; since 1.7.0 a screen may carry its `figma` link (the "Open in Figma" button) |
 | `clarification-1.md` | The same, readable |
@@ -18,6 +18,7 @@ in `portal/contract/`, with a `SOURCE` file naming the ba-tools tag and each fil
 | `status-1.schema.json` | The Portal's reply to `GET /api/v1/status` |
 | `answers-1.schema.json` | The Portal's reply to `POST /api/v1/answers/reserve`: a batch of sent Answers |
 | `answers-2.schema.json` | Since 1.4.0. The reply to `POST /api/v1/answers/reserve` when the request accepts `answers/2`: `answers/1` plus `updates`, the Client's saves on Items (below); since 1.6.0 an item's `kind` may be `todo` |
+| `answers-3.schema.json` | Since 1.8.0. The reply to `POST /api/v1/answers/reserve` when the request accepts `answers/3`: `answers/2` plus `suggestions`, the Client's suggestions from the Portal Timeline (below) |
 | `reserve-request-1.schema.json` | Since 1.4.0. The optional body of `POST /api/v1/answers/reserve`: `{ accept: [...] }`, the batch versions the fetcher reads |
 | `ack-request-1.schema.json` | The body of `POST /api/v1/answers/ack`: `{ batch_id }`. One ack confirms a batch's Answers and updates together |
 | `ack-1.schema.json` | The Portal's reply to `POST /api/v1/answers/ack` |
@@ -54,6 +55,23 @@ Update box:
 Updates come in `sent_at` order, then `id`. With nothing to hand out (no Answers and no updates), `batch_id`
 and `reserved_until` are `null` and both lists are empty. A batch always holds at least one Answer or one
 update. The same `ack-request/1` (`batch_id`) confirms the Answers and the updates together.
+
+## Client suggestions (since 1.8.0)
+
+On the Portal Timeline a Client may suggest a new feature, a change, or say something is wrong (the Suggest
+button). The suggestion shows on the chart at once, to everyone who can see the project, marked Suggested.
+
+- **Hand-out.** A fetcher whose `accept` list holds `answers/3` gets `answers/3`: `answers/2` plus a required
+  `suggestions` list (may be empty). Each suggestion is handed out once, held and confirmed like an Answer (the same
+  `batch_id`, the same ack). A fetcher that does not accept `answers/3` gets `answers/2` or `answers/1` as before,
+  and the suggestions wait for one that does.
+- **One suggestion:** `id` (UUID v7), `sent_at` (UTC), `person` `{ name, email }`, `type` (`feature` · `change` ·
+  `problem`), `feature` (the Timeline row's id, or `null` for a new feature in an area), `feature_name` (that row's label when it was sent, or `null`), `area` (≤ 300), `title`
+  (1 to 120), `what` (plain text ≤ 5,000, one point per line, may be empty), `urgency` (`nice` · `soon` ·
+  `blocking`), `link` (an `https://` link ≤ 2,000, or `null`). In `sent_at` order, then `id`.
+- **The answer goes back in the next Timeline send**, as `timeline/1` `suggestion_status` (`timeline-1.md`). An id
+  the Portal does not know is ignored.
+- A suggestion is never changed or withdrawn once sent.
 
 ## The Timeline send (since 1.6.0)
 

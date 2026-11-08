@@ -1,0 +1,166 @@
+{
+  "contract": "answers/3",
+  "batch_id": "019a5a20-3d4e-7e5f-8a60-c1d2e3f4a5b6",
+  "reserved_until": "2026-10-27T11:10:00.000Z",
+  "last_fetched_at": "2026-10-24T16:42:05.120Z",
+  "answers": [
+    {
+      "id": "019a2b90-0a1b-7c2d-8e3f-405162738495",
+      "sent_at": "2026-10-26T14:03:11.000Z",
+      "person": {
+        "name": "Sample Client",
+        "email": "sample.client@example.com"
+      },
+      "page": {
+        "slug": "merchant-payouts",
+        "title": "Merchant payouts"
+      },
+      "round": {
+        "key": "merchant-payouts-v7",
+        "label": "Round V7 · sent 20 Oct 2026 by Sample BA · replaces V6",
+        "published_at": "2026-10-20T08:00:00.000Z"
+      },
+      "question": {
+        "id": "payout-day",
+        "title": "Which day of the week should merchants be paid?",
+        "position": 1
+      },
+      "option": {
+        "v": "friday",
+        "text": "Every Friday"
+      },
+      "note": "Friday suits our cash flow better.",
+      "replaces": {
+        "id": "019a2a01-9f8e-7d6c-8b5a-493827161504",
+        "sent_at": "2026-10-22T09:12:40.000Z",
+        "person_name": "Sample Client",
+        "option": {
+          "v": "monday",
+          "text": "Every Monday"
+        },
+        "note": null
+      }
+    },
+    {
+      "id": "019a2b91-1c2d-7e3f-9a4b-5c6d7e8f9a0b",
+      "sent_at": "2026-10-26T14:03:11.000Z",
+      "person": {
+        "name": "Second Person",
+        "email": "second.person@example.com"
+      },
+      "page": {
+        "slug": "merchant-payouts",
+        "title": "Merchant payouts"
+      },
+      "round": {
+        "key": "merchant-payouts-v7",
+        "label": "Round V7 · sent 20 Oct 2026 by Sample BA · replaces V6",
+        "published_at": "2026-10-20T08:00:00.000Z"
+      },
+      "question": {
+        "id": "statement",
+        "title": "How often should merchants get a statement?",
+        "position": 5
+      },
+      "option": null,
+      "note": "We need to ask our accountant first.",
+      "replaces": null
+    }
+  ],
+  "updates": [
+    {
+      "id": "019a2b95-0a00-7c00-8a00-000000000001",
+      "sent_at": "2026-10-26T15:00:00.000Z",
+      "person": {
+        "name": "Sample Client",
+        "email": "sample.client@example.com"
+      },
+      "item": {
+        "key": "229cd4b6d021",
+        "kind": "waiting",
+        "title": "Send the employer list for the pilot"
+      },
+      "note": "We sent the list to Sample BA by email.",
+      "resolved": false
+    },
+    {
+      "id": "019a2b95-0a00-7c00-8a00-000000000002",
+      "sent_at": "2026-10-26T16:30:00.000Z",
+      "person": {
+        "name": "Second Person",
+        "email": "second.person@example.com"
+      },
+      "item": {
+        "key": "0cbce405e12a",
+        "kind": "agenda",
+        "title": "Agree the fee for early repayment"
+      },
+      "note": "Our board agreed: the fee stays at 50.\nWe can talk about it on the call.",
+      "resolved": false
+    },
+    {
+      "id": "019a2b95-0a00-7c00-8a00-000000000003",
+      "sent_at": "2026-10-26T17:45:00.000Z",
+      "person": {
+        "name": "Sample Client",
+        "email": "sample.client@example.com"
+      },
+      "item": {
+        "key": "229cd4b6d021",
+        "kind": "waiting",
+        "title": "Send the employer list for the pilot"
+      },
+      "note": null,
+      "resolved": true
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "019a5a10-0b00-7c00-8a00-000000000001",
+      "sent_at": "2026-11-06T12:00:00.000Z",
+      "person": {
+        "name": "Sample Client",
+        "email": "sample.client@example.com"
+      },
+      "type": "change",
+      "feature": "sign-up-with-phone-number",
+      "feature_name": "Sign-up with phone number",
+      "title": "Let people sign up with email too",
+      "what": "Some staff have no work phone.\nThey cannot finish sign-up today.",
+      "urgency": "soon",
+      "link": null
+    },
+    {
+      "id": "019a5a10-0b00-7c00-8a00-000000000002",
+      "sent_at": "2026-11-06T12:30:00.000Z",
+      "person": {
+        "name": "Second Person",
+        "email": "second.person@example.com"
+      },
+      "type": "feature",
+      "feature": null,
+      "feature_name": null,
+      "area": "Back office",
+      "title": "A monthly report of advances by employer",
+      "what": "",
+      "urgency": "nice",
+      "link": "https://example.com/sheets/report-sample"
+    },
+    {
+      "id": "019a5a10-0b00-7c00-8a00-000000000003",
+      "sent_at": "2026-11-06T13:15:00.000Z",
+      "person": {
+        "name": "Sample Client",
+        "email": "sample.client@example.com"
+      },
+      "type": "problem",
+      "feature": "advance-request",
+      "feature_name": "Advance request",
+      "area": "Loans",
+      "title": "The fee shows twice on the confirm screen",
+      "what": "Seen on Android.",
+      "urgency": "blocking",
+      "link": null
+    }
+  ]
+}

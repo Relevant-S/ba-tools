@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/timeline-1.schema.json",
   "title": "timeline/1",
-  "description": "Since 1.6.0. One Timeline send for one product (one Portal project): the BA's Timeline page data (ba-tools skills/timeline, build.py --json) with the envelope, client_contacts and clarification_pages added; a feature names its Portal Clarification page by slug (page) in place of the artifact link (clar); clar, pages, dashboardUrl and pins[].decided[].url are left out. A field the build writes as null is left out. Sent to POST /api/v1/publish/dashboard like dashboard/2; the latest send of either wins. Readable twin: timeline-1.md. x-visibility says who may see each leaf field: client, id, portal or admin.",
+  "description": "Since 1.6.0. One Timeline send for one product (one Portal project): the BA's Timeline page data (ba-tools skills/timeline, build.py --json) with the envelope, client_contacts and clarification_pages added; a feature names its Portal Clarification page by slug (page) in place of the artifact link (clar); clar, pages, dashboardUrl and pins[].decided[].url are left out; since 1.8.0 it may carry suggestion_status (the BA's Accepted or Declined on Client suggestions). A field the build writes as null is left out. Sent to POST /api/v1/publish/dashboard like dashboard/2; the latest send of either wins. Readable twin: timeline-1.md. x-visibility says who may see each leaf field: client, id, portal or admin.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -1094,6 +1094,40 @@
         "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?![\\s\\S])"
       },
       "x-visibility": "portal"
+    },
+    "suggestion_status": {
+      "description": "Since 1.8.0. The BA's decision on Client suggestions sent on the Portal Timeline (handed out in answers/3): one entry per decided suggestion, from the product's docs/BA/timeline/suggestions.yaml. A suggestion not listed stays Suggested. An id the Portal does not know is ignored. Optional; each send replaces the whole list.",
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "description": "One decision.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "reason"],
+        "properties": {
+          "id": {
+            "description": "The suggestion's id, as answers/3 handed it out (UUID v7).",
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "format": "uuid",
+            "x-visibility": "id"
+          },
+          "status": {
+            "description": "accepted or declined.",
+            "type": "string",
+            "enum": ["accepted", "declined"],
+            "x-visibility": "client"
+          },
+          "reason": {
+            "description": "Why, in plain text, shown under the suggestion (\"Why it was declined\" or \"Note from <BA>\"). May be empty.",
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 2000,
+            "x-visibility": "client"
+          }
+        }
+      }
     }
   }
 }

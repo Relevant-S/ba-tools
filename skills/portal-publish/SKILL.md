@@ -154,6 +154,33 @@ uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.
    other way round.
 4. **Report** `report` from each `send`.
 
+### Decisions on suggestions (contract 1.8.0)
+
+Clients suggest features and changes on the Portal Timeline; `fetch-portal` brings each one in as an intake file
+with its `suggestion_id`. The BA's answer goes back in the next Timeline send as `suggestion_status`, from one file
+per product: **`suggestions.yaml` next to that product's Timeline data file** (e.g.
+`docs/BA/timeline/suggestions.yaml`, or `docs/BA/timeline/admin/suggestions.yaml` for a product kept in
+`docs/BA/timeline/admin/`):
+
+```yaml
+- id: 019a5a10-0b00-7c00-8a00-000000000001
+  status: accepted
+  reason: Planned for the next release.
+- id: 019a5a10-0b00-7c00-8a00-000000000002
+  status: declined
+  reason: "Out of scope: not for the pilot."
+```
+
+- When the BA says **"accept suggestion …"** or **"decline suggestion … because …"**, add or change that line
+  (the id from the intake file's `suggestion_id`; the reason in the BA's words, plain text, at most 2,000
+  characters). Do not send: the decision goes out with the next `timeline plan`, when the BA asks for it.
+- Keep every line: each send carries the whole list, and a suggestion not in it shows "Suggested". An id the
+  Portal does not have is still sent; the Portal ignores it.
+- `timeline plan` reads the file before the build. A bad line (not a list, an id that is not a suggestion id, a
+  status other than accepted or declined, an unknown field, the same id twice) stops it with a plain message
+  naming the file and the line; nothing is sent. No file: the send has no `suggestion_status`.
+- The dry-run list shows "Decisions on Client suggestions (N)", one line per decision with its reason.
+
 ## When it stops
 
 Show `error` as it is; it already says what to do. Nothing was sent in these cases, except the "may have arrived" row.

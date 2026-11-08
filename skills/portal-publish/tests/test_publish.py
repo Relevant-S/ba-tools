@@ -1556,7 +1556,7 @@ def ba_build() -> dict:
     nulls)."""
     doc = read(TL_SMALL)
     for k in ("contract", "sent_at", "sent_by", "ba_tools_version", "source_commit", "client_contacts",
-              "clarification_pages"):
+              "clarification_pages", "suggestion_status"):
         doc.pop(k)
     rows = [f for g in doc["groups"] for a in g["areas"] for f in a["features"]]
     for i, f in enumerate(rows):
@@ -1828,3 +1828,56 @@ def test_timeline_send_after_the_portal_address_changed(capsys, project, tl_port
     code, result, _ = run(capsys, project, "timeline", "send", "--payload", str(path))
     assert code == 1 and "Run `timeline plan` again" in result["error"]
     assert tl_portal.requests == [] and not path.exists()
+
+
+# ---- decisions on Client suggestions (contract 1.8.0) --------------------------------------------------
+
+SUG_A = "019a5a10-0b00-7c00-8a00-000000000001"
+SUG_B = "019a5a10-0b00-7c00-8a00-000000000002"
+
+
+def test_timeline_plan_sends_the_products_decisions(capsys, project, timelines, tl_portal):
+    (project / publish.TIMELINE_DIR / "suggestions.yaml").write_text(
+        f"- id: {SUG_A}\n  status: accepted\n  reason: Planned for the next release.\n"
+        f"- id: {SUG_B.upper()}\n  status: Declined\n  reason: 'Out of scope: not for the pilot.'\n",
+        encoding="utf-8")
+    code, plan, _ = run(capsys, project, "timeline", "plan")
+    try:
+        assert code == 0, plan
+        dry = [json.loads(r.content) for r in tl_portal.posts() if "dry_run=1" in str(r.url)]
+        app, admin = dry
+        assert app["suggestion_status"] == [
+            {"id": SUG_A, "status": "accepted", "reason": "Planned for the next release."},
+            {"id": SUG_B, "status": "declined", "reason": "Out of scope: not for the pilot."}]
+        assert "suggestion_status" not in admin, "the Admin product's folder has no decisions file"
+        shown = by_product(plan)["App"]["client_list"]
+        assert "Decisions on Client suggestions (2)" in shown
+        assert f"- {SUG_A}: Accepted — Planned for the next release." in shown
+    finally:
+        cleanup(plan)
+
+
+@pytest.mark.parametrize("text, words", [
+    (f"- id: {SUG_A}\n  status: maybe\n", "decision 1: the status \"maybe\" must be accepted or declined"),
+    ("- id: suggestion-1\n  status: accepted\n", "the id \"suggestion-1\" is not a suggestion id"),
+    (f"- id: {SUG_A}\n  status: accepted\n- id: {SUG_A}\n  status: declined\n", "decision 2 decides the same"),
+    (f"- id: {SUG_A}\n  status: accepted\n  why: x\n", "a field a decision does not take: why"),
+    (f"id: {SUG_A}\n", "must be a list of decisions"),
+    ("- [unclosed\n", "could not be read"),
+])
+def test_a_bad_decision_stops_timeline_plan_before_anything_is_sent(capsys, project, timelines, tl_portal, text, words):
+    (project / publish.TIMELINE_DIR / "suggestions.yaml").write_text(text, encoding="utf-8")
+    code, out, _ = run(capsys, project, "timeline", "plan")
+    assert code == 1 and words in out["error"], out
+    assert "docs/BA/timeline/suggestions.yaml" in out["error"] and "Nothing was sent" in out["error"]
+    assert tl_portal.posts() == []
+
+
+def test_decisions_file_rules(project):
+    data = project / publish.TIMELINE_DIR / "app-timeline.yaml"
+    data.parent.mkdir(parents=True, exist_ok=True)
+    assert publish.suggestion_status(project, data) is None, "no file: no suggestion_status"
+    (data.parent / "suggestions.yaml").write_text("", encoding="utf-8")
+    assert publish.suggestion_status(project, data) == [], "an empty file clears every decision"
+    (data.parent / "suggestions.yaml").write_text(f"- id: {SUG_A}\n  status: declined\n", encoding="utf-8")
+    assert publish.suggestion_status(project, data) == [{"id": SUG_A, "status": "declined", "reason": ""}]

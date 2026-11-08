@@ -1,6 +1,6 @@
 ---
 name: fetch-portal
-description: Bring the Client's Answers from the Relevant Clients Portal into the repo — one intake file per Clarification page at docs/BA/intake/YYYY-MM-DD-HHMM-portal-<slug>.md, for the /intake-and-triage skill to process — and the Client's notes and Resolved ticks on dashboard items, as docs/BA/portal-updates/YYYY-MM-DD-HHMM-<product>.json for ba-dashboard's "sync the mind map". Each sent Answer and each update comes once. Use when the BA says "fetch portal answers", "get the answers from the portal", "fetch-portal", when the Portal's Publishing tab shows Answers waiting to be fetched, or when a clarification page's answers come back on a project whose profile has tools.portal. Companion to /fetch-fireflies, /fetch-gmail and /fetch-slack — same target folder, same intake-file shape, different source (`source: portal`).
+description: Bring the Client's Answers from the Relevant Clients Portal into the repo — one intake file per Clarification page at docs/BA/intake/YYYY-MM-DD-HHMM-portal-<slug>.md, for the /intake-and-triage skill to process — and the Client's notes and Resolved ticks on dashboard items, as docs/BA/portal-updates/YYYY-MM-DD-HHMM-<product>.json for ba-dashboard's "sync the mind map" — and the Client's suggestions from the Portal Timeline, one intake file each at docs/BA/intake/YYYY-MM-DD-portal-suggestion-<slug>.md. Each sent Answer, update and suggestion comes once. Use when the BA says "fetch portal answers", "get the answers from the portal", "fetch-portal", when the Portal's Publishing tab shows Answers waiting to be fetched, or when a clarification page's answers come back on a project whose profile has tools.portal. Companion to /fetch-fireflies, /fetch-gmail and /fetch-slack — same target folder, same intake-file shape, different source (`source: portal`).
 ---
 
 # fetch-portal
@@ -15,6 +15,14 @@ brings these in with the Answers, in the same reserve and ack, as one file per p
 `docs/BA/portal-updates/`. The BA then runs `ba-dashboard`'s **"sync the mind map"** with that file, so the notes
 land in `dashboard.yaml` like the BA's own notes. fetch-portal asks the Portal for `answers/2` (Answers plus
 updates); an older Portal answers with `answers/1` (Answers only), and that still works.
+
+**Client suggestions (contract 1.8.0).** On the Portal Timeline a client person can press **Suggest** and send a
+new feature, a change or "something's wrong". fetch-portal asks for `answers/3` and brings each suggestion in once,
+in the same reserve and ack, as its own intake file (below). `/intake-and-triage` reads it like any other intake.
+An older Portal answers with `answers/2` or `answers/1` (no suggestions), and that still works. The BA's answer
+goes back to the client in the next Timeline send: when the BA says "accept suggestion …" or "decline suggestion
+… because …", write it in the product's `docs/BA/timeline/suggestions.yaml` (see `portal-publish`, "Decisions on
+suggestions") and run `timeline plan` when the BA asks to send.
 
 **How the hand-out works (two steps, so nothing is lost).** The script first asks the Portal to *reserve* the
 new Answers (it holds them for 10 minutes). It writes the files under a `.tmp` name. Only when every file is on
@@ -88,7 +96,9 @@ products are done. …". A repo with one product works as before.
    To put them in docs/BA/dashboard.yaml, run "sync the mind map" with this file.
    ```
 
-   and "No new answers or updates since …" when there is nothing.
+   and "No new answers or updates since …" when there is nothing ("No new answers, updates or suggestions since …"
+   on a Portal that hands out suggestions). Each suggestion file is listed with its title:
+   `- docs/BA/intake/2026-11-06-portal-suggestion-a-monthly-report.md (suggestion: A monthly report)`.
    With two or more products, `message` has one block per product, and each file names its product:
 
    ```
@@ -185,6 +195,41 @@ Replaces the answer sent 2026-10-22 09:12 UTC by Sample Client:
 - A note is kept whole and indented 4 spaces. "none (note only)" means the person sent a note and no option.
 - "Replaces the answer sent …" appears when the person changed an earlier Answer. The earlier option and note
   follow. Treat the new Answer as the one that counts.
+
+## A suggestion's intake file
+
+One file per suggestion, `docs/BA/intake/YYYY-MM-DD-portal-suggestion-<slug>.md`: the day it was sent (UTC) and
+its title as a slug. If the name is taken, `-2`, `-3` … is added; no file is ever overwritten. The shape is the
+one the projects' `suggestions_to_intake.py` writes, with `source: portal`:
+
+```markdown
+---
+source: portal
+date: '2026-11-06'
+channel: "Portal suggestion"
+suggestion_id: '019a5a10-0b00-7c00-8a00-000000000001'
+participants:
+  - 'Sample Client <sample.client@example.com>'
+processed: false
+---
+# Let people sign up with email too
+
+**From:** Sample Client <sample.client@example.com>, on the Sample Portal Timeline
+**Sent:** 2026-11-06 12:00 UTC
+**Type:** Change to a feature
+**For:** Sign-up with phone number (`sign-up-with-phone-number`), in Onboarding
+**How urgent:** Soon
+**Suggestion id:** 019a5a10-0b00-7c00-8a00-000000000001
+
+## What and why
+
+- Some staff have no work phone.
+- They cannot finish sign-up today.
+```
+
+- `suggestion_id` is the id the BA's decision names in `suggestions.yaml`.
+- A new feature reads "**For:** a new feature in <area>". `**Link:**` appears only when the client gave one.
+- In a repo with two or more products the header has `product: '<name>'` too.
 
 ## The updates file
 

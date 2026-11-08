@@ -1,0 +1,9 @@
+{
+  "contract": "answers/3",
+  "details": [
+    {
+      "check": "schema",
+      "path": ""
+    }
+  ]
+}

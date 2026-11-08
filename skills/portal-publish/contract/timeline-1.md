@@ -51,6 +51,7 @@ optional.
 | `releases` | ≤ 2,000 `{ name ≤ 255, date }`, both required | yes | client |
 | `client_contacts` | ≤ 200 `{ name ≤ 100, email?, slack? }`, as in `dashboard/2` | yes (may be empty) | portal |
 | `clarification_pages` | ≤ 1,000 page slugs, as in `dashboard/2`; unique (`unique_page_slug`). Missing: no page is touched | no | portal |
+| `suggestion_status` | since 1.8.0: ≤ 100,000 decisions on Client suggestions, below | no | client |
 
 `product`: `name` (≤ 200), `tagWord` ("Release" or "Phase", ≤ 40), `tracker` ("jira", "github-bmad", ≤ 40), `ba`
 (the BA's first name, ≤ 100), `footer` (≤ 5,000, may be empty), all required; `workLink` (`https://` link ≤ 2,000),
@@ -119,6 +120,23 @@ id, not checked: it may name a feature of a later send), `tags`, optional. `self
 (≤ 500), all required. Optional: `subject` (≤ 1,000), `ref` (≤ 100, id), `people` (≤ 200 names ≤ 100), `staff`
 and `minutes` (whole numbers ≥ 0), `summary` (≤ 50 texts ≤ 5,000), `decided` (≤ 500 `{ title, page, how }`, each
 text, may be empty) and `owes` (≤ 500 `{ who, text }`, each text, may be empty).
+
+## Decisions on suggestions (`suggestion_status`, since 1.8.0)
+
+Clients suggest a new feature or a change on the Portal Timeline (the Suggest button). `fetch-portal` brings each
+suggestion in once (`answers/3`). The BA marks it Accepted or Declined in the product's
+`docs/BA/timeline/suggestions.yaml`, and the next `timeline/1` send carries every decision:
+
+| Field | Type | Required | Who sees |
+|---|---|---|---|
+| `id` | the suggestion's id from `answers/3` (UUID) | yes | id |
+| `status` | `accepted` · `declined` | yes | client |
+| `reason` | text ≤ 2,000, may be empty: "Why it was declined", or "Note from <BA>" | yes | client |
+
+- Each send replaces the whole list. A suggestion not in the list shows "Suggested".
+- An id the Portal does not know is **ignored**, not refused (the BA may decide before the Portal has it, or a
+  suggestion of another product).
+- The Client view (`client_timeline_1`) carries the list as sent.
 
 ## Named checks
 

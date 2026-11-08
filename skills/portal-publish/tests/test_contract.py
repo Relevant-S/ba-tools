@@ -114,6 +114,8 @@ DASHBOARD_CASES = {
     "tl1-bad-todo-kind", "tl1-bad-page-slug", "tl1-todo-title-too-long", "tl1-duplicate-feature-id",
     "tl1-duplicate-todo-key", "tl1-duplicate-pin-id", "tl1-duplicate-page-slug", "tl1-unknown-pin",
     "tl1-unknown-request-pin", "tl1-unknown-page", "tl1-html-entity",
+    # suggestion_status (contract 1.8.0)
+    "tl1-suggestion-bad-status", "tl1-suggestion-bad-id", "tl1-suggestion-missing-reason",
 }
 PAGE_CASES = {
     "page-too-many-questions", "page-too-many-screenshots", "question-no-options",
@@ -163,6 +165,16 @@ REPLY_CASES = {
     "answers2-update-empty-note": "answers/2",
     "answers2-update-missing-resolved": "answers/2",
     "answers2-sent-as-answers1": "answers/1",
+    # answers/3 (contract 1.8.0)
+    "answers3-missing-suggestions": "answers/3",
+    "answers3-no-batch-with-suggestions": "answers/3",
+    "answers3-batch-with-nothing": "answers/3",
+    "answers3-suggestion-bad-type": "answers/3",
+    "answers3-suggestion-title-too-long": "answers/3",
+    "answers3-suggestion-link-http": "answers/3",
+    "answers3-suggestion-bad-urgency": "answers/3",
+    "answers3-suggestion-missing-area": "answers/3",
+    "answers3-sent-as-answers2": "answers/2",
     "reserve-request-empty": "reserve-request/1",
     "reserve-request-empty-accept": "reserve-request/1",
     "reserve-request-accept-twice": "reserve-request/1",
@@ -687,11 +699,11 @@ def test_limits_match_the_spec():
 
 def test_index_names_existing_schemas():
     idx = checks.index()
-    assert idx["contract_folder"] == "1.7.0"
+    assert idx["contract_folder"] == "1.8.0"
     assert idx["accepted"] == ["dashboard/1", "dashboard/2", "timeline/1", "clarification/1"]
     assert set(idx["schemas"]) == {"dashboard/1", "dashboard/2", "timeline/1", "clarification/1", "publish-reply/1",
                                    "status/1",
-                                   "answers/1", "answers/2", "reserve-request/1", "ack-request/1", "ack/1",
+                                   "answers/1", "answers/2", "answers/3", "reserve-request/1", "ack-request/1", "ack/1",
                                    "connect-request/1", "connect/1"}
     assert {p.name for p in SCHEMAS} == set(idx["schemas"].values())
     for contract, name in idx["schemas"].items():
@@ -1311,3 +1323,44 @@ def test_timeline_small_file_uses_every_stage():
             stages |= {s["stage"] for s in q["stages"]}
     assert stages == set(timeline_schema()["properties"]["groups"]["items"]["properties"]["areas"]["items"]
                          ["properties"]["features"]["items"]["properties"]["stage"]["enum"])
+
+
+# ---- answers/3 and suggestion_status (contract 1.8.0) -------------------------------------------------------
+
+def test_answers3_is_answers2_plus_suggestions():
+    two = read(checks.CONTRACT_DIR / "answers-2.schema.json")
+    three = read(checks.CONTRACT_DIR / "answers-3.schema.json")
+    assert three["required"] == two["required"] + ["suggestions"]
+    for field in ("batch_id", "reserved_until", "last_fetched_at", "answers", "updates"):
+        assert three["properties"][field] == two["properties"][field], field
+    assert set(three["properties"]["suggestions"]["items"]["required"]) == {
+        "id", "sent_at", "person", "type", "feature", "feature_name", "area", "title", "what", "urgency", "link"}
+
+
+def test_answers3_batches_pass():
+    for name in ("answers-3-batch.json", "answers-3-suggestions-only.json", "answers-3-nothing-to-fetch.json"):
+        assert checks.check_reply(read(FIXTURES / "valid" / name), "answers/3") == [], name
+    batch = read(FIXTURES / "valid" / "answers-3-batch.json")
+    assert {s["type"] for s in batch["suggestions"]} == {"feature", "change", "problem"}
+    assert any(s["feature"] is None for s in batch["suggestions"])
+    assert any(s["link"] for s in batch["suggestions"])
+
+
+def test_reserve_request_may_accept_answers3():
+    assert checks.check_reply(read(FIXTURES / "valid" / "reserve-request-1-answers-3.json"), "reserve-request/1") == []
+
+
+def test_timeline_suggestion_status_is_optional_and_client_visible():
+    doc = tl_small()
+    assert [s["status"] for s in doc["suggestion_status"]] == ["accepted", "declined"]
+    del doc["suggestion_status"]
+    assert checks.check_publish(doc) is None
+    vis = {path: prop["x-visibility"] for path, prop in leaves(timeline_schema())}
+    assert vis["#/suggestion_status[]/id"] == "id"
+    assert vis["#/suggestion_status[]/status"] == vis["#/suggestion_status[]/reason"] == "client"
+
+
+def test_timeline_suggestion_ids_match_the_answers3_batch():
+    """The small Timeline decides suggestions the answers/3 batch handed out (the round trip both sides test)."""
+    handed = {s["id"] for s in read(FIXTURES / "valid" / "answers-3-batch.json")["suggestions"]}
+    assert {s["id"] for s in tl_small()["suggestion_status"]} <= handed

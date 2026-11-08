@@ -1135,6 +1135,12 @@ TIMELINE_CONTRACT = "timeline/1"
 TIMELINE_DROPPED = ("pages", "dashboardUrl")
 TIMELINE_STAGE_NAME = {**STAGE_NAME, "design": "Spec & design", "live": "Live"}
 TODO_KIND_NAME = {"waiting": "Waiting", "agenda": "Next-call agenda", "todo": "BA to-do"}
+# The BA's decisions on Client suggestions (contract 1.8.0): one file per product folder, next to its Timeline data
+# file. Claude edits it when the BA says "accept/decline suggestion …"; every timeline/1 send carries it whole.
+SUGGESTIONS_FILE = "suggestions.yaml"
+SUGGESTION_ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+SUGGESTION_REASON_MAX = 2000
+DECISION_NAME = {"accepted": "Accepted", "declined": "Declined"}
 
 
 def timeline_files(root: Path) -> dict[str, Path]:
@@ -1189,6 +1195,57 @@ def run_timeline_build(root: Path, data_file: Path) -> dict:
     return build
 
 
+def suggestion_status(root: Path, data_file: Path) -> list[dict] | None:
+    """The BA's decisions on Client suggestions for one product (timeline/1 suggestion_status, contract 1.8.0), from
+    docs/BA/timeline/…/suggestions.yaml next to the product's Timeline data file: a list of
+    `- id: <the suggestion id>, status: accepted | declined, reason: <text>`. None when there is no file (the send
+    has no suggestion_status); an empty file sends an empty list. Ids the Portal has not handed out are kept and
+    sent: the Portal ignores an id it does not know. A bad line stops the run with a plain message."""
+    path = data_file.parent / SUGGESTIONS_FILE
+    if not path.exists():
+        return None
+    rel = path.relative_to(root).as_posix()
+    fix = "Fix it, then run `timeline plan` again. Nothing was sent."
+    shape = "- id: <the suggestion id>, status: accepted or declined, reason: <why>"
+    try:
+        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as e:
+        first = str(e).strip().splitlines()[0] if str(e).strip() else "not YAML"
+        raise Stop(f"{rel} could not be read ({first}). {fix}") from None
+    if doc is None:
+        return []
+    if not isinstance(doc, list):
+        raise Stop(f"{rel} must be a list of decisions, one per line: {shape}. {fix}")
+    out: list[dict] = []
+    seen: dict[str, int] = {}
+    for n, entry in enumerate(doc, 1):
+        where = f"{rel}, decision {n}"
+        if not isinstance(entry, dict):
+            raise Stop(f"{where} is not a decision. Write it as {shape}. {fix}")
+        extra = sorted(str(k) for k in entry if k not in ("id", "status", "reason"))
+        if extra:
+            raise Stop(f"{where} has a field a decision does not take: {', '.join(extra)}. A decision has only id, "
+                       f"status and reason. {fix}")
+        sid = text(entry.get("id")).lower()
+        if not SUGGESTION_ID.match(sid):
+            raise Stop(f"{where}: the id \"{text(entry.get('id'))}\" is not a suggestion id. Copy it from the "
+                       f"suggestion's intake file (suggestion_id). {fix}")
+        status = text(entry.get("status")).lower()
+        if status not in DECISION_NAME:
+            raise Stop(f"{where}: the status \"{text(entry.get('status'))}\" must be accepted or declined. {fix}")
+        reason = entry.get("reason")
+        if reason is not None and not isinstance(reason, str):
+            raise Stop(f"{where}: the reason must be text. Put it in quotes. {fix}")
+        reason = (reason or "").replace("\r\n", "\n").strip()
+        if len(reason) > SUGGESTION_REASON_MAX:
+            raise Stop(f"{where}: the reason is {len(reason)} characters; at most {SUGGESTION_REASON_MAX}. {fix}")
+        if sid in seen:
+            raise Stop(f"{where} decides the same suggestion as decision {seen[sid]} ({sid}). Keep one. {fix}")
+        seen[sid] = n
+        out.append({"id": sid, "status": status, "reason": reason})
+    return out
+
+
 def no_nulls(value):
     """A copy with every null field and every null list entry left out (timeline/1 has no nulls: a field the
     build writes as null is not sent)."""
@@ -1204,11 +1261,12 @@ def timeline_rows(doc: dict) -> list[tuple[str, dict]]:
 
 
 def timeline_payload(root: Path, prof: dict, product: str, build: dict, products: list[str],
-                     sent_at: str | None = None) -> tuple[dict, list[str]]:
+                     sent_at: str | None = None, decisions: list[dict] | None = None) -> tuple[dict, list[str]]:
     """One product's timeline/1 send (contract timeline-1.md) from its Timeline build, and warnings. The build is
     sent as it is, except: the envelope, client_contacts and clarification_pages are added; each feature's clar (a
     claude.ai artifact link) becomes page, the slug of the Portal page with that url (clarLabel goes with it);
-    pages, dashboardUrl and pins[].decided[].url are left out; null fields are left out."""
+    pages, dashboardUrl and pins[].decided[].url are left out; null fields are left out. Since contract 1.8.0
+    `decisions` (the product's suggestions.yaml, `suggestion_status`) goes in as suggestion_status when not None."""
     warnings: list[str] = []
     pages, more = dashboard_pages(root, prof, products, product)
     warnings += more
@@ -1248,6 +1306,8 @@ def timeline_payload(root: Path, prof: dict, product: str, build: dict, products
     payload.update(doc)
     payload["client_contacts"] = people
     payload["clarification_pages"] = pages
+    if decisions is not None:
+        payload["suggestion_status"] = decisions
     return payload, warnings
 
 
@@ -1263,6 +1323,7 @@ def timeline_where(path: str, doc: dict) -> str:
             pass
     top = path.strip("/").split("/")[0] if path.strip("/") else ""
     return {"client_contacts": f"{PROFILE} → tools.client_contacts", "sent_by": "git config user.name",
+            "suggestion_status": f"{TIMELINE_DIR}/…/{SUGGESTIONS_FILE} (the decisions on Client suggestions)",
             "clarification_pages": f"the page YAMLs in {CLARIFICATIONS}/ (their slug: lines)",
             "ba_tools_version": f"{PROFILE} → ba_tools_version"}.get(top, "the Timeline build")
 
@@ -1336,6 +1397,15 @@ def timeline_list(reply: dict, product: str = "", project: str = "") -> str:
     out_lines += ["", f"Pins ({len(view['pins'])}): " + (", ".join(f"{k} {n}" for k, n in kinds.items()) or "none")
                   + ". Every pin field is shown: summaries, people, decisions and \"To-dos from it\"."]
     out_lines.append(f"Releases: {len(view['releases'])}")
+    decided = view.get("suggestion_status")
+    if decided is not None:
+        out_lines += ["", f"Decisions on Client suggestions ({len(decided)}). The Client sees each one's status and "
+                      "reason; an id the Portal does not have is ignored:"]
+        if not decided:
+            out_lines.append("- none")
+        for x in decided:
+            out_lines.append(f"- {x['id']}: {DECISION_NAME.get(x['status'], x['status'])}"
+                             + (f" — {x['reason']}" if x.get("reason") else ""))
     names = reply.get("client_contact_names") or []
     out_lines += ["", f"Client contacts ({len(names)}): " + (", ".join(names) if names else "none")]
     removed = removed_pages(reply)
@@ -1386,8 +1456,9 @@ def cmd_timeline_plan(root: Path, only: str | None = None) -> dict:
     built, warnings = [], []
     every_product = portal_products(root, prof, found)
     for product in [only] if only else products:   # every product's local check passes before anything is sent
+        decisions = suggestion_status(root, found[product])    # a bad decisions file stops before the build
         build = run_timeline_build(root, found[product])
-        payload, more = timeline_payload(root, prof, product, build, every_product, sent_at)
+        payload, more = timeline_payload(root, prof, product, build, every_product, sent_at, decisions)
         body = encode(payload)
         timeline_local_check(payload, body, product if len(products) > 1 else "")
         warnings += [w for w in more if w not in warnings]

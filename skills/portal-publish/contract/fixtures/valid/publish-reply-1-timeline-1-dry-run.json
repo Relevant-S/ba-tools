@@ -868,6 +868,18 @@
         "name": "6.2",
         "date": "2026-05-15"
       }
+    ],
+    "suggestion_status": [
+      {
+        "id": "019a5a10-0b00-7c00-8a00-000000000001",
+        "status": "accepted",
+        "reason": "Planned for the next release."
+      },
+      {
+        "id": "019a5a10-0b00-7c00-8a00-000000000002",
+        "status": "declined",
+        "reason": "Out of scope for the pilot."
+      }
     ]
   },
   "client_contact_names": [
