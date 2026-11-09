@@ -7,7 +7,8 @@ Run from the project root (or pass --root). Reads:
   - docs/BA/specs/.ba-profile.yml                products (Jira project -> product name), tools.dashboard
   - docs/BA/clarifications/*-decisions.yaml      answered-question counts and the spec path, matched by `url`
   - docs/BA/mind-map/{tickets,areas,releases}.json   the Jira files; --refresh rewrites them first
-Writes docs/BA/mind-map/mind-map.html (the page to publish) and docs/BA/mind-map/stages.json (each
+Writes docs/BA/mind-map/mind-map.html (the page to publish — or, when the profile has
+tools.dashboard.timelines, the data the Timelines and portal-publish read) and docs/BA/mind-map/stages.json (each
 clarification page reads its stage and the map link from it).
 
 --refresh needs node and the Jira variables JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN. The Jira scripts only read.
@@ -56,6 +57,12 @@ PROJ = mcfg.get("products") or {p["jira_project"]: p["name"] for p in prof.get("
 if not PROJ:
     sys.exit("No Jira projects: set products[].jira_project (or tools.dashboard.map.products) in .ba-profile.yml")
 MAP_URL = dash.get("url", "")
+# When the profile names Timelines (tools.dashboard.timelines: {product: {data, url}}), the Timelines are the
+# dashboard: the Map + Board page is built for its data only, never published, and the clarification pages'
+# Back button opens their product's Timeline.
+TIMELINES = {k: (v or {}).get("url", "") for k, v in (dash.get("timelines") or {}).items()}
+if TIMELINES and not MAP_URL:
+    MAP_URL = next((u for u in TIMELINES.values() if u), "")
 KEY_RE = re.compile(r"\b(?:%s)-\d+\b" % "|".join(map(re.escape, PROJ)))
 SECTIONS = {"W": ("awaiting", "waiting"), "T": ("todos", "todo"), "A": ("agenda", "agenda")}
 
@@ -356,8 +363,13 @@ for a in areas:
     if f and f.get("clar"):
         stages_out[f["clar"]] = {"stage": a["stageKey"], "fromJira": bool(a["tickets"]),
                                  "since": a.get("doneDate"), "asOf": str(today), "feature": a["id"]}
-# Where the clarification pages' Back button goes: the map, opened on the feature (#<feature id>).
+        if TIMELINES:  # "Both" and an unknown product go back to the first Timeline
+            stages_out[f["clar"]]["back"] = TIMELINES.get(a.get("prod")) or MAP_URL
+# Where the clarification pages' Back button goes: the map, opened on the feature (#<feature id>),
+# or, when the Timelines are the dashboard, the page's own `back` link (`_backLabel` names it).
 stages_out["_mapUrl"] = MAP_URL
+if TIMELINES:
+    stages_out["_backLabel"] = "Back to the timeline"
 (mm / "stages.json").write_text(json.dumps(stages_out, indent=1), encoding="utf-8")
 
 data = {"updated": str(today), "title": d.get("title", "BA Dashboard"), "products": list(PROJ.values()),

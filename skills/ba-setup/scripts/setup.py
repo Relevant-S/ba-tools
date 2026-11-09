@@ -411,13 +411,15 @@ def cmd_check_project(root):
             rows.append(row(label, "n/a", "not used on this project"))
             continue
         ok = bool(v) if need is None else bool(v) and all(v.get(n) for n in need)
+        if key == "dashboard" and v and v.get("file") and v.get("timelines"):  # the Timelines are the dashboard
+            ok = all((x or {}).get("url") and (x or {}).get("data") for x in v["timelines"].values())
         rows.append(row(label, "ok" if ok else "missing", "set" if ok else "not set", "ba-setup project"))
     if isinstance(t.get("portal"), dict) and t["portal"]:
         rows += portal_key_rows(root, prof)
     # The dashboard is best started right after the project brief: every feature and question hangs from it.
     dash = t.get("dashboard") or {}
     briefs = sorted({*root.glob("docs/**/product-brief*.md"), *root.glob("docs/planning-artifacts/**/*brief*.md")})
-    if not dash.get("url") and briefs:
+    if not dash.get("url") and not dash.get("timelines") and briefs:
         rows.append(row("BA dashboard", "warn", f"the project has a brief ({briefs[0].relative_to(root).as_posix()}) but no dashboard",
                         "ba-dashboard — Starting one (it seeds the features from the brief)"))
     elif dash.get("url") and not dash.get("page"):

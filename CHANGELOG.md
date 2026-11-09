@@ -1,6 +1,17 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 — 2026-11-09
+
+- **The Timelines can be the dashboard** (Vadim, 9 Nov 2026). New profile setting
+  `tools.dashboard.timelines` — one Timeline per product (`data`, `url`), in place of `tools.dashboard.url`.
+  - `ba-dashboard` → *Publish* then builds and publishes each product's Timeline instead of the Map + Board page.
+    The map page is still built: it is the data the Timelines and `portal-publish` read. "Sync the mind map"
+    reads each Timeline's store.
+  - Clarification pages: the Back button reads "Back to the timeline" and opens the Timeline of the page's
+    feature's product ("Both" → the first). `map/build.py` writes the link per page into `stages.json`.
+  - `ba-setup check` accepts `timelines` in place of `url`.
+  - `intake-and-triage`, `clarification-page` and `timeline` say which page to publish.
+  - Nothing changes for a project without `timelines`.
 
 - **`ba-setup` for the Claude desktop app.** BAs now work in the desktop app's Code tab, so setup no longer
   assumes a terminal:

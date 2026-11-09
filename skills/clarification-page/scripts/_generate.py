@@ -264,7 +264,8 @@ BACK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6l6 6
 
 
 def render_back(cfg: dict, base: pathlib.Path) -> str:
-    """A Back button to the mind map, opened on this page's feature (`<map link>#<feature id>`).
+    """A Back button to the mind map, opened on this page's feature (`<map link>#<feature id>`) — or, when
+    the profile's tools.dashboard.timelines makes the Timelines the dashboard, to the product's Timeline.
     The map link and the feature id come from docs/BA/mind-map/stages.json. A page whose feature is
     not on the dashboard goes back to the map itself; with no map at all, there is no button."""
     f = base.parent / "mind-map" / "stages.json"
@@ -274,10 +275,14 @@ def render_back(cfg: dict, base: pathlib.Path) -> str:
     url = data.get("_mapUrl")
     if not url:
         return ""
-    feature = (data.get(cfg.get("url")) or {}).get("feature")
-    href = url + ("#" + feature if feature else "")
+    hit = data.get(cfg.get("url")) or {}
+    if data.get("_backLabel"):  # the Timelines are the dashboard: back to this page's product Timeline
+        href, label = hit.get("back") or url, data["_backLabel"]
+    else:
+        feature = hit.get("feature")
+        href, label = url + ("#" + feature if feature else ""), "Back to the mind map"
     return (f'<a class="btn ghost back" href="{esc(href)}" target="_blank" rel="noopener">'
-            f'{BACK_ICON}Back to the mind map</a>')
+            f'{BACK_ICON}{esc(label)}</a>')
 
 
 def build_questions(questions: list, base: pathlib.Path) -> list:

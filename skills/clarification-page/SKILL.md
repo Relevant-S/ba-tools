@@ -38,7 +38,8 @@ dated and attributed. If an answer only lives on the page, the spec rots and the
    and the dashboard map always show the same stage; fill it in after the first publish), `round`
    ("Round V7 · sent 22 Oct 2026 by …"), `description` (1–2 sentences), `problem` and `solution`
    (1–3 sentences each). The side panel shows progress, the Send button and a timeline; "Back to the
-   map" opens the dashboard on this feature. A project with no dashboard map yet shows the stage from
+   map" opens the dashboard on this feature ("Back to the timeline", the product's Timeline, when the
+   profile has `tools.dashboard.timelines`). A project with no dashboard map yet shows the stage from
    the `events` and no Back button.
 5. **Say what is already decided** in `decisions`, so the client is never asked twice: one entry per
    decision — `id`, `date`, `who`, `how`, `title`, `detail`. Put `who` only when a source names the
@@ -74,7 +75,7 @@ dated and attributed. If an answer only lives on the page, the spec rots and the
   `set-clar --feature "<the feature's area>" --url <this page's link> --label "Clarification page — V<n>, <k> questions"`
   with `--open <file>` holding the page's open questions (one line each, the client's words), and
   `--new <file>` the first time, when the feature has no row yet. Then `build` and publish the
-  dashboard to its link (`tools.dashboard.url`). **The dashboard is the register of clarification
+  dashboard (`ba-dashboard` → *Publish*: its link `tools.dashboard.url`, or the Timelines). **The dashboard is the register of clarification
   pages** — this is how a BA finds a page after it is created.
 - **And run portal-publish** when the profile has `tools.portal`, in this order:
   1. Publish the Artifact (above).

@@ -164,5 +164,5 @@ Report sections: items grouped by lane (each carrying a `proposed_action:` block
 
 **The dashboard page.** After the last approved action of a run, rebuild and republish the dashboard
 once (`ba-dashboard` → *Publish*: check the YAML, build the map page, publish it to
-`tools.dashboard.url`). A project without a dashboard yet: offer to start one (`ba-dashboard` →
+`tools.dashboard.url` — or, when the profile has `tools.dashboard.timelines`, build and publish each Timeline). A project without a dashboard yet: offer to start one (`ba-dashboard` →
 *Starting one*).

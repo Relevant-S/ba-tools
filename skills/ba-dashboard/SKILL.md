@@ -16,6 +16,11 @@ open, on whom, for how long, and how far each feature has got.
 - **Board** (`#board` opens it) — rows are Jira releases (upcoming, "Not planned yet", the last release,
   one earlier release picked from a list); columns are the same areas; one card per feature.
 
+**Or the Timelines are the dashboard.** When the profile has `tools.dashboard.timelines` (one Timeline per
+product, see *Profile settings*), the Map + Board page is no longer published: it is built only as the data
+the Timelines and `portal-publish` read. The Timeline pages (the `timeline` skill) are what the BA and the
+client open. Everything else here — the YAML, the commands, the checks — stays the same.
+
 **The page is built, never hand-edited.** Its content lives in **`docs/BA/dashboard.yaml`**; Jira adds the
 tickets, areas and releases. Change the YAML (by hand, or with the commands below), build, publish.
 
@@ -103,6 +108,9 @@ alone. For example: a question you cannot word without inventing a client positi
 3. Publish `docs/BA/mind-map/mind-map.html` **to `tools.dashboard.url`**. Leave `capabilities` out, so
    the page keeps its saved notes store, and do not use `force`. Never publish `docs/BA/dashboard.html` to
    that link — it would replace the map.
+   **When the profile has `tools.dashboard.timelines`, do this instead:** for each product, build its
+   Timeline (`timeline` skill → *Build*, with that product's `data` file) and publish the built page to its
+   `url` (`timeline` → *Publish*). Do not publish the map page anywhere.
 4. **The share pin does not move by itself** — if the page is shared, tell the BA to move it from the
    artifact's share menu.
 5. If `docs/BA/dashboard-slack.yaml` exists, sync the client copy in Slack (next section).
@@ -123,6 +131,8 @@ They save in the published page's own store (collection `resolutions`) and show 
 page cannot change the repo, so to make them stick:
 
 1. Read the store: ArtifactData `list` on `tools.dashboard.url`, collection `resolutions`, saved to a JSON file.
+   With `tools.dashboard.timelines`, read each Timeline's store instead (its `url`, same collection), one
+   file per page, and run steps 2 and 3 once per file.
 2. `uv run --with pyyaml python <skills>/ba-dashboard/map/sync.py <that file>`. Notes go to the front of
    the item's `s` as "UPDATE <date> — …" / "CLOSED <date> — …"; resolved items get `done: true`.
 3. Delete exactly the `applied` keys from the store (ArtifactData `batch` delete). Keys under
@@ -185,6 +195,23 @@ dashboard:
     stage_of_status:                              # optional: Jira status -> stage (concept/spec/ready/dev/qa/done)
       In Review: qa
 ```
+
+**The Timelines as the dashboard** — replace `url` with one Timeline per product (the key is the product
+name as `dashboard.yaml` writes it in `prod:`):
+
+```yaml
+dashboard:
+  file: docs/BA/dashboard.yaml
+  page: docs/BA/mind-map/mind-map.html          # still built — the data the Timelines read; never published
+  timelines:
+    AcmeLending: { data: docs/BA/timeline/epd-timeline.yaml, url: https://claude.ai/artifact/<id> }
+    Bond Portal: { data: docs/BA/timeline/bond-portal/ip-timeline.yaml, url: https://claude.ai/artifact/<id> }
+```
+
+The clarification pages' Back button then reads "Back to the timeline" and opens the Timeline of the page's
+feature's product ("Both" → the first one). Switching an existing project over: add `timelines`, remove `url`,
+build the map, rebuild every clarification page (so its Back button moves), publish the Timelines, and only
+then, with the BA's yes, delete the old Map + Board artifact.
 
 Without `map.products`, the products come from the profile's `products` (`jira_project` → `name`).
 Statuses not in `stage_of_status` use Jira's own groups: To Do → Ready for dev, In Progress → In dev,

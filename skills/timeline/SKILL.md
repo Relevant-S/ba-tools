@@ -13,6 +13,10 @@ listed in `docs/timeline-data-contract.md` (ba-tools repo); the plan behind it i
 
 **The timeline never writes to the dashboard.** It reads `dashboard.yaml` and the dashboard's built page.
 
+**The Timeline can be the dashboard.** When the profile has `tools.dashboard.timelines` (product → `data`,
+`url`), the Map + Board page is no longer published, and `ba-dashboard` → *Publish* builds and publishes each
+product's Timeline to its `url` instead. That link is then the one the BA and the client open.
+
 ## Stage rules (every project)
 
 | Stage | Rule |
@@ -96,7 +100,8 @@ the data file, not in the page.
 
 ## Publish
 
-Publish the built `.html` to the project's timeline link with the Artifact tool (same link every time; omit
+Publish the built `.html` to the project's timeline link (the product's `url` in
+`tools.dashboard.timelines`, when the profile has it) with the Artifact tool (same link every time; omit
 `capabilities` so the page keeps its `db` and `user` store). Notes, Resolved ticks and suggestions saved on the
 page come back the same way as on the dashboard: read the store with ArtifactData, run the dashboard's
 `sync.py` for notes and the project's `suggestions_to_intake.py` for suggestions.
