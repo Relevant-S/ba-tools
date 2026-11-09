@@ -114,7 +114,9 @@ alone. For example: a question you cannot word without inventing a client positi
 4. **The share pin does not move by itself** — if the page is shared, tell the BA to move it from the
    artifact's share menu.
 5. If `docs/BA/dashboard-slack.yaml` exists, sync the client copy in Slack (next section).
-6. When the profile has `tools.portal`, run `portal-publish dashboard` after the Slack sync. It shows the
+6. When the profile has `tools.portal`, run `portal-publish dashboard` after the Slack sync — or, when it has
+   `tools.dashboard.timelines`, `portal-publish timeline` (the Timelines are what the Client sees; a Dashboard
+   send would put Map and Board back, so `dashboard plan` stops). It shows the
    BA what the Client will read in the Relevant Clients Portal and sends it only after a yes. If the BA
    says no, nothing is sent. A repo with two products sends each product to its own Portal project (its
    key is named in `tools.portal.products`), with one dry run and one yes or no per product.

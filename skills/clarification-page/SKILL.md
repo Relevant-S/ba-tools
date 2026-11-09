@@ -87,7 +87,8 @@ dated and attributed. If an answer only lives on the page, the spec rots and the
      the Portal project of its Feature's product (the Feature whose `clar.url` is the page's `url:`; "Both"
      sends it to every product's project, one yes or no each). A page no Feature links goes to the first
      product's project.
-  4. When the link is new, run `portal-publish dashboard` too, so the Client's Dashboard links to the page.
+  4. When the link is new, run `portal-publish dashboard` too, so the Client's Dashboard links to the page
+     (`portal-publish timeline` when the profile has `tools.dashboard.timelines`).
 
   Each round needs its own `store_key` and `round:` line: a Round the Client has already answered
   cannot be replaced.

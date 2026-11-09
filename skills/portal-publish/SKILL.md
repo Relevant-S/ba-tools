@@ -134,7 +134,8 @@ If the BA edits `dashboard.yaml` after `plan`, discard and run `plan` again — 
 The BA's Timeline replaces Map and Board on the Portal (Vadim, 6 Nov 2026). A product moves to the Timeline when
 the BA sends `timeline/1` for it; a later `dashboard send` for that product brings Map and Board back. Until the
 Timeline page is on the Portal, the Client sees a "new dashboard is on its way" card after a Timeline send, so
-**send a Timeline only when the BA asks for it.**
+**send a Timeline only when the BA asks for it.** When the profile has `tools.dashboard.timelines`, the Timeline
+is the only send for those products: `dashboard plan` stops with a message that points here.
 
 ```bash
 uv run --project <skills>/portal-publish python <skills>/portal-publish/publish.py timeline plan [--product "<name>"]

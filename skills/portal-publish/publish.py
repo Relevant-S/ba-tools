@@ -968,6 +968,14 @@ def cmd_plan(root: Path, refresh: bool, only: str | None = None) -> dict:
                    "Nothing was sent.")
     names = key_names(prof, products, only)
     products = [only] if only else products
+    # When the profile makes the Timelines the dashboard (tools.dashboard.timelines), a Dashboard send would put
+    # Map and Board back on the Portal for those products — so it stops before anything is sent.
+    as_dashboard = ((prof.get("tools") or {}).get("dashboard") or {}).get("timelines") or {}
+    covered = [p for p in products if p in as_dashboard]
+    if covered:
+        raise Stop(f"This project's dashboard is its Timeline for {', '.join(covered)} (tools.dashboard.timelines in "
+                   "docs/BA/specs/.ba-profile.yml). A Dashboard send would put Map and Board back on the Portal. "
+                   "Run `timeline plan` instead. Nothing was sent.")
     try:
         timelines = timeline_files(root)
     except Stop:

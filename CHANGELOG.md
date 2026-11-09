@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.1 — 2026-11-09
+
+- **The Portal gets the Timeline when the Timelines are the dashboard.** With `tools.dashboard.timelines`,
+  `portal-publish dashboard plan` stops before anything is sent and points to `timeline plan` — a Dashboard send
+  would put Map and Board back on the Portal. `ba-dashboard` → *Publish* and `clarification-page` now say to run
+  `portal-publish timeline` in that case.
+
 ## 0.9.0 — 2026-11-09
 
 - **The Timelines can be the dashboard** (Vadim, 9 Nov 2026). New profile setting

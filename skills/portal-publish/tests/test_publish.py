@@ -1373,7 +1373,7 @@ def test_pages_follow_the_profile_order_not_the_map_order(project):
 
 
 @pytest.mark.skipif(not (EASY_PAYDAY / publish.MAP_PAGE).exists(), reason="the Acme Lending folder is not here")
-def test_real_project_dashboard_plan_lists_15_and_6_pages(capsys, tmp_path, portal, builds):
+def test_real_project_dashboard_plan_lists_17_and_6_pages(capsys, tmp_path, portal, builds):
     """A copy of the Acme Lending folder (read only) with two mapped keys, against the fake Portal."""
     root = tmp_path / "easy-payday"
     for rel in (publish.PROFILE, publish.DASHBOARD, publish.SLACK, publish.MAP_PAGE):
@@ -1386,6 +1386,8 @@ def test_real_project_dashboard_plan_lists_15_and_6_pages(capsys, tmp_path, port
     edit_yaml(root / publish.PROFILE, lambda d: d.setdefault("tools", {}).update(portal={
         "url": URL, "products": {"AcmeLending": "PORTAL_PUBLISH_KEY_APP",
                                  "Bond Portal": "PORTAL_PUBLISH_KEY_ADMIN"}}))
+    # the real project sends Timelines (tools.dashboard.timelines); this test checks the Dashboard send
+    edit_yaml(root / publish.PROFILE, lambda d: (d["tools"].get("dashboard") or {}).pop("timelines", None))
     git(root, "init", "-q")
     git(root, "config", "user.name", "Sample BA")
     git(root, "config", "user.email", "ba@example.com")
@@ -1397,7 +1399,7 @@ def test_real_project_dashboard_plan_lists_15_and_6_pages(capsys, tmp_path, port
         assert code == 0, plan
         easy, investor = (json.loads(r.content) for r in portal.posts())
         assert checks.check_publish(easy) is None and checks.check_publish(investor) is None
-        assert len(easy["clarification_pages"]) == 15 and len(investor["clarification_pages"]) == 6
+        assert len(easy["clarification_pages"]) == 17 and len(investor["clarification_pages"]) == 6
         assert "security-log-decisions" in easy["clarification_pages"]
         assert "security-log-decisions" in investor["clarification_pages"]
         unlinked = next(w for w in plan["warnings"] if "these Clarification pages" in w)
@@ -1800,6 +1802,14 @@ def test_dashboard_plan_warns_that_it_replaces_a_timeline(capsys, project, porta
         assert "App has a Timeline (docs/BA/timeline/app-timeline.yaml)" in said[0]
     finally:
         cleanup(plan)
+
+
+def test_dashboard_plan_stops_when_the_timelines_are_the_dashboard(capsys, project, portal, builds, timelines):
+    edit_yaml(project / publish.PROFILE, lambda d: d.setdefault("tools", {}).setdefault("dashboard", {}).update(
+        timelines={"App": {"data": "docs/BA/timeline/app-timeline.yaml", "url": "https://claude.ai/artifact/x"}}))
+    code, plan, _ = run(capsys, project, "dashboard", "plan")
+    assert code != 0 and "`timeline plan`" in plan["error"] and "App" in plan["error"], plan
+    assert not portal.posts()
 
 
 def test_no_nulls_drops_null_fields_and_null_list_entries():
