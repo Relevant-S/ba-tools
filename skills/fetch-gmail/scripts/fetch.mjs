@@ -165,7 +165,7 @@ async function getAccessToken() {
     return _accessTokenCache.token;
   }
   if (!CLIENT_ID || !CLIENT_SECRET) {
-    abort('GMAIL_OAUTH_CLIENT_ID / GMAIL_OAUTH_CLIENT_SECRET not set. Add to ~/.claude/settings.json env block, restart session.');
+    abort('GMAIL_OAUTH_CLIENT_ID / GMAIL_OAUTH_CLIENT_SECRET not set. Add to ~/.claude/settings.json env block, then start a new session.');
   }
   if (!existsSync(TOKEN_PATH)) {
     abort(`Refresh token not found at ${TOKEN_PATH}. Run: node fetch.mjs init-auth`);
@@ -236,7 +236,7 @@ async function cmdInitAuth() {
     }
     if (code) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end('<h1>fetch-gmail authorized.</h1><p>You can close this tab and return to your terminal.</p>');
+      res.end('<h1>fetch-gmail authorized.</h1><p>You can close this tab and return to Claude.</p>');
       resolveCode(code);
     } else {
       res.writeHead(400);

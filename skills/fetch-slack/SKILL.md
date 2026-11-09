@@ -52,7 +52,7 @@ The allowlist lives at `docs/BA/.fetch-slack-config.yaml` (project-scoped, git-t
    }
    ```
 
-6. **Restart the Claude Code session** so the env var propagates.
+6. **Start a new session** (New session in the desktop app) so the scripts see the key. `ba-setup me` does steps 5–6 for you.
 
 ### Channel membership
 
@@ -190,7 +190,7 @@ Looking now. The retry timeout is set to 30s but the upstream is taking 45s on s
 
 | Error | Meaning | Fix |
 |---|---|---|
-| `SLACK_USER_TOKEN not set` | Env var missing | Add to `~/.claude/settings.json` env block, restart session |
+| `SLACK_USER_TOKEN not set` | Env var missing | Add to `~/.claude/settings.json` env block, then start a new session |
 | `Slack X error: invalid_auth` | Token invalid or revoked | Reinstall the Slack app, copy a fresh User OAuth Token |
 | `Slack X error: missing_scope (needed scope: groups:history)` | Token lacks a required scope | Add the scope under User Token Scopes, reinstall the app, copy the fresh token |
 | `Slack X error: not_in_channel` | Token's user isn't a member of the private channel | Join the channel in Slack and retry |

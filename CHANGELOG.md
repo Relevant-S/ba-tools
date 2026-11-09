@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+- **`ba-setup` for the Claude desktop app.** BAs now work in the desktop app's Code tab, so setup no longer
+  assumes a terminal:
+  - Claude runs the commands: installs (`winget`), the Gmail sign-in, opening the settings file.
+  - Connectors are checked from the session's connector list (connected, switched off, needs sign-in,
+    missing), and Claude can switch one on. The command-line check (`atlassianUserInfo`, `whoami`) stays as
+    the fallback.
+  - New `keys-add`: writes `PASTE-…` placeholder lines for missing keys into `~/.claude/settings.json`
+    (backed up), so the BA only swaps values — no JSON to type. `--set` takes a site or an email, never a key.
+  - `check-me` also reads the saved settings file, so it tests a key right after it is saved, and shows a
+    "New session" row while the session is behind. A `PASTE-…` value counts as not set.
+  - Starter permissions: `--connectors` adds each connector rule again under the desktop app's tool name
+    (`mcp__<id>__…`). Before this, none of them applied in the desktop app — including the block on sending
+    email.
+  - "Restart Claude Code" is now "start a new session" in ba-setup, the fetch skills, jira and confluence.
+  - `docs/new-ba-onboarding.md` rewritten for the desktop app.
+
 ## 0.8.0 — 2026-11-09
 
 - **`portal-publish` contract 1.9.0** (tag `portal-contract-1.9.0`): "Coming up" — planned deadlines, releases

@@ -18,7 +18,7 @@ const TOKEN = process.env.JIRA_API_TOKEN;
 
 if (!BASE || !EMAIL || !TOKEN) {
   console.error('JIRA env vars not set. Required: JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN.');
-  console.error('Add to ~/.claude/settings.json env block, then restart the session.');
+  console.error('Add to ~/.claude/settings.json env block, then start a new session.');
   process.exit(1);
 }
 

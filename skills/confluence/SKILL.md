@@ -90,8 +90,8 @@ The Atlassian MCP `create/updateConfluencePage` tools require the **full page bo
 
 | Error | Meaning | Fix |
 |---|---|---|
-| `Atlassian env vars not set` | No token vars present | Set `JIRA_*` (or `CONFLUENCE_*`) in `~/.claude/settings.json` env, restart session |
-| `401 Unauthorized` | Token invalid/expired | Regenerate the API token, update settings, restart |
+| `Atlassian env vars not set` | No token vars present | Set `JIRA_*` (or `CONFLUENCE_*`) in `~/.claude/settings.json` env, then start a new session |
+| `401 Unauthorized` | Token invalid/expired | Regenerate the API token, update settings, then start a new session |
 | `403 Forbidden` | Token's account lacks space permission | Grant create/edit on the target space |
 | `Space "X" not found` | Wrong key or no access | Run `space <KEY>`; check the key and permissions |
 | `400 ... storage` | Markdown produced storage XHTML Confluence rejected | Simplify the offending markdown (often a raw-HTML snippet); re-run |

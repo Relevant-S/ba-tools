@@ -38,7 +38,7 @@ Two env vars:
 }
 ```
 
-Get the key from Fireflies at **app.fireflies.ai → Settings → Developer Settings → API key**. The user email is the one Fireflies registered you as on the workspace (the same address that shows up in `participants` on your meetings). Restart the Claude Code session after adding so the env vars propagate to spawned processes.
+Get the key from Fireflies at **app.fireflies.ai → Settings → Developer Settings → API key**. The user email is the one Fireflies registered you as on the workspace (the same address that shows up in `participants` on your meetings). Start a new session after adding (New session in the desktop app): a session reads the keys only when it starts. `ba-setup me` adds these lines for you.
 
 ## Workflow
 
@@ -147,7 +147,7 @@ The `/intake-and-triage` skill reads `docs/BA/intake/*.md` and ingests each as a
 
 | Error | Meaning | Fix |
 |---|---|---|
-| `FIREFLIES_API_KEY not set` | Env var missing | Add to `~/.claude/settings.json` env block, restart session |
+| `FIREFLIES_API_KEY not set` | Env var missing | Add to `~/.claude/settings.json` env block, then start a new session |
 | `Fireflies API 401` | Invalid or expired API key | Generate a new one at app.fireflies.ai → Settings → Developer |
 | `Fireflies API 429` | Rate limited | Wait ~1 min and retry |
 | `transcript <id> not found` | ID deleted or wrong | Re-run `list` to get current IDs |

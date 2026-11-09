@@ -35,7 +35,7 @@ The same JIRA env vars used by the `/jira` skill:
 | `JIRA_EMAIL` | The email tied to the API token |
 | `JIRA_API_TOKEN` | Token from id.atlassian.com → Account settings → Security |
 
-If any are missing the script aborts with a clear message; add them to `~/.claude/settings.json` env block and restart the session.
+If any are missing the script aborts with a clear message; add them to `~/.claude/settings.json` env block and start a new session.
 
 ## Workflow
 
@@ -192,7 +192,7 @@ If you want to refresh a `filed` spec, do not re-fetch it — run `ba-spec` on i
 
 | Error | Meaning | Fix |
 |---|---|---|
-| `JIRA env vars not set` | Missing `JIRA_BASE_URL` / `JIRA_EMAIL` / `JIRA_API_TOKEN` | Add to `~/.claude/settings.json`, restart session |
+| `JIRA env vars not set` | Missing `JIRA_BASE_URL` / `JIRA_EMAIL` / `JIRA_API_TOKEN` | Add to `~/.claude/settings.json`, then start a new session |
 | `JIRA API 401` | Invalid or expired token | Generate a new one at id.atlassian.com → Security |
 | `JIRA API 404` (on a specific key) | Ticket key doesn't exist or you lack permission | Verify the key; check project permissions |
 | `_releases.md not found at docs/BA/specs/{project}/` | Project folder missing or not initialized | Create the folder + `_releases.md` (use `node <skills>/jira/scripts/jira.mjs refresh-specs` if available) |

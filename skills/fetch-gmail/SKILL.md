@@ -50,7 +50,7 @@ For Acme: `project_slug: acme` → `BA-intake/acme`.
    }
    ```
 
-6. **Restart the Claude Code session** so the env vars propagate.
+6. **Start a new session** (New session in the desktop app) so the scripts see the key. `ba-setup me` does steps 5–6 for you.
 
 ### One-time consent flow
 
@@ -206,7 +206,7 @@ Triage doesn't care about the source — it ingests whatever's in `docs/BA/intak
 
 | Error | Meaning | Fix |
 |---|---|---|
-| `GMAIL_OAUTH_CLIENT_ID / SECRET not set` | Env vars missing | Add to `~/.claude/settings.json`, restart session |
+| `GMAIL_OAUTH_CLIENT_ID / SECRET not set` | Env vars missing | Add to `~/.claude/settings.json`, then start a new session |
 | `Refresh token not found at state/token.json` | Auth not initialized | Run `init-auth` |
 | `Gmail API 401: invalid_grant` | Refresh token expired or revoked | Re-run `init-auth` |
 | `Gmail API 403: insufficient permissions` | Scope mismatch | Re-run `init-auth` (script requests `gmail.modify`) |

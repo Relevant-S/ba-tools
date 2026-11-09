@@ -8,8 +8,14 @@ Commands
   list-jira-projects           Jira projects the token can see
   list-confluence-spaces       Confluence spaces the token can see
   list-slack-channels          Slack channels the token's user is a member of
+  keys-add <tool…> [--set NAME=VALUE]
+                               add PASTE-… placeholder lines for a tool's missing keys to the env block of
+                               ~/.claude/settings.json (tools: jira, confluence, fireflies, gmail, slack). --set
+                               fills a site address or an email the BA gave; it refuses keys and tokens.
   defaults-plan                what installing the starter defaults would add (changes nothing)
   defaults-apply               add the starter defaults (backs up both files first)
+  check-me, defaults-plan and defaults-apply take --connectors '{"<connector name>": "<id>", …}' (the desktop
+  app's connector list), so the connector rules are added under the names the desktop app uses as well.
   stamp                        record that setup passed for this ba-tools version
   stamp-status                 is there a passing stamp for this version?
   connect <root> --product <name or ""> --code <code> [--replace]
@@ -73,8 +79,65 @@ def http(method, url, headers=None, body=None, timeout=20):
         return 0, {"error": type(e).__name__}
 
 
+# Keys live in the `env` block of ~/.claude/settings.json. A session reads that block once, when it starts, so a
+# key the BA has just saved is in the file but not yet in os.environ. The checks read the file as well, so they
+# test the key the BA saved, and say "start a new session" when the session is behind the file.
+PLACEHOLDER = "PASTE-"
+KEY_GROUPS = {
+    "jira": ["JIRA_BASE_URL", "JIRA_EMAIL", "JIRA_API_TOKEN"],
+    "confluence": ["CONFLUENCE_BASE_URL", "CONFLUENCE_EMAIL", "CONFLUENCE_API_TOKEN"],
+    "fireflies": ["FIREFLIES_API_KEY", "FIREFLIES_USER_EMAIL"],
+    "gmail": ["GMAIL_OAUTH_CLIENT_ID", "GMAIL_OAUTH_CLIENT_SECRET"],
+    "slack": ["SLACK_USER_TOKEN"],
+}
+PLACEHOLDER_TEXT = {
+    "JIRA_BASE_URL": "PASTE-the-Jira-site-like-https://example.atlassian.net",
+    "JIRA_EMAIL": "PASTE-the-email-you-sign-in-to-Jira-with",
+    "JIRA_API_TOKEN": "PASTE-your-Atlassian-API-token",
+    "CONFLUENCE_BASE_URL": "PASTE-the-Confluence-site-only-if-not-the-Jira-site",
+    "CONFLUENCE_EMAIL": "PASTE-the-email-you-sign-in-to-Confluence-with",
+    "CONFLUENCE_API_TOKEN": "PASTE-your-Atlassian-API-token-for-that-site",
+    "FIREFLIES_API_KEY": "PASTE-your-Fireflies-API-key",
+    "FIREFLIES_USER_EMAIL": "PASTE-the-email-Fireflies-has-for-you",
+    "GMAIL_OAUTH_CLIENT_ID": "PASTE-the-client-ID-from-the-lead-BA",
+    "GMAIL_OAUTH_CLIENT_SECRET": "PASTE-the-client-secret-from-the-lead-BA",
+    "SLACK_USER_TOKEN": "PASTE-the-User-OAuth-Token-starting-xoxp-",
+}
+NOT_SECRET = re.compile(r"_(BASE_URL|EMAIL)$")   # the only values the BA may give in chat (keys-add --set)
+SAVED_NOT_LOADED, STILL_PLACEHOLDER = set(), set()
+
+
+def settings_env():
+    try:
+        return json.loads((CLAUDE / "settings.json").read_text(encoding="utf-8")).get("env") or {}
+    except Exception:
+        return {}
+
+
 def env(*names):
-    return {n: os.environ.get(n, "") for n in names}
+    """The value of each name: this session's, or else the one saved in settings.json. A placeholder counts as
+    not set. Notes which names are saved but not loaded, and which still hold a placeholder."""
+    saved, vals = settings_env(), {}
+    for n in names:
+        v = os.environ.get(n, "")
+        if not v and saved.get(n):
+            v = str(saved[n])
+            if not v.startswith(PLACEHOLDER):
+                SAVED_NOT_LOADED.add(n)
+        if v.startswith(PLACEHOLDER):
+            STILL_PLACEHOLDER.add(n)
+            v = ""
+        vals[n] = v
+    return vals
+
+
+def not_set(missing):
+    """The 'not set' detail, naming the ones that still hold a placeholder."""
+    ph = [m for m in missing if m in STILL_PLACEHOLDER]
+    rest = [m for m in missing if m not in STILL_PLACEHOLDER]
+    parts = ([f"not set: {', '.join(rest)}"] if rest else []) + \
+            ([f"still a placeholder (PASTE-…): {', '.join(ph)}"] if ph else [])
+    return "; ".join(parts)
 
 
 def row(tool, state, detail, fix=""):
@@ -95,7 +158,7 @@ def atlassian_auth(prefix):
 def check_jira():
     auth, missing = atlassian_auth("JIRA")
     if not auth:
-        return row("Jira", "missing", f"not set: {', '.join(missing)}", "see references/me.md → Jira")
+        return row("Jira", "missing", not_set(missing), "see references/me.md → Jira")
     base, h = auth
     code, body = http("GET", f"{base}/rest/api/3/myself", h)
     if code == 200:
@@ -122,7 +185,7 @@ def check_fireflies():
     e = env("FIREFLIES_API_KEY", "FIREFLIES_USER_EMAIL")
     missing = [k for k, v in e.items() if not v]
     if missing:
-        return row("Fireflies", "missing", f"not set: {', '.join(missing)}", "references/me.md → Fireflies")
+        return row("Fireflies", "missing", not_set(missing), "references/me.md → Fireflies")
     code, body = http("POST", "https://api.fireflies.ai/graphql",
                       {"Authorization": f"Bearer {e['FIREFLIES_API_KEY']}", "Content-Type": "application/json"},
                       {"query": "{ user { email name } }"})
@@ -139,10 +202,10 @@ def check_gmail():
     e = env("GMAIL_OAUTH_CLIENT_ID", "GMAIL_OAUTH_CLIENT_SECRET")
     missing = [k for k, v in e.items() if not v]
     if missing:
-        return row("Gmail", "missing", f"not set: {', '.join(missing)}", "references/me.md → Gmail")
+        return row("Gmail", "missing", not_set(missing), "references/me.md → Gmail")
     if not GMAIL_TOKEN.exists():
         return row("Gmail", "missing", "keys set, but you have not signed in yet",
-                   "run the fetch-gmail sign-in once (references/me.md → Gmail, step 6)")
+                   "ask Claude to run the Gmail sign-in (references/me.md → Gmail, step 3)")
     try:
         refresh = json.loads(GMAIL_TOKEN.read_text(encoding="utf-8")).get("refresh_token", "")
     except Exception:
@@ -152,7 +215,7 @@ def check_gmail():
     code, body = http("POST", "https://oauth2.googleapis.com/token",
                       {"Content-Type": "application/x-www-form-urlencoded"}, form)
     if code != 200 or "access_token" not in body:
-        return row("Gmail", "broken", "the saved sign-in no longer works", "sign in again (references/me.md → Gmail, step 6)")
+        return row("Gmail", "broken", "the saved sign-in no longer works", "ask Claude to run the Gmail sign-in again (references/me.md → Gmail, step 3)")
     code, prof = http("GET", "https://gmail.googleapis.com/gmail/v1/users/me/profile",
                       {"Authorization": f"Bearer {body['access_token']}"})
     if code == 200:
@@ -161,9 +224,9 @@ def check_gmail():
 
 
 def check_slack():
-    tok = os.environ.get("SLACK_USER_TOKEN", "")
+    tok = env("SLACK_USER_TOKEN")["SLACK_USER_TOKEN"]
     if not tok:
-        return row("Slack", "missing", "not set: SLACK_USER_TOKEN", "references/me.md → Slack")
+        return row("Slack", "missing", not_set(["SLACK_USER_TOKEN"]), "references/me.md → Slack")
     if not tok.startswith("xoxp-"):
         return row("Slack", "broken", "SLACK_USER_TOKEN is not a user token (it should start with xoxp-)",
                    "copy the User OAuth Token, not the Bot token (references/me.md → Slack)")
@@ -202,15 +265,78 @@ def check_plugins():
     return None
 
 
-def cmd_check_me():
+INSTALL = {   # Claude runs these for the BA, after a yes (winget ships with Windows 11)
+    "git": "winget install --id Git.Git -e",
+    "node": "winget install --id OpenJS.NodeJS.LTS -e",
+    "uv": "winget install --id astral-sh.uv -e",
+}
+NEW_SESSION = "start a new session (New session in the sidebar): this one started before the change"
+
+
+def cmd_check_me(connectors=None):
     rows = [check_jira(), check_confluence(), check_fireflies(), check_gmail(), check_slack(),
-            check_program("git", ["--version"], "needed", "install Git for Windows"),
-            check_program("node", ["--version"], "needed by the fetch scripts", "install Node 22 LTS"),
-            check_program("uv", ["--version"], "needed by BMad and ba-tools", "install uv from astral.sh")]
+            check_program("git", ["--version"], "needed", f"Claude can install it: {INSTALL['git']}"),
+            check_program("node", ["--version"], "needed by the fetch scripts",
+                          f"Claude can install it: {INSTALL['node']}"),
+            check_program("uv", ["--version"], "needed by BMad and ba-tools", f"Claude can install it: {INSTALL['uv']}")]
     rows += [r for r in (check_github_token(), check_plugins()) if r]
-    rows.append(row("Atlassian connector", "skill-checks", "checked by the skill, not this script"))
-    rows.append(row("Figma connector", "skill-checks", "checked by the skill, not this script"))
-    out({"rows": rows, "defaults_installed": defaults_installed()})
+    if SAVED_NOT_LOADED:
+        rows.append(row("New session", "warn",
+                        f"saved in your settings but not loaded here: {', '.join(sorted(SAVED_NOT_LOADED))}. "
+                        "The check above used the saved values; the fetch scripts will not see them yet",
+                        NEW_SESSION))
+    rows.append(row("Connectors", "skill-checks", "checked by the skill (the session's connector list), not this script"))
+    out({"rows": rows, "defaults_installed": defaults_installed(connectors)})
+
+
+def cmd_keys_add(argv):
+    """Add placeholder lines for the missing keys of the named tools to the env block of settings.json, so the BA
+    only swaps each PASTE-… text for the real value: no JSON to type, no commas to get wrong. Keeps every value
+    already there. Backs the file up first. Prints names only, never a value."""
+    p = argparse.ArgumentParser(prog="setup.py keys-add")
+    p.add_argument("tools", nargs="+", choices=sorted(KEY_GROUPS))
+    p.add_argument("--set", action="append", default=[], metavar="NAME=VALUE",
+                   help="a site address or an email the BA gave (never a key or a token)")
+    a = p.parse_args(argv)
+    given = {}
+    for item in a.set:
+        name, _, value = item.partition("=")
+        if not NOT_SECRET.search(name):
+            out({"ok": False, "error": f"--set takes only a site address or an email, not {name}. "
+                                       "Keys are typed into the settings file by the BA."})
+            sys.exit(1)
+        given[name] = value.strip()
+    sp = CLAUDE / "settings.json"
+    try:
+        settings = load_json(sp)
+    except json.JSONDecodeError as e:
+        out({"ok": False, "error": f"settings.json is not valid JSON (line {e.lineno}): fix that first; "
+                                   "nothing was written", "settings_path": str(sp)})
+        sys.exit(1)
+    block = settings.setdefault("env", {})
+    added, filled, kept = [], [], []
+    for tool in a.tools:
+        for name in KEY_GROUPS[tool]:
+            current = str(block.get(name, ""))
+            if name in given and (not current or current.startswith(PLACEHOLDER)):
+                block[name] = given[name]
+                filled.append(name)
+            elif current:
+                kept.append(name)
+            else:
+                block[name] = PLACEHOLDER_TEXT[name]
+                added.append(name)
+    backup = None
+    if added or filled:
+        if sp.exists():
+            backup = sp.with_name(f"settings.json.bak-{dt.datetime.now().strftime('%Y%m%d-%H%M%S')}")
+            shutil.copy2(sp, backup)
+        sp.parent.mkdir(parents=True, exist_ok=True)
+        sp.write_text(json.dumps(settings, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    placeholders = sorted(n for n, v in block.items() if str(v).startswith(PLACEHOLDER))
+    out({"ok": True, "settings_path": str(sp), "placeholders_added": added, "filled_from_chat": filled,
+         "already_set": kept, "placeholders_left": placeholders, "backup": str(backup) if backup else None,
+         "open_with": f'notepad "{sp}"'})
 
 
 # ---------------------------------------------------------------- check-project
@@ -364,7 +490,7 @@ def cmd_list_confluence():
 
 
 def cmd_list_slack():
-    tok = os.environ.get("SLACK_USER_TOKEN", "")
+    tok = env("SLACK_USER_TOKEN")["SLACK_USER_TOKEN"]
     if not tok:
         out({"error": "not set: SLACK_USER_TOKEN"}); return
     chans, cursor = [], ""
@@ -387,8 +513,41 @@ def load_json(path):
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 
 
-def defaults_plan():
+CONNECTOR_RULE = re.compile(r"^mcp__claude_ai_([A-Za-z0-9_]+?)__(.+)$")
+
+
+def connectors_arg(argv):
+    """--connectors '{"Atlassian Rovo": "<id>", "Gmail": "<id>", …}': the session's claude.ai connectors, as the
+    skill reads them from the desktop app's connector list. Empty when not given."""
+    if "--connectors" not in argv:
+        return {}
+    i = argv.index("--connectors")
+    try:
+        return {str(k): str(v) for k, v in json.loads(argv[i + 1]).items() if v}
+    except (IndexError, ValueError, AttributeError):
+        out({"ok": False, "error": "--connectors needs a JSON object of connector name → id"})
+        sys.exit(1)
+
+
+def starter_rules(connectors):
+    """The starter permissions. The file names connector tools as the command line does (mcp__claude_ai_Gmail__…).
+    The desktop app names the same tool after the connector's id (mcp__<id>__…), so each such rule is added again
+    under the id of every connector given, or a "never send email" rule would not block anything there."""
     starter = json.loads((SKILL / "assets/starter-permissions.json").read_text(encoding="utf-8"))
+    by_key = {re.sub(r"\W+", "_", name).strip("_"): cid for name, cid in connectors.items()}
+    rules = {}
+    for k in ("allow", "deny"):
+        rules[k] = []
+        for r in starter.get(k, []):
+            rules[k].append(r)
+            m = CONNECTOR_RULE.match(r)
+            if m and m.group(1) in by_key:
+                rules[k].append(f"mcp__{by_key[m.group(1)]}__{m.group(2)}")
+    return rules
+
+
+def defaults_plan(connectors=None):
+    starter = starter_rules(connectors or {})
     settings = load_json(CLAUDE / "settings.json")
     perms = settings.get("permissions") or {}
     add = {k: [r for r in starter.get(k, []) if r not in (perms.get(k) or [])] for k in ("allow", "deny")}
@@ -404,13 +563,13 @@ def defaults_plan():
             "claude_md_path": str(md)}
 
 
-def defaults_installed():
-    p = defaults_plan()
+def defaults_installed(connectors=None):
+    p = defaults_plan(connectors)
     return not p["permissions_to_add"]["allow"] and not p["permissions_to_add"]["deny"] and p["instructions"] == "up to date"
 
 
-def cmd_defaults_apply():
-    plan = defaults_plan()
+def cmd_defaults_apply(connectors=None):
+    plan = defaults_plan(connectors)
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     sp, md = CLAUDE / "settings.json", CLAUDE / "CLAUDE.md"
     backups = []
@@ -712,8 +871,12 @@ if __name__ == "__main__":
         sys.exit(0)
     c = sys.argv[1] if len(sys.argv) > 1 else "help"
     arg = sys.argv[2] if len(sys.argv) > 2 else "."
-    {"check-me": cmd_check_me, "check-project": lambda: cmd_check_project(arg),
+    if c == "keys-add":
+        cmd_keys_add(sys.argv[2:])
+        sys.exit(0)
+    conn = connectors_arg(sys.argv[2:])
+    {"check-me": lambda: cmd_check_me(conn), "check-project": lambda: cmd_check_project(arg),
      "list-jira-projects": cmd_list_jira, "list-confluence-spaces": cmd_list_confluence,
-     "list-slack-channels": cmd_list_slack, "defaults-plan": lambda: out(defaults_plan()),
-     "defaults-apply": cmd_defaults_apply, "stamp": cmd_stamp, "stamp-status": cmd_stamp_status,
+     "list-slack-channels": cmd_list_slack, "defaults-plan": lambda: out(defaults_plan(conn)),
+     "defaults-apply": lambda: cmd_defaults_apply(conn), "stamp": cmd_stamp, "stamp-status": cmd_stamp_status,
      }.get(c, lambda: print(__doc__))()

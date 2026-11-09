@@ -40,7 +40,7 @@ Three env vars:
 }
 ```
 
-Restart the Claude Code session after adding so the env vars propagate to spawned processes.
+Start a new session after adding (New session in the desktop app): a session reads the keys only when it starts. `ba-setup me` adds these lines for you.
 
 ## Subcommands
 
@@ -125,11 +125,11 @@ Output JSON: `{ ok, issueKey, field, changeKind, fieldShape, bytesIn, url }`. No
 
 | Error | Meaning | Fix |
 |---|---|---|
-| `JIRA env vars not set` | One of `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` missing | Add to `~/.claude/settings.json` env block, restart session |
+| `JIRA env vars not set` | One of `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` missing | Add to `~/.claude/settings.json` env block, then start a new session |
 | `Spec status must be "approved" before filing` | Frontmatter `status:` ≠ `approved` | Get BA approval first, set frontmatter to `approved`, then re-run |
 | `Spec frontmatter missing jira_fixversion` | Required field absent | Add it to the spec frontmatter (must match a real JIRA fixVersion) |
 | `fixVersion "X" not found in project Y` | Version doesn't exist or is archived | Run `versions <project>` to see valid names |
-| `Auth failed (401)` | Token invalid or expired | Generate a new one, update settings, restart session |
+| `Auth failed (401)` | Token invalid or expired | Generate a new one, update settings, then start a new session |
 | `Forbidden (403)` | Token lacks permission for the project | Check Atlassian project permissions |
 
 ## Rules that still apply

@@ -178,7 +178,7 @@ async function writeProjectConfig(cfg) {
 // ===== Slack API =====
 
 async function slackGet(method, params = {}) {
-  if (!TOKEN) abort('SLACK_USER_TOKEN not set. Add to ~/.claude/settings.json env block and restart session.');
+  if (!TOKEN) abort('SLACK_USER_TOKEN not set. Add to ~/.claude/settings.json env block and start a new session.');
   const url = new URL(`${SLACK_BASE}/${method}`);
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
