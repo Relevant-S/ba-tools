@@ -46,7 +46,14 @@ ba = root / "docs/BA"
 mm = ba / "mind-map"
 mm.mkdir(parents=True, exist_ok=True)
 d = yaml.safe_load(open(ba / "dashboard.yaml", encoding="utf-8"))
-prof = yaml.safe_load(open(ba / "specs/.ba-profile.yml", encoding="utf-8"))
+# A feature's open questions and tickets must be lists: one block of text would reach the Timelines and the
+# Portal as one entry per character (11 Nov 2026: "463 open questions" on the scorecard row).
+for _i, _f in enumerate(d.get("features") or []):
+    for _k in ("open", "tickets"):
+        if _f.get(_k) is not None and not isinstance(_f[_k], list):
+            sys.exit(f"docs/BA/dashboard.yaml → features[{_i}] '{_f.get('area', '?')}' → {_k} must be a list, one "
+                     f"entry per line starting with '- ', not one block of text. Fix it and build again.")
+prof =yaml.safe_load(open(ba / "specs/.ba-profile.yml", encoding="utf-8"))
 dash = (prof.get("tools") or {}).get("dashboard") or {}
 mcfg = dash.get("map") or {}
 today = date.fromisoformat(str(d["updated"]))

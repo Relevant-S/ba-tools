@@ -100,7 +100,9 @@ alone. For example: a question you cannot word without inventing a client positi
 ## Publish
 
 1. `dashboard.py build` — it checks the YAML (missing fields, an item's `feature` that no feature or
-   topic has, an id used twice). Fix what it reports.
+   topic has, an id used twice, a feature's `open` or `tickets` written as one block of text instead of a
+   list). Fix what it reports. `map/build.py` stops on `open` or `tickets` written as text too. **When you
+   write `open:` yourself, write one `- ` line per question** — never a paragraph.
 2. `map/build.py` — add **`--refresh`** when the Jira files in `docs/BA/mind-map/` are older than a day
    (needs `node` and the Jira variables `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`; the Jira scripts
    only read). It writes `docs/BA/mind-map/mind-map.html` and `docs/BA/mind-map/stages.json` (the

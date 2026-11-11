@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.2 — 2026-11-11
+
+- **`ba-dashboard` refuses open questions written as one block of text.** A feature's `open` (and `tickets`)
+  must be a list. On 11 Nov the scorecard row's nine questions were saved as one paragraph, and the Timeline
+  showed "463 open questions", one per character. Now `dashboard.py build` reports it, naming the feature, and
+  `map/build.py` stops before the Timelines or the Portal get it. A blank line in the list is still fine.
+  New tests: `skills/ba-dashboard/tests/test_check.py`.
+
 ## 0.9.1 — 2026-11-09
 
 - **The Portal gets the Timeline when the Timelines are the dashboard.** With `tools.dashboard.timelines`,

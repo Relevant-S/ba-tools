@@ -84,6 +84,22 @@ def save(d):
         f.write(HEAD + yaml.dump(d, Dumper=Dumper, allow_unicode=True, sort_keys=False, width=110))
 
 
+def list_problems(f, where):
+    """A feature's `open` and `tickets` must be lists. One block of text reads as one entry per character."""
+    out, name = [], f.get("area", "?")
+    for key, what in (("open", "one open question per line"), ("tickets", "one Jira key per line")):
+        v = f.get(key)
+        if v is None or isinstance(v, list):
+            continue
+        out.append(f"{where} '{name}' → {key} must be a list, {what}, each line starting with '- '. It is one "
+                   f"block of text, so the pages would show every character as a separate entry")
+    if isinstance(f.get("open"), list):
+        for q in f["open"]:
+            if not isinstance(q, (str, type(None))):
+                out.append(f"{where} '{name}' → open has an entry that is not a line of text: {q!r}")
+    return out
+
+
 def check(d):
     problems = []
     for name in LISTS:
@@ -109,6 +125,7 @@ def check(d):
             problems.append(f"features[{i}] '{f.get('area', '?')}' is missing {sorted(miss)}")
         if f.get("stage") not in STAGES:
             problems.append(f"features[{i}] '{f.get('area', '?')}' stage must be one of {sorted(STAGES)}")
+        problems += list_problems(f, f"features[{i}]")
         f.setdefault("open", [])
         f.setdefault("clar", None)
         f.setdefault("refs", "")
