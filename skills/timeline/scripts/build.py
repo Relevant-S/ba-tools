@@ -361,6 +361,11 @@ def main():
     client_text = {f["id"]: f for f in dash.get("features", [])}
     recorded = {f["id"]: f for f in tl.get("features") or []}
     hand_tags = tl.get("tags") or tl.get("phases") or {}
+    extra_tags = tl.get("extra_tags") or {}
+
+    def extra_tags_of(key):
+        v = extra_tags.get(key)
+        return [str(t).strip() for t in (v if isinstance(v, list) else [v]) if str(t or "").strip()]
     item_first = {}
     for lst in ("awaiting", "todos", "agenda"):
         for a in dash.get(lst) or []:
@@ -428,6 +433,46 @@ def main():
 
     # ---- areas: the dashboard's features, then the tracker's rows that are not on the dashboard
     extra = tracker.extra_rows({f["id"] for fs in by_area.values() for f, _ in fs})
+    # rows written by hand in the data file (`hand_rows:`), for items with no dashboard feature, spec or story —
+    # e.g. client feedback rows fixed straight in the code (Vadim, 11 Nov 2026)
+    for h in tl.get("hand_rows") or []:
+        stages = [{"stage": s["stage"], "from": iso(s["from"])} for s in h.get("stages") or []]
+        row = {"id": str(h["id"]), "label": str(h["label"]), "stage": stages[-1]["stage"] if stages else h["stage"],
+               "doneDate": iso(h["done"]) if h.get("done") else None, "since": iso(h["since"]) if h.get("since") else
+               (stages[0]["from"] if stages else None), "desc": "", "clar": None, "clarLabel": None, "guess": False,
+               "origin": "dashboard", "basis": "code" if stages else "none", "work": [], "tags": [], "who": [],
+               "originNote": str(h.get("note") or "From the client feedback sheet.")}
+        if stages:
+            row["stages"] = stages
+        elif row["since"]:
+            # no recorded stage dates: one stage from the day it was asked, so it can still sit under a parent
+            row["stages"] = [{"stage": row["stage"], "from": row["since"]}]
+        if h.get("basis_note"):
+            row["basisNote"] = str(h["basis_note"])
+        if h.get("kind"):
+            row["kind"] = str(h["kind"])
+        extra.setdefault(str(h["area"]), []).append(row)
+    # Big features (Vadim, 10 Nov 2026): an area may list its `rows:` — the ids of every row under it, in the
+    # order shown. A listed row moves there from wherever the dashboard or the tracker put it, and is no guess.
+    place, order = {}, {}
+    for g in tl["groups"]:
+        for a in g["areas"]:
+            for i, rid in enumerate((a.get("rows") or []) if isinstance(a, dict) else []):
+                if str(rid) in place:
+                    raise DataError("Row %s is listed under both %s and %s." % (rid, place[str(rid)], a["name"]))
+                place[str(rid)], order[str(rid)] = a["name"], i
+    if place:
+        moved = {}
+        for area, fs in by_area.items():
+            for f, guess in fs:
+                moved.setdefault(place.get(f["id"], area), []).append((f, guess and f["id"] not in place))
+        by_area, moved = moved, {}
+        for area, rows in extra.items():
+            for f in rows:
+                if f["id"] in place:
+                    f["guess"] = False
+                moved.setdefault(place.get(f["id"], area), []).append(f)
+        extra = moved
     known = set()
     groups = []
     for g in tl["groups"]:
@@ -438,6 +483,8 @@ def main():
             row = {"name": name,
                    "features": [feature_out(f, guess) for f, guess in by_area.get(name, [])]
                                + sorted(extra.pop(name, []), key=lambda f: f.get("since") or "")}
+            if place:
+                row["features"].sort(key=lambda f: order.get(f["id"], 10 ** 6))
             link = tracker.area_link(name)
             if link:
                 row["link"] = link
@@ -453,15 +500,166 @@ def main():
     # plain descriptions for rows without the dashboard's client text (Vadim, 5 Nov)
     dpath = here / "descriptions.yaml"
     about = (yaml.safe_load(dpath.read_text(encoding="utf-8")) or {}) if dpath.exists() else {}
+    # an entry is a list of bullets, or {about: [...], figma: <link>, figma_where: "<page> → <frame>"};
+    # a QA bug or change under a row is described by its own id the same way
+    def describe(target, entry):
+        if isinstance(entry, dict):
+            if entry.get("about"):
+                target["about"] = [str(x) for x in entry["about"]][:20]
+            if str(entry.get("figma") or "").startswith("https://www.figma.com/"):
+                target["figma"] = str(entry["figma"])
+                if entry.get("figma_where"):
+                    target["figmaWhere"] = str(entry["figma_where"])
+        elif entry:
+            target["about"] = [str(x) for x in entry][:20]
     missing = []
     for f in rows_by_id.values():
         if about.get(f["id"]):
-            f["about"] = [str(x) for x in about[f["id"]]]
-        elif not f.get("desc"):
+            describe(f, about[f["id"]])
+        if not f.get("about") and not f.get("desc"):
             missing.append(f["id"])
     if missing and dpath.exists():
         print("No description yet (add to descriptions.yaml): %d — %s" % (len(missing), ", ".join(missing[:12])))
+    # stage dates written by hand win over the tracker for every row, not only the dashboard's (Vadim, 11 Nov 2026)
+    for fid, r in recorded.items():
+        f = rows_by_id.get(fid)
+        if f and r.get("stages") and f.get("basis") != "recorded":
+            f["stages"] = [{"stage": s["stage"], "from": iso(s["from"])} for s in r["stages"]]
+            f["stage"], f["basis"] = f["stages"][-1]["stage"], "recorded"
+            if f["stage"] in ("done", "live"):
+                f["doneDate"] = f["stages"][-1]["from"]
     tracker.add_requests(rows_by_id)
+    for f in rows_by_id.values():
+        for q in f.get("requests") or []:
+            if about.get(q["id"]):
+                describe(q, about[q["id"]])
+    # what each row is inside its big feature: the first build, something new, or a change (the tracker marks those)
+    # `row_kinds:` in the data file overrides it per row, e.g. a client-reported bug shown as "bug" (Vadim, 11 Nov 2026)
+    row_kinds = tl.get("row_kinds") or {}
+    for f in rows_by_id.values():
+        f.setdefault("kind", "build" if f.get("origin") == "old-work" else "new")
+        if row_kinds.get(f["id"]):
+            f["kind"] = str(row_kinds[f["id"]])
+    for k in sorted(set(row_kinds) - set(rows_by_id)):
+        print("row_kinds: no such row: %s" % k)
+    # extra tags (e.g. "Before Global"), from the data file's `extra_tags:`, added after the phase or release —
+    # on every row, whether it came from the dashboard, a spec or the tracker
+    for f in rows_by_id.values():
+        f["tags"] = list(f.get("tags") or [])
+        f["tags"] += [t for t in extra_tags_of(f["id"]) if t not in f["tags"]]
+        for q in f.get("requests") or []:
+            more = extra_tags_of(q["id"])
+            if more:
+                base = q.get("tags") or f["tags"]
+                q["tags"] = list(base) + [t for t in more if t not in base]
+    unknown = sorted(k for k in extra_tags if k not in rows_by_id
+                     and not any(q["id"] == k for f in rows_by_id.values() for q in f.get("requests") or []))
+    if unknown:
+        print("extra_tags: no such row or change: " + ", ".join(map(str, unknown)))
+    # ---- the one item model (`items: specs`, Vadim 11 Nov 2026): every row is a spec item. Its type, tags, summary,
+    # Figma link and outside references come from the spec; an item with a `parent` shows once, under the item at
+    # the top of its parent chain, all on one level, and takes that top item's area.
+    if tl.get("items") == "specs" and hasattr(tracker, "item_of"):
+        for r in getattr(tracker, "child_rows", []):
+            r.setdefault("tags", [])
+            rows_by_id.setdefault(r["id"], r)
+        item_of = tracker.item_of
+
+        def kind_of(it):
+            t = (it or {}).get("type")
+            if t == "feature" or not t:
+                return "build" if (it or {}).get("baseline") else None
+            return str(t)
+
+        def fill(target, it):
+            for t in it.get("tags") or []:
+                if str(t) not in target.setdefault("tags", []):
+                    target["tags"].append(str(t))
+            if it.get("summary"):
+                target["about"] = list(it["summary"])
+            if str(it.get("figma") or "").startswith("https://www.figma.com/"):
+                target["figma"] = str(it["figma"])
+                if it.get("figma_where"):
+                    target["figmaWhere"] = str(it["figma_where"])
+            ref = next((r for r in it.get("refs") or [] if isinstance(r, dict)), None)
+            if ref:
+                pin = tracker.pin_for_ref(ref)
+                if pin and not target.get("askedIn"):
+                    target["askedIn"] = pin
+                target["askedBy"] = target.get("askedBy") or ref.get("who")
+                if ref.get("asked"):
+                    target["asked"] = str(ref["asked"])
+
+        by_key = {}
+        for fid, f in rows_by_id.items():
+            it = item_of(fid)
+            if it:
+                by_key[it["key"]] = fid
+                fill(f, it)
+                k = kind_of(it)
+                if k:
+                    f["kind"] = k
+                elif f.get("kind") == "change":
+                    f["kind"] = "new"
+
+        def top_of(fid):
+            seen, cur = set(), fid
+            while True:
+                it = item_of(cur)
+                par = (it or {}).get("parent")
+                if not par or par not in by_key or by_key[par] in seen:
+                    return cur
+                seen.add(cur)
+                cur = by_key[par]
+
+        gone = set()
+        for fid in list(rows_by_id):
+            it = item_of(fid)
+            if not it or not it.get("parent"):
+                continue
+            top = top_of(fid)
+            if top == fid or top not in rows_by_id:
+                print("Item %s: parent %s is not on the timeline" % (it["key"], it["parent"]))
+                continue
+            s, p = rows_by_id[fid], rows_by_id[top]
+            k = kind_of(it) or "sub-feature"
+            q = {"id": fid, "kind": k if k in ("bug", "change", "improvement", "sub-feature") else "sub-feature",
+                 "title": s["label"], "stages": s.get("stages") or [{"stage": s.get("stage") or "spec", "from": s.get("since") or TODAY.isoformat()}],
+                 "work": s.get("work") or [], "merged": None, "splitOff": None, "guess": False,
+                 "tags": list(s.get("tags") or [])}
+            for k_ in ("about", "figma", "figmaWhere", "askedIn", "askedBy", "asked"):
+                if s.get(k_):
+                    q[k_] = s[k_]
+            p.setdefault("requests", []).append(q)
+            gone.add(fid)
+        for g in groups:
+            for a in g["areas"]:
+                a["features"] = [f for f in a["features"] if f["id"] not in gone]
+        for fid in gone:
+            rows_by_id.pop(fid, None)
+        print("Items under their top parent: %d" % len(gone))
+    # `nest_changes: true` (Vadim, 11 Nov 2026): a change or bug with a `parent` shows ONCE, under its parent row,
+    # on the same level as the others — its own row is removed, and what the row carried moves onto the item
+    if tl.get("nest_changes"):
+        gone = set()
+        for f in list(rows_by_id.values()):
+            for q in f.get("requests") or []:
+                s = rows_by_id.get(q.get("self"))
+                if not s or s is f:
+                    continue
+                q["kind"] = s.get("kind") if s.get("kind") in ("bug", "change", "improvement", "sub-feature") else q["kind"]
+                q["tags"] = list(s.get("tags") or [])
+                for k_ in ("about", "figma", "figmaWhere"):
+                    if s.get(k_):
+                        q[k_] = s[k_]
+                q.pop("self", None)
+                gone.add(s["id"])
+        for g in groups:
+            for a in g["areas"]:
+                a["features"] = [f for f in a["features"] if f["id"] not in gone]
+        for fid in gone:
+            rows_by_id.pop(fid, None)
+        print("Nested under their parent rows: %d" % len(gone))
     for f in rows_by_id.values():
         if f.get("requests"):
             f["requests"].sort(key=lambda q: q["stages"][0]["from"] if q.get("stages") else "")

@@ -13,7 +13,7 @@ The data file's `github:` block:
   repo_url        e.g. https://github.com/northwind/docs — for links to stories and specs
   spec_branch     the branch the BA specs are on (default docs)
   spec_prefix     the spec file prefix (default "<PRODUCT>-", e.g. "NWE-")
-  spec_areas, titles, skip, aliases, mvp {phase, epic_areas, story_areas}, changes, doc_subject
+  spec_areas, titles, skip, aliases, mvp {phase, epic_areas, story_areas}, changes, doc_subject, change_prefix
 and top level: code_repo (the app checkout, from the docs repo root), code_commits.
 Everything is read only: `git fetch` and reads; nothing is written to either repo.
 """
@@ -51,7 +51,18 @@ class Tracker(Base):
         self.specs = gs.specs_info(docs, self.ctx.ba / "specs" / str(self.ctx.product["clarifications"]), self.prefix)
         self.stories = gs.feature_stories(docs, self.ref) if self.app_repo else {}
         self.app = gs.AppRepo(self.app_repo) if self.app_repo else None
-        self.codest = self._code_stages(self.ctx.tl.get("code_commits")) if self.app_repo else {}
+        # the one item model (11 Nov 2026): every spec is an item; dashboard ids reach theirs through `aliases`
+        self.items = {gs.fid_of(k): dict(s, key=k) for k, s in self.specs.items()}
+        for k, dash_id in (self.ghc.get("aliases") or {}).items():
+            if gs.norm_key(k) in self.specs:
+                self.items[str(dash_id)] = self.items[gs.fid_of(gs.norm_key(k))]
+        commits = dict(self.ctx.tl.get("code_commits") or {})
+        for fid, it in self.items.items():
+            if it.get("commits"):
+                commits[fid] = [str(c) for c in it["commits"]]
+        self.codest = self._code_stages(commits) if self.app_repo else {}
+        self.baseline_by_story = {str(s["story"]): k for k, s in self.specs.items() if s.get("baseline") and s.get("story")}
+        self.child_rows = []
         self.titles = {}
         print("GitHub: %d specs, %d features with stories" % (len(self.specs), len(self.stories)))
 
@@ -67,8 +78,10 @@ class Tracker(Base):
                 if r.returncode:
                     print("Commit %s (%s) is not in the app repo" % (c, fid)); continue
                 days.append(r.stdout.strip())
-                if self.app.anc(c, "origin/main"):
-                    deployed.append(self.app.prod_day(c) or days[-1])
+                # on main itself, or copied there under a new id (same commit title)
+                prod = self.app.prod_day(c)
+                if prod or self.app.anc(c, "origin/main"):
+                    deployed.append(prod or days[-1])
                 else:
                     on_main = False
             if days:
@@ -85,6 +98,39 @@ class Tracker(Base):
         if fid in self.alias:
             return self.alias[fid]
         return gs.norm_key(fid) if re.fullmatch(r"(?:fr|tkt)\d+", fid or "") else None
+
+    def item_of(self, fid):
+        """The spec item behind a row id (fr56, tkt08, a dashboard alias), or None."""
+        return self.items.get(fid)
+
+    def apply_item_status(self, row, item):
+        """Stage dates written in the item itself win: `stages:` in full, or `done:` as the closing date."""
+        if not item:
+            return
+        if item.get("stages"):
+            st = [{"stage": x["stage"], "from": str(x["from"])} for x in item["stages"]]
+            row.update(stages=st, stage=st[-1]["stage"], basis="recorded")
+            row["since"] = row.get("since") or st[0]["from"]
+            if st[-1]["stage"] in ("done", "live"):
+                row["doneDate"] = st[-1]["from"]
+        elif item.get("done"):
+            day = str(item["done"])
+            st = [x for x in row.get("stages") or [] if x["from"] < day and x["stage"] not in ("done", "live")]
+            st.append({"stage": "done", "from": day})
+            row.update(stages=st, stage="done", doneDate=day, basis="recorded")
+
+    def pin_for_ref(self, ref):
+        """A pin for an item's outside reference ({source, key, kind, who, date, asked}); returns its id or None."""
+        if not isinstance(ref, dict) or not ref.get("date"):
+            return None
+        kind = ref.get("kind") or "doc"
+        subject = None
+        if kind == "email" and ref.get("asked"):
+            subject = str(ref["asked"]).split(" — ")[0]
+        if kind == "doc" and self.ghc.get("doc_subject"):
+            day = dt.date.fromisoformat(iso(ref["date"]))
+            subject = "%s — rows added %s" % (self.ghc["doc_subject"], day.strftime("%#d %b" if sys.platform == "win32" else "%-d %b"))
+        return self.ctx.add_pin(iso(ref["date"]), kind, ref.get("who"), subject)
 
     def stories_for(self, key):
         """A feature's stories, with those of the features its spec owns (NWE-FR-115 covers FR-116).
@@ -164,6 +210,7 @@ class Tracker(Base):
                 st.append({"stage": "done", "from": cs["done"] or cs["first"]})
                 out["doneDate"] = cs["done"] or cs["first"]
             out.update(stages=st, stage=cs["stage"], basis="code")
+        self.apply_item_status(out, self.item_of(fid))
 
     def tags_of_work(self, work):
         return []
@@ -171,25 +218,50 @@ class Tracker(Base):
     def extra_rows(self, on_dashboard):
         rows = {}
         on_dash = {self.key_of(fid) for fid in on_dashboard} - {None}
-        covered = {c for k, s in self.specs.items() for c in s.get("covers", []) if c != k and c not in self.specs}
+        # a change, improvement or bug changes what it covers; it never hides it. Before the item model, the same was
+        # read from a spec-name prefix (`github.change_prefix`, e.g. "TKT-").
+        chg = self.ghc.get("change_prefix")
+        is_change = lambda k: ((self.specs.get(k) or {}).get("type") not in (None, "feature")) or bool(chg and k.startswith(chg))
+        covered = {c for k, s in self.specs.items() for c in s.get("covers", [])
+                   if c != k and c not in self.specs and not is_change(k)}
         skip = set(self.ghc.get("skip") or [])
         # specs (and features with stories) that are not on the dashboard
         for key in sorted(set(self.specs) | set(self.stories), key=lambda k: (k[:2], int(k.split("-")[1]))):
             if key in on_dash or key in skip or key in covered:
                 continue
+            spec = self.specs.get(key) or {}
+            if spec.get("baseline"):
+                continue                              # a baseline item is drawn from its MVP story, below
             area = (self.ghc.get("spec_areas") or {}).get(key)
+            if spec.get("parent"):
+                area = "__child__"                    # sits under its parent; its area is its top parent's
             if not area:
                 print("No area for %s in github.spec_areas: left out" % key); continue
-            spec = self.specs.get(key) or {}
             ghs = self.stages_of(key, None)
-            if not ghs or not ghs["stages"]:
+            if not ghs or not (ghs["stages"] or spec.get("stages") or spec.get("done")):
                 continue
+            if not ghs["stages"]:
+                ghs["stages"] = [{"stage": "spec", "from": spec.get("specDay")}]
             label = (self.ghc.get("titles") or {}).get(key) or spec.get("title") or key
             rows.setdefault(area, []).append({
                 "id": gs.fid_of(key), "label": label + (" (parked)" if spec.get("status") == "parked" else ""),
                 "stage": ghs["stage"], "doneDate": ghs["doneDate"], "since": ghs["stages"][0]["from"],
                 "desc": "", "clar": None, "clarLabel": None, "guess": False, "origin": "spec", "basis": "tracker",
-                "stages": ghs["stages"], "work": self.work_of(ghs["items"]), "tags": ghs["phases"], "who": []})
+                "stages": ghs["stages"], "work": self.work_of(ghs["items"]), "tags": ghs["phases"], "who": [],
+                **({"kind": "change"} if is_change(key) else {})})
+            # commits listed in the data file count for a spec row too, when it has no stories (Vadim, 11 Nov 2026)
+            cs = self.codest.get(gs.fid_of(key))
+            if cs and not ghs["items"]:
+                row = rows[area][-1]
+                st = [x for x in row["stages"] if x["from"] < cs["first"] and x["stage"] in ("concept", "spec", "ready")]
+                st.append({"stage": "dev", "from": cs["first"]})
+                if cs["stage"] == "done":
+                    st.append({"stage": "done", "from": cs["done"] or cs["first"]})
+                    row["doneDate"] = cs["done"] or cs["first"]
+                row.update(stages=st, stage=cs["stage"], basis="code")
+            self.apply_item_status(rows[area][-1], spec)
+            if area == "__child__":
+                self.child_rows.append(rows.pop(area)[-1])
         # the MVP: one row per story (no BA specs, and its stories name no feature)
         mvp = self.ghc.get("mvp") or {}
         if mvp and self.app:
@@ -204,8 +276,10 @@ class Tracker(Base):
                 res = gs.stages_from_stories([(ph, sk, s)], self.app)
                 if not area or not res or not res["stages"]:
                     continue
+                bkey = self.baseline_by_story.get(sk)
                 rows.setdefault(area, []).append({
-                    "id": "mvp-" + sk, "label": title, "stage": res["stage"], "doneDate": res.get("doneDate"),
+                    "id": gs.fid_of(bkey) if bkey else "mvp-" + sk,
+                    "label": (self.specs[bkey].get("title") or title) if bkey else title, "stage": res["stage"], "doneDate": res.get("doneDate"),
                     "since": res["stages"][0]["from"], "desc": "", "clar": None, "clarLabel": None, "guess": False,
                     "origin": "old-work", "basis": "tracker", "originNote": "Built in the MVP, before the BA specs.",
                     "stages": res["stages"], "work": self.work_of([(ph, sk, s)]), "tags": [ph], "who": []})
@@ -218,6 +292,21 @@ class Tracker(Base):
         doc_subject = self.ghc.get("doc_subject")
         for fid, c in (self.ghc.get("changes") or {}).items():
             f, parent = rows_by_id.get(fid), rows_by_id.get(c.get("parent"))
+            if f and not c.get("parent"):
+                # no parent (big features, 10 Nov 2026): the change is a row of its own, shown once, marked a change
+                src = c.get("source") or {}
+                if src.get("date"):
+                    kind = src.get("kind") or "email"
+                    subject = src["what"].split(" — ")[0] if kind == "email" and src.get("what") else None
+                    if kind == "doc" and doc_subject:
+                        subject = "%s — rows added %s" % (doc_subject, dt.date.fromisoformat(iso(src["date"])).strftime("%#d %b" if sys.platform == "win32" else "%-d %b"))
+                    f["askedIn"] = f.get("askedIn") or self.ctx.add_pin(iso(src["date"]), kind, src.get("who"), subject)
+                f["askedBy"] = f.get("askedBy") or src.get("who")
+                if src.get("what"):
+                    f["asked"] = src["what"]
+                f["kind"] = "change"
+                n_chg += 1
+                continue
             if not f or not parent or not f.get("stages"):
                 print("Change %s: no row for it or its parent %s" % (fid, c.get("parent"))); continue
             src, pin = c.get("source") or {}, None
@@ -239,7 +328,10 @@ class Tracker(Base):
             n_chg += 1
         bpath = self.ctx.here / "bug-parents.yaml"
         parents = (yaml.safe_load(bpath.read_text(encoding="utf-8")) or {}) if bpath.exists() else {}
-        bugs = gs.qa_bugs(self.ctx.repo, self.ref, self.app) if self.app else {}
+        # `github.qa_bugs: false` leaves our own QA test-run bugs off the page: the client sees only the bugs it
+        # reported itself (Vadim, 11 Nov 2026)
+        show_qa = self.ghc.get("qa_bugs", True) is not False and self.ctx.tl.get("items") != "specs"
+        bugs = gs.qa_bugs(self.ctx.repo, self.ref, self.app) if self.app and show_qa else {}
         for bid, b in bugs.items():
             m = parents.get(bid) or {}
             parent = rows_by_id.get(m.get("parent"))
