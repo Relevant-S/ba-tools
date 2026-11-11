@@ -1635,6 +1635,37 @@ def test_timeline_payload_turns_the_ba_page_data_into_timeline_1(project, timeli
         "to-do keys are sent as the build has them"
 
 
+def test_timeline_payload_keeps_figma_links_and_row_kinds(project, timelines):
+    """Contract 1.10.0: kind, asked, figma and figmaWhere go in as the build has them."""
+    prof = yaml.safe_load((project / publish.PROFILE).read_text(encoding="utf-8"))
+    payload, warnings = publish.timeline_payload(project, prof, "App", ba_build(), ["App", "Admin"])
+    assert checks.check_publish(payload) is None
+    rows = [f for _, f in checks.timeline_rows(payload)]
+    assert {f["kind"] for f in rows} == {"build", "new", "bug"}
+    assert rows[0]["figma"].startswith("https://www.figma.com/") and rows[0]["figmaWhere"]
+    assert rows[0]["asked"]
+    assert any("figma" in q for f in rows for q in f.get("requests") or [])
+    assert not any("Figma links" in w for w in warnings)
+
+
+def test_timeline_payload_leaves_out_a_link_that_is_not_figma(project, timelines):
+    """Contract 1.10.0: a figma that is not a https://www.figma.com/ link is left out with its figmaWhere, with a
+    warning, so the send still passes."""
+    prof = yaml.safe_load((project / publish.PROFILE).read_text(encoding="utf-8"))
+    build = ba_build()
+    rows = [f for g in build["groups"] for a in g["areas"] for f in a["features"]]
+    rows[0]["figma"] = "https://example.com/not-figma"
+    q = next(q for f in rows for q in f.get("requests") or [] if "figma" in q)
+    q["figma"] = "javascript:alert(1)"
+    payload, warnings = publish.timeline_payload(project, prof, "App", build, ["App", "Admin"])
+    assert checks.check_publish(payload) is None
+    sent = [f for _, f in checks.timeline_rows(payload)]
+    assert "figma" not in sent[0] and "figmaWhere" not in sent[0]
+    assert not any("figma" in r for f in sent for r in f.get("requests") or [])
+    warn = next(w for w in warnings if "Figma links" in w)
+    assert "https://example.com/not-figma" in warn and "javascript:alert(1)" in warn
+
+
 def test_timeline_plan_dry_runs_each_product_then_sends(capsys, project, timelines, tl_portal):
     code, plan, _ = run(capsys, project, "timeline", "plan")
     assert code == 0 and plan["ok"] is True, plan

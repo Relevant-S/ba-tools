@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Relevant-S/ba-tools/skills/portal-publish/contract/timeline-1.schema.json",
   "title": "timeline/1",
-  "description": "Since 1.6.0. One Timeline send for one product (one Portal project): the BA's Timeline page data (ba-tools skills/timeline, build.py --json) with the envelope, client_contacts and clarification_pages added; a feature names its Portal Clarification page by slug (page) in place of the artifact link (clar); clar, pages, dashboardUrl and pins[].decided[].url are left out; since 1.8.0 it may carry suggestion_status (the BA's Accepted or Declined on Client suggestions); since 1.9.0 it may carry upcoming (planned deadlines, releases and steps). A field the build writes as null is left out. Sent to POST /api/v1/publish/dashboard like dashboard/2; the latest send of either wins. Readable twin: timeline-1.md. x-visibility says who may see each leaf field: client, id, portal or admin.",
+  "description": "Since 1.6.0. One Timeline send for one product (one Portal project): the BA's Timeline page data (ba-tools skills/timeline, build.py --json) with the envelope, client_contacts and clarification_pages added; a feature names its Portal Clarification page by slug (page) in place of the artifact link (clar); clar, pages, dashboardUrl and pins[].decided[].url are left out; since 1.8.0 it may carry suggestion_status (the BA's Accepted or Declined on Client suggestions); since 1.9.0 it may carry upcoming (planned deadlines, releases and steps); since 1.10.0 a row may carry kind, asked, figma and figmaWhere, and a change or bug figma and figmaWhere. A field the build writes as null is left out. Sent to POST /api/v1/publish/dashboard like dashboard/2; the latest send of either wins. Readable twin: timeline-1.md. x-visibility says who may see each leaf field: client, id, portal or admin.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -590,6 +590,34 @@
                         "maxLength": 300,
                         "x-visibility": "id"
                       },
+                      "kind": {
+                        "description": "Since 1.10.0. What the row is inside its big feature: \"build\" (its first build, the chip fb) or \"new\" (something new, the chip n). A BA may set another short word per row (the data file's row_kinds, e.g. \"bug\"); the Portal shows an unknown word as it is.",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40,
+                        "x-visibility": "client"
+                      },
+                      "asked": {
+                        "description": "Since 1.10.0. What the client asked for, in their words.",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000,
+                        "x-visibility": "client"
+                      },
+                      "figma": {
+                        "description": "Since 1.10.0. The row's frame in Figma, for the Open in Figma button. Only a link that starts with https://www.figma.com/ and holds no space (check figma_link).",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000,
+                        "x-visibility": "client"
+                      },
+                      "figmaWhere": {
+                        "description": "Since 1.10.0. Where that frame is, as the BA page shows it under the button: the Figma page, then the frame, e.g. \"Member · Account and access → /signup — Create account\".",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500,
+                        "x-visibility": "client"
+                      },
                       "requests": {
                         "description": "Changes and bugs under it.",
                         "type": "array",
@@ -785,6 +813,20 @@
                               "maxLength": 10,
                               "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
                               "format": "date",
+                              "x-visibility": "client"
+                            },
+                            "figma": {
+                              "description": "Since 1.10.0. The change's or bug's frame in Figma, for the Open in Figma button. Only a link that starts with https://www.figma.com/ and holds no space (check figma_link).",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000,
+                              "x-visibility": "client"
+                            },
+                            "figmaWhere": {
+                              "description": "Since 1.10.0. Where that frame is, as the BA page shows it under the button: the Figma page, then the frame, e.g. \"Member · Account and access → /signup — Create account\".",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500,
                               "x-visibility": "client"
                             },
                             "splitOff": {

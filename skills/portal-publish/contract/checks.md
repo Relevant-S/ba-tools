@@ -42,7 +42,7 @@ A failed check gives one error code and a list of details:
      `card_kind_fields`, `answered_in_range`, `no_html_entities`.
    - `timeline/1` (since 1.6.0), in this order: `unique_feature_id`, `unique_item_key`, `unique_pin_id`,
      `unique_page_slug`, `known_pin`, `known_page`, `unique_upcoming_id` (since 1.9.0), `known_feature` (since
-     1.9.0), `no_html_entities`.
+     1.9.0), `figma_link` (since 1.10.0), `no_html_entities`.
    - `clarification`: `unique_question_id`, `unique_option_v`, `one_rec_max`, `bare_file_names`,
      `one_hero_max`, `max_screenshots`, `unique_decision_id`, `figma_link` (since 1.7.0), `no_html_entities`.
 4. **Parts** (`screens_match_parts`) — pages only. Only on a page that passed steps 1 to 3, and only when the
@@ -147,6 +147,9 @@ path is `/groups/<g>/areas/<a>/features/<i>`.
 - **`known_feature`** (since 1.9.0): each `upcoming` item's `needs`, in order, then its `after`, names a row `id`
   of the send. One detail per unknown one at that place (`/upcoming/<n>/needs/<j>` or `/upcoming/<n>/after`),
   naming the value.
+- **`figma_link`** (since 1.10.0): a row's `figma`, then each of its `requests[].figma` in order, follows the
+  `figma_link` rule below. One detail per bad link at that `figma` (`/groups/<g>/areas/<a>/features/<i>/figma` or
+  `…/requests/<j>/figma`), with the same message as for a page screen.
 - **`no_html_entities`:** below.
 - **Raises:** `contract_invalid`.
 
@@ -182,7 +185,9 @@ path is `/groups/<g>/areas/<a>/features/<i>`.
     topic and Item titles, `short`, `open`, `who`, `how_to_send`) is still checked.
   - `timeline/1`: the links `product.workLink`, `groups[].areas[].link.url` and every work item's `url`
     (of rows and of their `requests`), `client_contacts[].email`, and the text copied from the tracker: every
-    work item's `title` and `status`, and `releases[].name`. Everything else, BA-written, is checked.
+    work item's `title` and `status`, and `releases[].name`. Since 1.10.0 also the Figma links: a row's `figma`
+    and each `requests[].figma` (checked by `figma_link`). Everything else, BA-written, is checked — `kind`,
+    `asked` and `figmaWhere` included.
   - `clarification`: `description`, `problem`, `solution`, `design.summary`, `design.detail`,
     `questions[].body`, `questions[].body2`, `questions[].snag` (light HTML), `url`, the screen file
     names `design.screens[].file` and `questions[].screens[].file` (checked by `bare_file_names`), and since
@@ -254,7 +259,7 @@ path is `/groups/<g>/areas/<a>/features/<i>`.
 - **One detail per repeat:** `path` is the later decision's `id`; the message names both places, for example
   `Decision id "bank-only" is used twice: /decisions/0/id and /decisions/1/id`.
 
-### `figma_link` (pages, since 1.7.0)
+### `figma_link` (pages since 1.7.0; Timeline rows and their changes since 1.10.0)
 
 - **Rule:** a screen's `figma` (in `design.screens[]` and every `questions[].screens[]`) starts with exactly
   `https://www.figma.com/` (lower case, `https`, with `www.`), and holds:
@@ -327,6 +332,9 @@ path is `/groups/<g>/areas/<a>/features/<i>`.
   `client_timeline_1` with it. Two named checks are added: `unique_upcoming_id` and `known_feature`. "Both `date`
   and `after`" is a schema rule (a `not`), reported at the item. Its texts follow the plain-text rule
   (`no_html_entities`).
+- Since 1.10.0 a `timeline/1` row may carry `kind` (text ≤ 40), `asked` (text ≤ 2,000), `figma` (a Figma link
+  ≤ 2,000) and `figmaWhere` (text ≤ 500), and each of its `requests` `figma` and `figmaWhere`; `client_timeline_1`
+  carries them as sent. The `figma_link` check covers them. All four are optional, so a 1.9.0 send still passes.
 - Python: `Draft202012Validator(schema, format_checker=FormatChecker())` from `jsonschema[format-nongpl]`.
 - Portal: `Ajv2020` with `strict: true` and `allErrors: true`, `ajv-formats`, and `x-visibility` added with
   `addKeyword` and an enum meta-schema (`client`, `id`, `portal`, `admin`), so a schema with any other value does

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.10.1 — 2026-11-11
+
+- **Portal contract 1.10.0: the Timeline's new fields are allowed** (Vadim, 11 Nov 2026). `timeline/1` (and the
+  dry run's `client_timeline_1`) now takes, all optional:
+  - on a row: `kind` (text ≤ 40 — `build` = chip **fb**, `new` = chip **n**, or the BA's own word from
+    `row_kinds`), `asked` (the client's words, ≤ 2,000), `figma` (a `https://www.figma.com/` link ≤ 2,000) and
+    `figmaWhere` (the Figma page → frame, ≤ 500);
+  - on a change or bug: `figma` and `figmaWhere`.
+  - The named check `figma_link` now covers Timeline rows and their changes; `no_html_entities` skips those links.
+  - `timeline-1.md` has a new section with how the BA page shows them (chips, the client's words, the Open in
+    Figma button, 6 bullets, "Hide done", extra tags), so the Portal can match it.
+  - `portal-publish timeline plan` leaves out a `figma` that is not a Figma link (with its `figmaWhere`) and
+    warns, so one bad link never stops a send.
+  - Fixtures: the small `timeline/1` carries the new fields; 8 new `tl1-…` invalid cases.
+- **Deploy the Portal on 1.10.0 first.** A Portal on 1.9.0 refuses every row that carries `kind`, which every
+  0.10.0 build sends (Acme Lending, Bond Portal and NWE).
+
 ## 0.10.0 — 2026-11-11
 
 - **Timeline: client changes and bugs sit once, under their feature, all on one level** (Vadim, 10–11 Nov 2026).

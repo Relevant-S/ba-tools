@@ -22,6 +22,8 @@ Client view, and `figma-…` cases that break it (check figma_link).
 Contract 1.8.0 adds Client suggestions: `answers/3` batches (`answers/2` plus the suggestions sent on the Portal
 Timeline) with `answers3-…` cases that break them, and the optional `suggestion_status` of `timeline/1` (the BA's
 Accepted or Declined, in the small file) with `tl1-suggestion-…` cases.
+Contract 1.10.0 adds a row's `kind`, `asked`, `figma` and `figmaWhere`, and a change's `figma` and `figmaWhere`, to
+the small `timeline/1` (and its dry-run reply), with `tl1-kind-…`, `tl1-asked-…` and `tl1-figma-…` cases.
 
 Pages: the clarification-page skill's example-probate-decisions.yaml converted to clarification/1, and a
 synthetic page of Merchants V7 size (6 Questions, 18 options, 4 screens). A page's invalid case is the
@@ -754,6 +756,17 @@ def timeline_small() -> dict:
         {"id": "new-brand", "title": "New landing page and style guide", "kind": "planned", "needs": [rows[7]["id"]],
          "what": ["New fonts and colours everywhere."]},
     ]
+    # Since 1.10.0: row kinds (build, new and a BA's own word), the client's words on a row, and Figma links on a
+    # row and on a change or bug.
+    for i, f in enumerate(rows):
+        f["kind"] = "build" if i % 3 == 0 else "new"
+    rows[4]["kind"] = "bug"
+    rows[0]["asked"] = "Can the customer see the calendar on their phone?"
+    rows[0]["figma"] = "https://www.figma.com/design/AbCdEf0123456789AbCdEf/?node-id=2569-492"
+    rows[0]["figmaWhere"] = "Member · Account and access → /signup — Create account"
+    q = next(q for f in rows for q in f.get("requests", []))
+    q["figma"] = "https://www.figma.com/design/AbCdEf0123456789AbCdEf/?node-id=1234-5&t=xY"
+    q["figmaWhere"] = "Staff · Payouts → Payout — Review"
     return d
 
 
@@ -858,6 +871,27 @@ def tl_invalid_cases() -> dict[str, tuple[dict, dict]]:
     case("tl1-upcoming-title-too-long", d, "contract_invalid", "schema", "/upcoming/2/title")
     d = timeline_small(); d["upcoming"][0]["date"] = "17 Dec"
     case("tl1-upcoming-bad-date", d, "contract_invalid", "schema", "/upcoming/0/date")
+    # contract 1.10.0: row kind, asked, figma and figmaWhere; a change's figma and figmaWhere
+    d = timeline_small(); tl_rows(d)[0]["kind"] = "K" * 41
+    case("tl1-kind-too-long", d, "contract_invalid", "schema", f0 + "/kind")
+    d = timeline_small(); tl_rows(d)[0]["kind"] = ""
+    case("tl1-kind-empty", d, "contract_invalid", "schema", f0 + "/kind")
+    d = timeline_small(); tl_rows(d)[0]["asked"] = "A" * 2001
+    case("tl1-asked-too-long", d, "contract_invalid", "schema", f0 + "/asked")
+    d = timeline_small(); tl_rows(d)[0]["figma"] = "https://example.com/design/x"
+    case("tl1-figma-not-figma", d, "contract_invalid", "figma_link", f0 + "/figma")
+    d = timeline_small(); tl_rows(d)[0]["figma"] = "https://www.figma.com/design/x?a=1&amp;b=2"
+    case("tl1-figma-html-entity", d, "contract_invalid", "figma_link", f0 + "/figma")
+    d = timeline_small(); tl_rows(d)[0]["figmaWhere"] = "W" * 501
+    case("tl1-figma-where-too-long", d, "contract_invalid", "schema", f0 + "/figmaWhere")
+    d = timeline_small()
+    g, a, i, j = next((g, a, i, j) for g, grp in enumerate(d["groups"]) for a, ar in enumerate(grp["areas"])
+                      for i, f in enumerate(ar["features"]) for j, q in enumerate(f.get("requests", [])) if "figma" in q)
+    d["groups"][g]["areas"][a]["features"][i]["requests"][j]["figma"] = "javascript:alert(1)"
+    case("tl1-request-figma-not-figma", d, "contract_invalid", "figma_link",
+         f"/groups/{g}/areas/{a}/features/{i}/requests/{j}/figma")
+    d = timeline_small(); tl_rows(d)[0]["figmaWhere"] = "Member &rarr; Sign up"
+    case("tl1-figma-where-html-entity", d, "contract_invalid", "no_html_entities", f0 + "/figmaWhere")
     return cases
 
 

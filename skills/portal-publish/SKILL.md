@@ -190,6 +190,14 @@ The build stops on most bad items. For the rest, the Portal's check refuses the 
 (`unique_upcoming_id`, `known_feature`: `needs` and `after` name a feature of the send). The dry-run list shows "Coming up (N)", one line per item. Deploy a
 Portal on 1.9.0 first: an older one refuses a send that carries `upcoming`.
 
+### Row kinds, the client's words and Figma links (contract 1.10.0)
+
+Since ba-tools 0.10.0 the Timeline build gives each row a `kind` (`build` → chip fb, `new` → chip n, or the BA's own
+word from `row_kinds`), and may give a row `asked` (the client's words) and a row or a change `figma` with
+`figmaWhere` (the Open in Figma button and the page → frame under it). They go into the send as they are. A
+`figma` that is not a `https://www.figma.com/` link is left out, with its `figmaWhere`, and the plan warns. Deploy a
+Portal on 1.10.0 first: an older one refuses every row that carries `kind`.
+
 ## When it stops
 
 Show `error` as it is; it already says what to do. Nothing was sent in these cases, except the "may have arrived" row.

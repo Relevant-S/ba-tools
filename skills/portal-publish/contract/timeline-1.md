@@ -90,6 +90,10 @@ optional.
 | `guess` | yes/no | yes | client |
 | `changes` | a feature id; not checked (it may name a row of a later send) | no | id |
 | `requests` | ≤ 500 changes and bugs, below | no | client |
+| `kind` | since 1.10.0: text ≤ 40 — what the row is inside its big feature, below | no | client |
+| `asked` | since 1.10.0: text ≤ 2,000 — what the client asked for, in their words | no | client |
+| `figma` | since 1.10.0: a Figma link ≤ 2,000 (`figma_link`) — the row's frame, for "Open in Figma" | no | client |
+| `figmaWhere` | since 1.10.0: text ≤ 500 — where that frame is: the Figma page, then the frame | no | client |
 
 A **work item**: `id` (≤ 300), `title` (≤ 2,000, may be empty), `status` (≤ 200, may be empty), all required;
 `url` (`https://` link) and `done` (date), optional. Its text is copied from the tracker.
@@ -97,8 +101,43 @@ A **work item**: `id` (≤ 300), `title` (≤ 2,000, may be empty), `status` (�
 A **change or bug** (`requests[]`): `id` (≤ 300, id), `kind` (`sub-feature` · `change` · `improvement` · `bug`),
 `title` (≤ 1,000), `stages`, `work`, all required; `askedIn` (a pin's id, `known_pin`), `askedBy` (≤ 200), `asked`
 (≤ 2,000), `about`, `note` (≤ 2,000), `self` (a feature id, not checked), `guess`, `merged` (date), `splitOff` (a feature
-id, not checked: it may name a feature of a later send), `tags`, optional. `self` and `splitOff`, like a row's
+id, not checked: it may name a feature of a later send), `tags`, and since 1.10.0 `figma` (a Figma link ≤ 2,000,
+`figma_link`) and `figmaWhere` (≤ 500), optional. `self` and `splitOff`, like a row's
 `changes`, are not checked against the send's feature ids.
+
+## Since 1.10.0 — row kinds, the client's words and Figma links (ba-tools 0.10.0)
+
+The Timeline build now says what each row is, carries the client's own words on a row, and links a row or a
+change to its Figma frame. All four fields are optional: a 1.9.0 send still passes, and an older build sends none
+of them. They come from every tracker the build supports — Jira (Acme Lending, Bond Portal) sends `kind` on
+every row today; GitHub + BMAD (NWE) sends all four.
+
+**`kind` (a row).** Known values, and the chip the BA page shows before the row's name:
+
+| `kind` | Chip | Tooltip | When |
+|---|---|---|---|
+| `build` | **fb** | First build | old work from the tracker: how the feature was first built |
+| `new` | **n** | New | something new, from the dashboard or a spec |
+
+A BA may set any other short word on a row (the data file's `row_kinds`, for example `bug` for a client-reported
+bug that has its own row). The Portal shows a value it does not know as its own chip, with the word as the
+tooltip; it never refuses it. A change or bug (`requests[].kind`) keeps its own list (`sub-feature`, `change`,
+`improvement`, `bug`); the BA page shows **ch** for `change`, `improvement` and `sub-feature`, and **bug** for `bug`.
+
+**`asked` (a row).** The client's words, as on a change or bug. Shown in the row's panel under "Asked", before the
+description.
+
+**`figma` and `figmaWhere` (a row, and a change or bug).** An "Open in Figma" button that opens `figma` in a new
+tab, with `figmaWhere` (for example `Member · Account and access → /signup — Create account`) under it in small
+text. No button without `figma`; `figmaWhere` alone is not shown. Figma decides who may open the frame: a client
+without access to the file sees Figma's own "request access" page.
+
+**How the BA page shows a row since 0.10.0** (so the Portal can match it):
+- **Bullets:** `about` holds up to 6 plain bullets (the schema still allows 20). They show before `desc`.
+- **Changes and bugs sit once, under their feature, on one level**, each with its stage, its chip and its `tags`.
+- **"Hide done"** keeps a feature while any change or bug under it is not done, or was done in the last 2 weeks.
+- **Extra tags** (for example "Before Global" / "After Global" on NWE) are added to `tags` after the release or
+  phase. The tag filter is named by `product.tagWord`, as before ("Release", "Phase" or "Tag").
 
 ## A to-do (`todos[]`)
 
@@ -165,8 +204,9 @@ top of the chart, in the "Coming up" tab, and as flags on the features they name
 ## Named checks
 
 In this order (see `checks.md`): `unique_feature_id`, `unique_item_key`, `unique_pin_id`, `unique_page_slug`,
-`known_pin`, `known_page`, `unique_upcoming_id` and `known_feature` (both since 1.9.0), `no_html_entities`. `no_html_entities` skips the links (`product.workLink`, area
-`link.url`, work `url`), the Client contacts' emails and the text copied from the tracker (work `title` and
+`known_pin`, `known_page`, `unique_upcoming_id` and `known_feature` (both since 1.9.0), `figma_link` (since 1.10.0:
+a row's `figma`, then its changes' in order), `no_html_entities`. `no_html_entities` skips the links (`product.workLink`, area
+`link.url`, work `url`, and since 1.10.0 a row's or change's `figma`), the Client contacts' emails and the text copied from the tracker (work `title` and
 `status`, `releases[].name`).
 
 ## The reply

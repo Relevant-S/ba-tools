@@ -3,7 +3,7 @@
 # What each key means: https://github.com/Relevant-S/ba-tools/blob/main/profile/README.md
 
 profile_version: 2
-ba_tools_version: 0.10.0
+ba_tools_version: 0.10.1
 project: NWE (Northwind)
 
 products:

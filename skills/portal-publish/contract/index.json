@@ -1,5 +1,5 @@
 {
-  "contract_folder": "1.9.0",
+  "contract_folder": "1.10.0",
   "accepted": ["dashboard/1", "dashboard/2", "timeline/1", "clarification/1"],
   "schemas": {
     "dashboard/1": "dashboard-1.schema.json",

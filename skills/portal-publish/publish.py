@@ -1274,7 +1274,8 @@ def timeline_payload(root: Path, prof: dict, product: str, build: dict, products
     sent as it is, except: the envelope, client_contacts and clarification_pages are added; each feature's clar (a
     claude.ai artifact link) becomes page, the slug of the Portal page with that url (clarLabel goes with it);
     pages, dashboardUrl and pins[].decided[].url are left out; null fields are left out. Since contract 1.8.0
-    `decisions` (the product's suggestions.yaml, `suggestion_status`) goes in as suggestion_status when not None."""
+    `decisions` (the product's suggestions.yaml, `suggestion_status`) goes in as suggestion_status when not None.
+    Since contract 1.10.0 a figma that is not a Figma link is left out (with its figmaWhere) with a warning."""
     warnings: list[str] = []
     pages, more = dashboard_pages(root, prof, products, product)
     warnings += more
@@ -1301,6 +1302,18 @@ def timeline_payload(root: Path, prof: dict, product: str, build: dict, products
     for pin in doc.get("pins") or []:
         for d in pin.get("decided") or []:
             d.pop("url", None)
+    # Since contract 1.10.0: a row's or a change's figma must be a https://www.figma.com/ link (figma_link). Any
+    # other value is left out with a warning, with its figmaWhere, so one bad link never stops the send.
+    bad_links = []
+    for _, f in timeline_rows(doc):
+        for holder in [f] + list(f.get("requests") or []):
+            if "figma" in holder and not checks.is_figma_link(holder["figma"]):
+                bad_links.append(f"{holder.get('title') or holder.get('label') or holder.get('id')} ({holder['figma']})")
+                holder.pop("figma")
+                holder.pop("figmaWhere", None)
+    if bad_links:
+        warnings.append("These Figma links are not https://www.figma.com/ links, so they were left out and the "
+                        "Portal shows no Open in Figma button on them: " + "; ".join(bad_links) + ".")
     people, _, warn = contacts(root, prof)
     if warn:
         warnings.append(warn)

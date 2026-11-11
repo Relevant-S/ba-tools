@@ -119,6 +119,9 @@ DASHBOARD_CASES = {
     # upcoming (contract 1.9.0)
     "tl1-upcoming-duplicate-id", "tl1-upcoming-unknown-need", "tl1-upcoming-unknown-after",
     "tl1-upcoming-date-and-after", "tl1-upcoming-bad-kind", "tl1-upcoming-title-too-long", "tl1-upcoming-bad-date",
+    # contract 1.10.0: a row's kind, asked, figma and figmaWhere; a change's figma
+    "tl1-kind-too-long", "tl1-kind-empty", "tl1-asked-too-long", "tl1-figma-not-figma", "tl1-figma-html-entity",
+    "tl1-figma-where-too-long", "tl1-request-figma-not-figma", "tl1-figma-where-html-entity",
 }
 PAGE_CASES = {
     "page-too-many-questions", "page-too-many-screenshots", "question-no-options",
@@ -702,7 +705,7 @@ def test_limits_match_the_spec():
 
 def test_index_names_existing_schemas():
     idx = checks.index()
-    assert idx["contract_folder"] == "1.9.0"
+    assert idx["contract_folder"] == "1.10.0"
     assert idx["accepted"] == ["dashboard/1", "dashboard/2", "timeline/1", "clarification/1"]
     assert set(idx["schemas"]) == {"dashboard/1", "dashboard/2", "timeline/1", "clarification/1", "publish-reply/1",
                                    "status/1",
@@ -1249,7 +1252,7 @@ def test_every_timeline_check_has_a_fixture():
             checks_seen |= {d["check"] for d in read(case / "expected.json")["details"]}
     assert checks_seen == {"schema", "contract_version", "unique_feature_id", "unique_item_key", "unique_pin_id",
                            "unique_page_slug", "known_pin", "known_page", "unique_upcoming_id", "known_feature",
-                           "no_html_entities"}
+                           "figma_link", "no_html_entities"}
 
 
 def test_timeline_duplicate_feature_id_names_both_places():

@@ -53,6 +53,9 @@ ENTITY_SKIP = {
         "/releases/*/name",
         *(f"/groups/*/areas/*/features/*/{where}work/*/{field}" for where in ("", "requests/*/")
           for field in ("url", "title", "status")),
+        # Since 1.10.0: a row's or a change's Figma link (checked by figma_link).
+        "/groups/*/areas/*/features/*/figma",
+        "/groups/*/areas/*/features/*/requests/*/figma",
     },
     "clarification": {
         "/description",
@@ -493,8 +496,8 @@ def check_unique_at(entries: list[tuple[str, object]], check: str, label: str) -
 
 
 def timeline_1_checks(doc: dict) -> list[dict]:
-    """The named checks of timeline/1 (contract 1.6.0; unique_upcoming_id and known_feature since 1.9.0), in
-    checks.md order."""
+    """The named checks of timeline/1 (contract 1.6.0; unique_upcoming_id and known_feature since 1.9.0;
+    figma_link since 1.10.0), in checks.md order."""
     rows = timeline_rows(doc)
     pins = {p["id"] for p in doc["pins"]}
     out = check_unique_at([(f"{w}/id", f["id"]) for w, f in rows], "unique_feature_id", "Feature id")
@@ -526,6 +529,14 @@ def timeline_1_checks(doc: dict) -> list[dict]:
         for here, value in named:
             if value not in ids:
                 out.append(detail(here, "known_feature", f'{here} names a feature "{value}" that is not in this Publish.'))
+    # figma_link (contract 1.10.0): a row's or a change's figma is a https://www.figma.com/ link
+    for w, f in rows:
+        links = [(f"{w}/figma", f)] + [(f"{w}/requests/{j}/figma", q) for j, q in enumerate(f.get("requests", []))]
+        for here, holder in links:
+            if "figma" in holder and not is_figma_link(holder["figma"]):
+                out.append(detail(here, "figma_link",
+                                  f"{here} is not a Figma link: it must start with {FIGMA_PREFIX} and hold no space "
+                                  "or HTML entity."))
     return out + check_entities(doc, "timeline")
 
 
