@@ -188,9 +188,12 @@ a{color:var(--fg)}
 .tabs button .n{font-weight:400;color:var(--muted-fg);margin-left:4px}
 .card[data-view]:not([data-view="tl"]) :is(#toolbar,#legend,#chart,#foot){display:none}
 .card[data-view="tl"] #list{display:none}
-.list{flex:1;min-width:0;overflow:auto;padding:4px 20px 24px;overscroll-behavior:contain}
+.list{flex:1;min-width:0;overflow:auto;padding:0 20px 24px;overscroll-behavior:contain}
+.list>:first-child:not(.lbar){margin-top:4px}
 .list .li{padding:10px 0}
-.lbar{position:sticky;top:0;z-index:2;background:var(--card);padding:12px 0 8px;margin-bottom:4px}
+/* the filter bar over a list stays on top while the list scrolls: full width (it spans the list's side padding) and
+   flush with the top (it covers the list's top padding), so no row shows through beside or above it */
+.lbar{position:sticky;top:0;z-index:8;display:flex;background:var(--card);margin:0 -20px 4px;padding:16px 20px 8px;border-bottom:1px solid var(--border)}
 .lbar .clear{border:0;background:none;color:var(--muted-fg);font-size:12px;cursor:pointer;text-decoration:underline;padding:4px}
 .list .sh:first-child{margin-top:12px}
 .list a.li{text-decoration:none;color:inherit}

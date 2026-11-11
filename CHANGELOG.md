@@ -19,6 +19,8 @@
 - **Stage fixes:** a fix copied to main under a new commit id (cherry-pick, rebase) now counts as on production;
   listed commits count for a spec row too; stage dates written by hand win for every row; a spec header line
   `needed_by: -` no longer stops its item fields being read.
+- **List filter bars stay fixed** on Clarification pages and To-dos: full width, flush with the top, no jump when
+  scrolling starts (rows no longer show through beside or above them).
 - ⚠️ **Portal:** every row now carries `kind`, and rows and items may carry `figma` and `figmaWhere`, which the
   `timeline/1` data rules do not allow yet. A `portal-publish timeline` send is refused until the Portal accepts
   them (or the send step drops them).
