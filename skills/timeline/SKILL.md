@@ -53,6 +53,27 @@ product:
   intake_skip: 'gmail-.*agreement'   # optional: leave out intake files whose name matches (another product's)
 ```
 
+## Items from specs (`items: specs` in the data file — NWE since 11 Nov 2026)
+
+Every row and every change or bug is a **spec item**; the project is the source of truth. Design:
+`docs/items-model.md` (ba-tools). The build reads, from each spec under the product's spec folder (sub-folders
+included, e.g. `baseline/`):
+
+| Spec field | On the page |
+|---|---|
+| `type` (`feature` · `improvement` · `change` · `bug`) | the chip; `baseline: true` on a feature = **fb** (first build) |
+| `parent` | the item sits once under the item at the top of its parent chain, all on one level, in that item's area |
+| `story` (baseline items) | the MVP story that builds it — its stages |
+| `tags` | added after the phase or release |
+| `refs` (`{source, key, kind, who, date, asked}`) | the "where it was asked" pin, who asked and what |
+| `figma`, `figma_where` | the Open in Figma button |
+| `## Summary` (bullets right under the heading) | the plain description |
+| `commits`, `stages`, `done` | stage dates: listed commits, or dates written by hand, win over the tracker |
+
+The data file then keeps only the page layout (groups, areas, `rows:` order, `spec_areas`, `aliases`). Outside
+sources (a client sheet, Jira) are only `refs`: changes there come in through intake-and-triage. Our own QA bugs are
+never shown.
+
 ## Coming up (`upcoming:` in the data file)
 
 Planned events after today: a hard deadline, a step that waits for a feature, a change with no date yet.

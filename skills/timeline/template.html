@@ -68,7 +68,7 @@ button{font:inherit;color:inherit}
 .ring{display:inline-block;width:14px;height:14px;border-radius:50%;flex-shrink:0;-webkit-mask:radial-gradient(circle,transparent 3.5px,#000 4px);mask:radial-gradient(circle,transparent 3.5px,#000 4px)}
 .ring.empty{background:transparent;border:1.5px dashed #a1a1aa;-webkit-mask:none;mask:none;width:12px;height:12px}
 .kind{font-size:12px;line-height:16px;font-weight:600;border-radius:4px;padding:2px 8px;background:var(--muted);color:var(--fg2);white-space:nowrap;margin-left:auto}
-.kind.bug{background:var(--red-t);color:var(--red)} .kind.improvement{background:var(--ready-t);color:var(--ready)} .kind.change{background:var(--spec-t);color:var(--spec)}
+.kind.bug{background:var(--red-t);color:var(--red)} .kind.improvement{background:var(--ready-t);color:var(--ready)} .kind.change{background:var(--spec-t);color:var(--spec)} .kind.new{background:var(--ready-t);color:var(--ready)} .row.feature .kind{margin-left:auto}
 .guess{color:var(--orange);font-weight:600;margin-left:2px}
 .bar{position:absolute;top:10px;height:16px;left:calc(var(--s) * 100%);width:calc(var(--w) * 100%)}
 .row.req .bar{top:13px;height:10px}
@@ -279,7 +279,10 @@ const BA_NAME = P.ba || "the BA";
 const TRACKER = {jira:{name:"Jira", work:"Jira tickets"}, "github-bmad":{name:"GitHub", work:"Stories"}}[P.tracker] || {name:"the tracker", work:"Work items"};
 const STAGE = {concept:"Concept",spec:"Spec & design",design:"Spec & design",ready:"Ready for dev",dev:"In dev",qa:"In QA",done:"Done",live:"Live"};
 const COL = {concept:"var(--concept)",spec:"var(--spec)",design:"var(--spec)",ready:"var(--ready)",dev:"var(--dev)",qa:"var(--qa)",done:"var(--done)",live:"var(--done)"};
-const KIND = {"sub-feature":"sub-feature",change:"change",improvement:"improvement",bug:"bug"};
+const KIND = {"sub-feature":"sub-feature",change:"change",improvement:"improvement",bug:"bug",build:"first build",new:"new"};
+// the short chip on a row (Vadim, 11 Nov 2026); the full word is its tooltip
+const KIND_SHORT = {build:"fb",new:"n",change:"ch"};
+const kindChip = k => `<span class="kind ${esc(k)}" title="${esc(KIND[k]||k)}">${esc(KIND_SHORT[k]||KIND[k]||k)}</span>`;
 const MK = {call:"Client call",email:"Email",comments:"Comments",doc:"Document",page:"Clarification-page answers",idea:"Suggestion"};
 const ICON = {
   call:'<svg viewBox="0 0 24 24"><path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
@@ -475,7 +478,8 @@ function isDoneOld(f){
   const stg = f.stages && f.stages.length ? f.stages[f.stages.length-1] : null;
   const doneFrom = stg && ["done","live"].includes(stg.stage) ? d(stg.from) : (f.stage==="done" && f.doneDate ? d(f.doneDate) : null);
   if (doneFrom===null) return false;
-  if ((f.requests||[]).some(reqOpen)) return false;
+  // a feature stays while anything under it is open or was done in the last 2 weeks
+  if ((f.requests||[]).some(q => reqOpen(q) || !reqDoneOld(q))) return false;
   return doneFrom < TODAY - 14*DAY;
 }
 // search and person filter
@@ -492,6 +496,10 @@ function personMatch(f){
 const featureMatch = (f, area) => tagMatch(f) && personMatch(f) && (!st.q || featureText(f).includes(st.q) || area.toLowerCase().includes(st.q));
 const reqMatch = q => st.q && q.title.toLowerCase().includes(st.q);
 const TAG_WORD = P.tagWord || "Phase";
+// the design: one "Open in Figma" button, with where it opens (page → frame) under it
+const figmaBtn = x => (x.figma && /^https:\/\/www\.figma\.com\//.test(x.figma)) ? `<a class="btn" href="${esc(x.figma)}" target="_blank" rel="noopener">◇ Open in Figma</a>${x.figmaWhere?`<p class="note">${esc(x.figmaWhere)}</p>`:""}` : "";
+// "Planned for release 3" reads well for a release or a phase; any other tag word lists the tags.
+const tagNote = t => /^(release|phase)$/i.test(TAG_WORD) ? `Planned for ${esc(TAG_WORD.toLowerCase())} ${t.map(esc).join(", ")}` : `${esc(TAG_WORD)}s: ${t.map(esc).join(", ")}`;
 const hasTag = list => (list && list.length) ? list.some(t => st.tags.has(t)) : st.tags.has("(none)");
 const tagMatch = f => !st.tags.size || hasTag(f.tags) || (f.requests||[]).some(q => q.tags && hasTag(q.tags));
 // one tag on the row (the latest); the others are counted, and all of them are in the side panel
@@ -625,7 +633,7 @@ function render(){
   const keep = {y: chart.scrollTop, right: st.lastPpd ? (st.lastStart ?? w0.start) + (chart.scrollLeft + chart.clientWidth - w0.label) / st.lastPpd * DAY : null};
   renderSide();                // the panel changes the chart's width, so place it first
   const w = win();
-  let h = `<div class="inner" style="width:${w.label + w.tw}px"><div class="axis"><div class="lab">Area · feature · request</div><div class="scale">${w.col ? `<div class="nodatehead" style="--s:${pos(w.end,w)}"><span>No date yet</span></div>` : ""}<div class="pins" id="pins"></div><div class="ticks">${ticks(w)}</div>${UP.filter(u => u.kind === "deadline" && u.date && d(u.date) >= w.start && d(u.date) <= w.end).map(u => `<button class="dlx${upPast(u) ? " past" : ""}" style="--s:${pos(d(u.date)+DAY/2,w)}" data-u="${esc(u.id)}" title="${esc(u.title)} · ${fmt(u.date, true)}">${fmt(u.date)} · ${esc(u.title)}</button>`).join("")}</div></div>`;
+  let h = `<div class="inner" style="width:${w.label + w.tw}px"><div class="axis"><div class="lab">Area · feature · change</div><div class="scale">${w.col ? `<div class="nodatehead" style="--s:${pos(w.end,w)}"><span>No date yet</span></div>` : ""}<div class="pins" id="pins"></div><div class="ticks">${ticks(w)}</div>${UP.filter(u => u.kind === "deadline" && u.date && d(u.date) >= w.start && d(u.date) <= w.end).map(u => `<button class="dlx${upPast(u) ? " past" : ""}" style="--s:${pos(d(u.date)+DAY/2,w)}" data-u="${esc(u.id)}" title="${esc(u.title)} · ${fmt(u.date, true)}">${fmt(u.date)} · ${esc(u.title)}</button>`).join("")}</div></div>`;
   if (UP.length) {
     const lane = upLane(w), n = UP.filter(u => !upPast(u)).length;
     h += `<div class="row up" style="--colw:${COLW}px"><div class="lab">Coming up<small>· ${n}</small></div><div class="track" style="height:${lane.height}px">${lane.html}</div></div>`;
@@ -643,7 +651,7 @@ function render(){
       // one flag per item and kind on the area row (an item that needs two of its features shows once)
       if (!open) { const seen = new Set(); stripes += flagsHtml(fs.flatMap(f => upFlags(f.id)).filter(x => { const k = x.u.id + "|" + x.kind; return seen.has(k) ? false : seen.add(k); }), w); }
       rows.push(`<div class="row area${fs.length?"":" empty"}${st.sel?.t==="a"&&st.sel.id===a.name?" sel":""}" data-a="${esc(a.name)}" tabindex="0" role="button" aria-expanded="${!!open}">
-        <div class="lab">${(fs.length||sn.length)?`<span class="caret">${open?"▾":"▸"}</span>`:'<span class="caret"></span>'}${ring(fs)}<span class="nm">${esc(a.name)}</span><span class="cnt">${fs.length?fs.length+" feature"+(fs.length>1?"s":""):"no open features"}</span></div>
+        <div class="lab">${(fs.length||sn.length)?`<span class="caret">${open?"▾":"▸"}</span>`:'<span class="caret"></span>'}${ring(fs)}<span class="nm">${esc(a.name)}</span><span class="cnt">${fs.length?fs.length+" item"+(fs.length>1?"s":""):"nothing open"}</span></div>
         <div class="track" style="--colw:${COLW}px">${stripes}</div></div>`);
       if (!open) return;
       fs.forEach(f => {
@@ -658,7 +666,7 @@ function render(){
         const qn = (f.openQ||[]).length, wo = todosOld(f);
         const badges = (qn?`<span class="badge q" title="${qn} open question${qn>1?"s":""} for the client">${qn}</span>`:"") + (wo?`<span class="badge w" title="${wo} to-do${wo>1?"s":""} open over 30 days">${wo}</span>`:"");
         rows.push(`<div class="row feature${st.sel?.t==="f"&&st.sel.id===f.id?" sel":""}" data-f="${esc(f.id)}" tabindex="0" role="button">
-          <div class="lab">${(reqs.length||sugFor(f.id).length)?`<button class="caret" data-tf="${esc(f.id)}" aria-label="Show what was added">${fo?"▾":"▸"}</button>`:'<span class="caret"></span>'}<i class="dot" style="background:${COL[f.stage]}"></i><span class="nm" title="${esc(f.label)}">${esc(f.label)}${f.guess?`<span class="guess" title="${esc(guessWhy(f))}">*</span>`:""}</span>${tagChips(f.tags)}${badges}<span class="stg"${badges?' style="margin-left:6px"':""}>${STAGE[f.stage]||f.stage}</span></div>
+          <div class="lab">${(reqs.length||sugFor(f.id).length)?`<button class="caret" data-tf="${esc(f.id)}" aria-label="Show what was added">${fo?"▾":"▸"}</button>`:'<span class="caret"></span>'}<i class="dot" style="background:${COL[f.stage]}"></i><span class="nm" title="${esc(f.label)}">${esc(f.label)}${f.guess?`<span class="guess" title="${esc(guessWhy(f))}">*</span>`:""}</span>${tagChips(f.tags)}${f.kind?kindChip(f.kind):""}${badges}<span class="stg"${(badges||f.kind)?' style="margin-left:6px"':""}>${STAGE[f.stage]||f.stage}</span></div>
           <div class="track" style="--colw:${COLW}px" title="${sp.approx?"Stage history not recorded yet: the bar starts when the dashboard first lists it":""}">${tr}</div></div>`);
         if (!fo) return;
         reqs.filter(q => !st.q || reqMatch(q) || featureText(f).includes(st.q)).forEach(q => {
@@ -668,7 +676,7 @@ function render(){
           if (q.merged && d(q.merged)>=w.start) qt += `<span class="mark merge" style="--s:${pos(d(q.merged),w)}">✓ merged ${fmt(q.merged)}</span>`;
           if (q.splitOff) { const t=Math.max(d(q.stages[0].from),w.start); qt += `<span class="mark split" style="--s:${pos(t,w)}">→ own feature</span>`; }
           rows.push(`<div class="row req${st.sel?.t==="q"&&st.sel.id===key?" sel":""}" data-q="${esc(key)}" tabindex="0" role="button">
-            <div class="lab"><span class="nm" title="${esc(q.title)}">${esc(q.title)}</span>${tagChips(q.tags)}<span class="kind ${q.kind}">${KIND[q.kind]||q.kind}</span></div><div class="track">${qt}</div></div>`);
+            <div class="lab"><span class="nm" title="${esc(q.title)}">${esc(q.title)}</span>${tagChips(q.tags)}${kindChip(q.kind)}<span class="stg" style="margin-left:6px">${q.merged?"Merged":q.splitOff?"Own feature":(STAGE[q.stages[q.stages.length-1].stage]||q.stages[q.stages.length-1].stage)}</span></div><div class="track">${qt}</div></div>`);
         });
         sugFor(f.id).forEach(x => rows.push(sugRow(x, w, "req")));
       });
@@ -836,15 +844,16 @@ function renderSide(){
   let h = "", back = "";   // the top line: Back (to the parent feature) on the left, Close on the right
   if (s.t==="f"){
     const f = F[s.id];
-    h += `<div class="pills"><span class="pill">Feature</span><span class="pill">${esc(f.area)}</span>${stagePill(f.stage)}</div><h2>${esc(f.label)}</h2>`;
-    if (f.tags && f.tags.length) h += `<p class="note">Planned for ${esc(TAG_WORD.toLowerCase())} ${f.tags.map(esc).join(", ")}</p>`;
-    // what the feature is, in plain words: the dashboard's client text, else the short description written for the timeline
-    if (f.desc) h += richText(f.desc);
-    else if (f.about && f.about.length) h += `<ul class="bul">${f.about.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    h += `<div class="pills"><span class="pill">${f.kind==="change"?"Change":f.kind==="bug"?"Bug":f.kind==="build"?"First build":"New"}</span><span class="pill">${esc(f.area)}</span>${stagePill(f.stage)}</div><h2>${esc(f.label)}</h2>`;
+    if (f.tags && f.tags.length) h += `<p class="note">${tagNote(f.tags)}</p>`;
+    // what the feature is, in plain words: the description written for the timeline, else the dashboard's client text
+    if (f.about && f.about.length) h += `<ul class="bul">${f.about.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    else if (f.desc) h += richText(f.desc);
+    h += figmaBtn(f);
     if (f.originNote) h += `<p class="note">${esc(f.originNote)}</p>`;
     if (f.changes && F[f.changes]) h += `<div class="sh">Changes</div><button class="li click" data-f="${esc(f.changes)}"><i class="dot" style="background:${COL[F[f.changes].stage]}"></i><span class="nm">${esc(F[f.changes].label)} · ${esc(F[f.changes].area)}</span></button>`;
     if (f.clar) h += `<a class="btn" href="${esc(f.clar)}" target="_blank" rel="noopener">▤ ${esc(f.clarLabel||"Clarification page")}</a>`;
-    if (f.askedIn) h += `<div class="sh">First asked</div>${msLine(f.askedIn)}${f.askedBy?`<p class="note">Asked by ${esc(f.askedBy)}</p>`:""}`;
+    if (f.askedIn) h += `<div class="sh">First asked</div>${msLine(f.askedIn)}${f.askedBy?`<p class="note">Asked by ${esc(f.askedBy)}${f.asked?" — "+esc(f.asked):""}</p>`:""}`;
     else if (f.startedBefore) h += `<div class="sh">First asked</div><p class="note">Before the timeline starts — work on it began ${fmt(f.startedBefore,true)}.</p>`;
     h += `<div class="sh">Stage dates</div>` + (f.basisNote ? `<p class="note">${esc(f.basisNote)}</p>` : "") + (f.stages ? stageDates(f.stages, TODAY+DAY) :`<p class="note">Not recorded yet. ${f.since?"The dashboard lists it since "+fmt(f.since)+"; the bar starts there.":"The dashboard has no start date for it."}${f.doneDate?" Done on "+fmt(f.doneDate)+".":""}</p>`);
     const allReqs = f.requests||[], reqs = st.hideDone ? allReqs.filter(q => !reqDoneOld(q)) : allReqs;
@@ -910,8 +919,9 @@ function renderSide(){
     const q = Q[s.id], f = F[q.feature], last = q.stages[q.stages.length-1].stage;
     back = `<button class="close back" data-f="${esc(f.id)}" title="Back to ${esc(f.label)}">← ${esc(f.label)}</button>`;
     h = `<div class="pills"><span class="pill">${KIND[q.kind]}</span>${stagePill(last)}</div><h2>${esc(q.title)}</h2>`;
-    { const qt = q.tags || f.tags; if (qt && qt.length) h += `<p class="note">Planned for ${esc(TAG_WORD.toLowerCase())} ${qt.map(esc).join(", ")}</p>`; }
+    { const qt = q.tags || f.tags; if (qt && qt.length) h += `<p class="note">${tagNote(qt)}</p>`; }
     if (q.about && q.about.length) h += `<ul class="bul">${q.about.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    h += figmaBtn(q);
     if (q.note) h += `<p class="note">${esc(q.note)}</p>`;
     if (q.self && F[q.self]) h += `<button class="li click" data-f="${esc(q.self)}"><i class="dot" style="background:${COL[F[q.self].stage]}"></i><span class="nm"><b>Open its details</b><small>to-dos, questions and its clarification page</small></span></button>`;
     if (q.askedIn) h += `<div class="sh">Where it came from</div>${msLine(q.askedIn)}${q.askedBy?`<p class="note">Asked by ${esc(q.askedBy)}${q.asked?" — "+esc(q.asked):""}</p>`:""}`;
@@ -921,16 +931,16 @@ function renderSide(){
     h += workBlock(q.work);
   } else if (s.t==="a"){
     const a = A[s.id], fs = a.features, n = fs.length || 1;
-    h += `<div class="pills"><span class="pill">Area</span><span class="pill">${esc(a.group)}</span></div><h2>${esc(a.name)}</h2>`;
+    h += `<div class="pills"><span class="pill">Feature</span><span class="pill">${esc(a.group)}</span></div><h2>${esc(a.name)}</h2>`;
     if (fs.length){
       const order=["done","live","qa","dev","ready","spec","design","concept"], counts={};
       fs.forEach(f=>counts[f.stage]=(counts[f.stage]||0)+1);
-      h += `<div class="mix">${order.filter(k=>counts[k]).map(k=>`<i style="flex:${counts[k]};background:${COL[k]}"></i>`).join("")}</div><p class="note">${fs.length} feature${fs.length>1?"s":""}: ${order.filter(k=>counts[k]).map(k=>counts[k]+" "+STAGE[k].toLowerCase()).join(", ")}</p>`;
+      h += `<div class="mix">${order.filter(k=>counts[k]).map(k=>`<i style="flex:${counts[k]};background:${COL[k]}"></i>`).join("")}</div><p class="note">${fs.length} item${fs.length>1?"s":""}: ${order.filter(k=>counts[k]).map(k=>counts[k]+" "+STAGE[k].toLowerCase()).join(", ")}</p>`;
       const fsShown = st.hideDone ? fs.filter(f => !isDoneOld(f)) : fs;
-      h += `<div class="sh">Features</div>` + fsShown.map(f => `<button class="li click" data-f="${esc(f.id)}"><i class="dot" style="background:${COL[f.stage]}"></i><span class="nm">${esc(f.label)}</span><span class="r">${STAGE[f.stage]}</span></button>`).join("") + hiddenNote(fs.length - fsShown.length);
+      h += `<div class="sh">First build, new parts and changes</div>` + fsShown.map(f => `<button class="li click" data-f="${esc(f.id)}"><i class="dot" style="background:${COL[f.stage]}"></i><span class="nm">${esc(f.label)}</span><span class="r">${STAGE[f.stage]}</span></button>`).join("") + hiddenNote(fs.length - fsShown.length);
       const rq = fs.reduce((s,f)=>s+(f.requests||[]).length,0);
-      if (rq) h += `<p class="note">${rq} request${rq>1?"s":""} added later, across these features.</p>`;
-    } else h += `<p class="note">No features or specs for this area yet.</p>`;
+      if (rq) h += `<p class="note">${rq} bug${rq>1?"s":""} and smaller changes inside these items.</p>`;
+    } else h += `<p class="note">Nothing built or specced for this feature yet.</p>`;
     if (a.link && a.link.url) h += `<p class="note"><a href="${esc(a.link.url)}" target="_blank" rel="noopener">${esc(a.link.label || "See all in " + TRACKER.name)}</a></p>`;
   } else if (s.t==="m"){
     const ids = s.id.split(","), list = ids.map(i => M[i] || (i.startsWith("sg:") ? allMs().find(m => m.id===i) : null)).filter(Boolean), days=[...new Set(list.map(m=>m.date))];
@@ -948,7 +958,7 @@ function renderSide(){
       if (!m.summary && !m.decided && !m.owes) h += `<p class="note">No summary for this ${MK[m.kind].toLowerCase()} yet.</p>`;
     }
     const asked = [];
-    Object.values(F).forEach(f => { if (ids.includes(f.askedIn)) asked.push(`<button class="li click" data-f="${esc(f.id)}"><span class="nm"><b>${esc(f.label)}</b><small>New feature · ${esc(f.area)}</small></span>${stagePill(f.stage)}</button>`); (f.requests||[]).forEach(q => { if (ids.includes(q.askedIn)) asked.push(`<button class="li click" data-q="${esc(f.id+"/"+q.id)}"><span class="nm"><b>${esc(q.title)}</b><small>${KIND[q.kind]} · ${esc(f.label)}</small></span>${stagePill(q.stages[q.stages.length-1].stage)}</button>`); }); });
+    Object.values(F).forEach(f => { if (ids.includes(f.askedIn)) asked.push(`<button class="li click" data-f="${esc(f.id)}"><span class="nm"><b>${esc(f.label)}</b><small>${f.kind==="change"?"Change":f.kind==="bug"?"Bug":"New"} · ${esc(f.area)}</small></span>${stagePill(f.stage)}</button>`); (f.requests||[]).forEach(q => { if (ids.includes(q.askedIn)) asked.push(`<button class="li click" data-q="${esc(f.id+"/"+q.id)}"><span class="nm"><b>${esc(q.title)}</b><small>${KIND[q.kind]} · ${esc(f.label)}</small></span>${stagePill(q.stages[q.stages.length-1].stage)}</button>`); }); });
     h += `<div class="sh">Requests from ${list.length>1?"these":"it"}</div>` + (asked.length ? asked.join("") : '<p class="note">None recorded yet.</p>');
   }
   side.innerHTML = `<div class="sidehead">${back}<button class="close shut" data-close>✕ Close</button></div>` + h; side.hidden = false;

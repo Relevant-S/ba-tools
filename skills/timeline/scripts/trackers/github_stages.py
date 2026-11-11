@@ -20,6 +20,8 @@ Stories are read from the docs repo's `origin/main` (the BA branch is behind); e
 (`git fetch` and reads; nothing is written to either repo).
 """
 import re, subprocess
+
+import yaml
 from collections import defaultdict
 
 IA = "_bmad-output/implementation-artifacts"
@@ -46,12 +48,13 @@ def fid_of(key):
 def specs_info(docs_repo, spec_dir, prefix="NWE-"):
     """{key: {title, status, opened, specDay, readyDay, file}} for every BA spec; dates from the file's git history."""
     out = {}
-    for p in sorted(spec_dir.glob(prefix + "*.md")):
+    for p in sorted(spec_dir.rglob(prefix + "*.md")):
         key = norm_key(p.stem)
         if not key:
             continue
         text = p.read_text(encoding="utf-8")
         head = text.split("\n---", 1)[0] if text.startswith("---") else text[:2000]   # the front matter
+        item = item_fields(text)
         field = lambda n: (re.search(r"^%s:\s*(.*?)\s*(?:#.*)?$" % n, head, re.M) or [None, ""])[1].strip().strip("'\"")
         rel = p.relative_to(docs_repo).as_posix()
         log = _git(docs_repo, "log", "--follow", "--reverse", "-p", "--format=@@%ad", "--date=short", "--", rel).stdout
@@ -66,9 +69,49 @@ def specs_info(docs_repo, spec_dir, prefix="NWE-"):
         if status == "ready" and not ready:
             ready = first
         covers = [norm_key(k) for k in re.findall(r"(?:FR|TKT)-?\d+", field("covers"))]
-        out[key] = {"title": field("title"), "status": status, "opened": field("opened") or first, "covers": covers,
+        out[key] = {"title": item.pop("_title", None) or field("title"), "status": status, "opened": field("opened") or first, "covers": covers,
                     "specDay": min(x for x in (field("opened"), first) if x) if (field("opened") or first) else None,
-                    "readyDay": ready, "file": rel}
+                    "readyDay": ready, "file": rel, **item}
+    return out
+
+
+def item_fields(text):
+    """The item fields of a spec (the one item model, 11 Nov 2026): type, baseline, parent, refs, tags, figma,
+    commits, story, done, resolution from the front matter, and the bullets of its `## Summary` section."""
+    fm = {}
+    if text.startswith("---"):
+        try:
+            raw = text[3:].split("\n---", 1)[0]
+            # a bare "-" (e.g. `needed_by: -`) is the template's "none", not a list: read it as text
+            raw = re.sub(r"^([A-Za-z_]\w*):[ \t]+-[ \t]*(#.*)?$", r"\1: '-'", raw, flags=re.M)
+            fm = yaml.safe_load(raw) or {}
+        except yaml.YAMLError:
+            fm = {}
+    out = {k: fm.get(k) for k in ("type", "baseline", "parent", "refs", "tags", "figma", "figma_where", "commits",
+                                   "story", "stages", "done", "resolution") if fm.get(k) not in (None, "", [], "-")}
+    for st in out.get("stages") or []:
+        if isinstance(st, dict) and st.get("from") and not isinstance(st["from"], str):
+            st["from"] = st["from"].isoformat()
+    if out.get("parent"):
+        out["parent"] = norm_key(str(out["parent"])) or str(out["parent"])
+    if out.get("done") and not isinstance(out["done"], str):
+        out["done"] = out["done"].isoformat()
+    for r in out.get("refs") or []:
+        if isinstance(r, dict) and r.get("date") and not isinstance(r["date"], str):
+            r["date"] = r["date"].isoformat()
+    # the Summary is the list right under its heading: it ends at the first line that is not a bullet
+    m = re.search(r"^## Summary[ \t]*\n", text, re.M)
+    if m:
+        bullets = []
+        for l in text[m.end():].splitlines():
+            if re.match(r"\s*[-*]\s+", l):
+                bullets.append(re.sub(r"^\s*[-*]\s+", "", l).strip())
+            elif l.strip() or bullets:
+                break
+        if bullets:
+            out["summary"] = bullets
+    if isinstance(fm.get("title"), str):
+        out["_title"] = fm["title"]
     return out
 
 
@@ -225,10 +268,26 @@ class AppRepo:
                         lst.append((cur, days.get(cur, "")))
         return self._bugs
 
+    def main_twin(self, c):
+        """A commit on main with the same title as `c` — the same fix, copied to main under a new id (a
+        cherry-pick or a rebase). None when there is none. (Vadim, 11 Nov 2026: fixes copied to main read as not
+        on production.)"""
+        if not hasattr(self, "_main_by_subject"):
+            self._main_by_subject = {}
+            for l in _git(self.repo, "log", "origin/main", "--no-merges", "--format=%H %s").stdout.splitlines():
+                h, _, s = l.partition(" ")
+                self._main_by_subject.setdefault(s.strip(), h)
+        subject = _git(self.repo, "log", "-1", "--format=%s", c).stdout.strip()
+        return self._main_by_subject.get(subject) if subject else None
+
     def prod_day(self, c):
-        """The day of the first production merge that took commit `c`, or None if it is not on main."""
+        """The day of the first production merge that took commit `c` (or its copy on main), or None if it is not
+        on main."""
         if not self.anc(c, "origin/main"):
-            return None
+            twin = self.main_twin(c)
+            if not twin or twin == c:
+                return None
+            c = twin
         for h, d in self.deploys:
             if self.anc(c, h):
                 return d

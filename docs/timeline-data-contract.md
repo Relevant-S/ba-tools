@@ -52,13 +52,16 @@ Dropped: `realNames` (the footer names no features any more), `prodDay` (not sho
 | `originNote` | text | One line at the top of the panel for a row not on the dashboard: "Built in the MVP, before the BA specs.", "A Jira story from before the timeline starts, in the epic …" | P | `mvpStory`, `earlier` + `epic` notes |
 | `basisNote` | text | One line above the stage dates: "From the Jira history of its tickets." | P | `fromJira`, `newRound` notes |
 | `desc` | text | The dashboard's client text | S | same |
-| `about` | list of text | 2–3 plain bullets when there is no `desc` | C (descriptions file) | same |
+| `about` | list of text | Up to 6 plain bullets; shown before `desc` (since 0.10.0) | C (the spec's `## Summary`, or the descriptions file) | same |
+| `kind` | text | **build** (first build, chip **fb**) · **new** (**n**) · **change** · **bug** · **improvement** — since 0.10.0 | P/C (the spec's `type` and `baseline`) | — |
+| `figma` · `figmaWhere` | url · text | The Open in Figma button and the page → frame under it — since 0.10.0 | C (the spec's `figma`, `figma_where`) | — |
+| `asked` | text | The client's words, after Asked by — since 0.10.0 | C (the spec's `refs`) | — |
 | `clar` · `clarLabel` | url · text | The clarification page button — **only a claude.ai artifact link** | S | same |
 | `openQ` | list of text | Open questions | S | same |
 | `todos` | list | To-dos, waiting items, agenda items (as today) | S | same |
 | `who` | list of text | Who asked for it | S | same |
 | `askedIn` · `askedBy` | pin id · text | Where it was first asked | C | same |
-| `tags` | list of text | Releases or phases | P/C | same |
+| `tags` | list of text | Releases or phases, then any extra tags (e.g. BG / AG) | P/C (the spec's `tags`, or `extra_tags`) | same |
 | `work` | list | `{id, title, status, url, done}` — the tickets or stories behind it; `done` = the day it was done (for "Hide done") | P | `tickets` |
 | `guess` | bool | Placed in this area by guess (`*` on the page) | S/C | same |
 | `changes` | feature id | For a change's own row: the feature it changes | C | same |
@@ -77,6 +80,7 @@ Dropped: `gh` (the "Spec and build" panel was replaced by `about`), `newRound` (
 | `stages` | list | As for a feature | same |
 | `askedIn` · `askedBy` · `asked` | pin id · text · text | Where it came from, who, and their words | same |
 | `about` | list of text | Plain bullets | same |
+| `tags` · `figma` · `figmaWhere` | list · url · text | As for a feature (the item's own spec) — since 0.10.0 | — |
 | `note` | text | One fact line: "QA bug BUG-093 · High · found 18 Sep · fixed in app commit 2a89b06" | same |
 | `self` | feature id | The change's own row, when it has one ("Open its details") | same |
 | `guess` | bool | Placed under this feature by guess | same |
@@ -120,3 +124,10 @@ plan's stage table.
 3. **No mark for worked-out dates** — some dates are worked out, not read (NWE: a story with no app commit
    noted is dated from the day it was accepted). The page treats them like any other date: the chart is read in
    weeks and days, so a guess of a day or two does not matter. No `inferred` field.
+
+## Items from specs (since 0.10.0)
+
+With `items: specs` in the data file (the GitHub + BMAD plug-in), every row and every change or bug is a spec
+item, and the fields above are read from the specs: `type`, `baseline`, `parent`, `story`, `tags`, `refs`,
+`figma`, `figma_where`, `commits`, `stages`, `done`, and the bullets of `## Summary`. An item with a `parent`
+becomes a `requests` entry under the item at the top of its parent chain. Design: `docs/items-model.md`.

@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.10.0 — 2026-11-11
+
+- **Timeline: client changes and bugs sit once, under their feature, all on one level** (Vadim, 10–11 Nov 2026).
+  Each shows its status, its type chip and its tags. Rows keep their own chip: **fb** first build, **n** new;
+  items show **ch** change or **bug** (the full word is the tooltip). "Hide done" keeps a feature while anything
+  under it is open or was done in the last 2 weeks.
+- **Up to 6 plain bullets per row and item, and an Open in Figma button** with the page → frame under it.
+  The bullets now show before the dashboard's client text.
+- **Extra tags next to the phase or release** (e.g. BG / AG for before / after an event): `extra_tags:` in the
+  data file. The filter is named by `tag_word` (NWE: "Tag").
+- **Items from specs** (`items: specs` in the data file, GitHub + BMAD plug-in): every row and every change or
+  bug is a spec. The build reads `type`, `baseline`, `parent`, `story`, `tags`, `refs`, `figma`, `figma_where`,
+  `commits`, `stages`, `done` and the `## Summary` section from the specs; the data file keeps only the layout.
+  Design: `docs/items-model.md`. Not yet in the Jira plug-in.
+- **Also in the data file:** `hand_rows:` (a row with no feature, spec or story), `row_kinds:`, `nest_changes:`,
+  `github.qa_bugs: false` (our own QA bugs off the page). `items: specs` replaces all of them.
+- **Stage fixes:** a fix copied to main under a new commit id (cherry-pick, rebase) now counts as on production;
+  listed commits count for a spec row too; stage dates written by hand win for every row; a spec header line
+  `needed_by: -` no longer stops its item fields being read.
+- ⚠️ **Portal:** every row now carries `kind`, and rows and items may carry `figma` and `figmaWhere`, which the
+  `timeline/1` data rules do not allow yet. A `portal-publish timeline` send is refused until the Portal accepts
+  them (or the send step drops them).
+
 ## 0.9.2 — 2026-11-11
 
 - **`ba-dashboard` refuses open questions written as one block of text.** A feature's `open` (and `tickets`)
