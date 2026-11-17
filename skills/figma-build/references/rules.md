@@ -86,3 +86,21 @@ component keys, colours, frame sizes, page names) are in the product's design pr
 23. **One screenshot at the end**, and fix only what it shows is wrong. Read values back when the
     screenshot cannot settle a question.
 24. **Build only what was asked.** Ask before adding footers, extra states or forms nobody requested.
+
+## Edges and alignment
+
+Learned on Hopline (test-logistics, 2026-11-17): the screenshot looked fine at a glance, and the BA saw
+cut-off edges and text out of line at full size.
+
+25. **Every painted box sits on whole pixels.** A row of equal boxes split with `FILL` (board columns,
+    choice tiles, stat cards) gives each a fractional width — a 242.5px card — and everything inside
+    inherits the half pixel, so borders render blurry or cut off. After building such a row, set each box
+    to `FIXED` at `floor((row width − gaps) ÷ count)`. Then run the half-pixel audit
+    (`plugin-gotchas.md` §5) on the frame; it must report zero.
+26. **Borders never move content.** A selected tile with a 2px border beside 1px tiles pushes its text
+    1px down and right and grows 2px taller. Set `strokesIncludedInLayout = false` (with
+    `strokeAlign = 'INSIDE'`) on every tile in the group, so a thicker selected border changes nothing else.
+27. **Leading items get a fixed box.** A number, icon or avatar before a title sits in a fixed-width,
+    fixed-height row centred on the title's line height (for example 12×20 for "1", "2", "3" before 14px
+    text) — otherwise "1" is narrower than "4" and titles start at a different x on every card, and an
+    icon aligned to the card's top sits higher than the text.
