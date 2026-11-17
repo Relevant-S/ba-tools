@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.10.2 — 2026-11-17
+
+- **figma-build: three rules on edges and alignment** (Vadim, 17 Nov 2026, from the Hopline test project).
+  `rules.md` has a new section, *Edges and alignment*:
+  - **25 — every painted box sits on whole pixels.** Equal boxes split with `FILL` land on half pixels and
+    their borders render blurry or cut off; set them `FIXED` at a whole-pixel width and run the new
+    half-pixel audit.
+  - **26 — borders never move content.** `strokesIncludedInLayout = false` on every tile, so a thicker
+    selected border does not shift text or grow the tile.
+  - **27 — leading items get a fixed box**, so titles after "1", "2", "4" or an icon start at the same x
+    and the icon centres on the title line.
+- **`plugin-gotchas.md`: the half-pixel audit script**, the `strokesIncludedInLayout` trap, and loading
+  fallback symbol fonts before changing a `font/family/*` variable.
+
 ## 0.10.1 — 2026-11-11
 
 - **Portal contract 1.10.0: the Timeline's new fields are allowed** (Vadim, 11 Nov 2026). `timeline/1` (and the

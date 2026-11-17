@@ -593,3 +593,28 @@ After reading the canonical SKILL.md, several earlier entries in this file were 
 - **Property reads immediately after a layout mutation are stale.** Heights returned in the same script
   that changed them came back as the pre-change values (three cards all reporting `320` after one had lost
   its image). Re-read in a fresh `use_figma` call, or verify with `get_screenshot`.
+- **Half-pixel audit — run it after any row of equal boxes** (`rules.md` rule 25; first recorded on
+  Hopline, 2026-11-17). `FILL` children that share a row get fractional widths, and the screenshot does not
+  show it at normal zoom. This read-only script lists every painted node off the whole-pixel grid; it must
+  return zero for each frame:
+
+  ```javascript
+  const frac = v => Math.abs(v - Math.round(v)) > 0.01;
+  const fr = await figma.getNodeByIdAsync(FRAME_ID);   // setCurrentPageAsync(its page) first
+  const half = [];
+  for (const n of fr.findAll(n => ['FRAME', 'INSTANCE', 'RECTANGLE', 'ELLIPSE'].includes(n.type) && n.visible)) {
+    const painted = (n.strokes && n.strokes.length) || (n.fills && n.fills !== figma.mixed && n.fills.length);
+    const bb = n.absoluteBoundingBox;
+    if (painted && bb && (frac(bb.width) || frac(bb.height) || frac(bb.x) || frac(bb.y))) half.push(n.name);
+  }
+  return { count: half.length, names: [...new Set(half)] };
+  ```
+
+  Fix the **parent row**, not the children: set each equal box to `FIXED` at a whole-pixel width.
+- **`strokesIncludedInLayout` defaults to taking space in auto-layout tiles.** A 2px selected border inside an
+  auto-layout frame grows it and shifts its children by the extra pixel. Set `strokesIncludedInLayout = false`
+  on every sibling tile (Hopline, 2026-11-17).
+- **Changing a font-family variable needs fallback fonts loaded.** `setValueForMode` on a `font/family/*`
+  variable re-renders every bound text style and throws `unloaded font "Noto Sans Symbols2 Regular"` (and
+  `Noto Sans Symbols Medium`) when kit text uses symbol glyphs. Catch the error, load each font it names, and
+  retry (Hopline, 2026-11-17, switching the shadcn kit from Geist to Figtree).
