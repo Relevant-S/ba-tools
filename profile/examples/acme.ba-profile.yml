@@ -3,7 +3,7 @@
 # What each key means: https://github.com/Relevant-S/ba-tools/blob/main/profile/README.md
 
 profile_version: 2
-ba_tools_version: 0.10.2
+ba_tools_version: 0.11.0
 project: Acme (Acme Lending + Bond Portal)
 
 products:
@@ -91,6 +91,13 @@ tools:
       - { key: SampleFileKey01AbCdEfG, name: 'Acme Lending (Copy)',  product: acme,      use: designs }
       - { key: SampleFileKey02AbCdEfG, name: 'Bond Portal',     product: bond-portal, use: designs }
       - { key: SampleFileKey03AbCdEfG, name: 'Custom DS',           product: both,            use: design-system }
+  doc_templates:                   # the Word templates the documents service fills in — the doc-templates skill
+    folder: 1ExampleDriveFolderId000000000000   # read by dev AND production (proved 11 Nov 2026)
+    folder_name: Acme Lending → Documents execution
+    company: Acme Ltd.        # footer text before the first "|"
+    test_api: https://documents.dev.acme.example/api
+    never_api: documents.acme.example
+    log: docs/BA/tools/doc-templates/README.md
   confluence: {}                   # not used on this project
   dashboard:                       # the BA dashboard — one page, one link; the ba-dashboard skill builds it
     file: docs/BA/dashboard.yaml

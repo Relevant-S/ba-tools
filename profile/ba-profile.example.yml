@@ -3,7 +3,7 @@
 # `ba-setup project` fills most of it in for you. What each key means: profile/README.md in ba-tools.
 
 profile_version: 2
-ba_tools_version: 0.10.2
+ba_tools_version: 0.11.0
 project: '<display name>'
 
 products:
@@ -81,6 +81,13 @@ tools:
     config: docs/BA/data-dictionary.config.yaml
   messages:                                   # every automatic message — messages skill
     file: docs/BA/messages.yaml
+  doc_templates:                              # delete when the project has no generated-document templates
+    folder: <drive folder id>                 # the folder the documents service reads, by exact file name
+    folder_name: <Product → Folder>           # how the BA finds it in Drive
+    company: <Company Ltd.>                   # footer text before the first "|"
+    test_api: https://<documents service on dev>/api
+    never_api: <documents service on production>
+    log: docs/BA/tools/doc-templates/README.md
   confluence:                                 # delete when the project does not use Confluence
     space: '<space key>'
     parent: '<page id new pages go under>'

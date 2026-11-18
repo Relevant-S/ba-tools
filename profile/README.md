@@ -15,7 +15,7 @@ every run. If a value they need is missing, they ask you, and you add it here �
 | Key | What it says | Acme Lending | NWE |
 |---|---|---|---|
 | `profile_version` | Layout of this file. The skills refuse a version they do not know. | `2` | `2` |
-| `ba_tools_version` | The ba-tools release installed in this project. | `0.10.2` | `0.10.2` |
+| `ba_tools_version` | The ba-tools release installed in this project. | `0.11.0` | `0.11.0` |
 | `project` | Display name. | Acme | NWE (Northwind) |
 | `products` | One entry per product in the repo: `key` (the spec's `product:` value and folder name), `name`, `jira_project` (or `-`), and `roles`. | two products | one |
 | `products[].design_profile` | Path to the product's design profile — Figma files, design system, tokens, frame sizes, traps. Read by `figma-build`; written by `ba-setup design`. | two, one per product | one |
@@ -46,6 +46,7 @@ every run. If a value they need is missing, they ask you, and you add it here �
 | `tools.dashboard` | `file` (the dashboard's data, `docs/BA/dashboard.yaml`), `url` (its published page — one link, never changes), `page` (`docs/BA/mind-map/mind-map.html`, the Map + Board page that gets published) and optional `map` (`products`: Jira project → product name; `stage_of_status`: Jira status → stage). Or, instead of `url`, `timelines` (product → `{data, url}`): the Timeline pages are then the dashboard, and the Map + Board page is built but never published. Where a BA finds every feature and clarification page. Started right after the project brief. | the live Map + Board page | none yet |
 | `tools.dictionary` | `config` — the data dictionary's config (which code it reads); the `data-dictionary` skill builds the page. | set | set |
 | `tools.messages` | `file` — the messages catalogue (`docs/BA/messages.yaml`); the `messages` skill builds its page. | 28 Bond Portal emails imported | empty |
+| `tools.doc_templates` | For the `doc-templates` skill: `folder` (the Drive folder id the documents service reads templates from, by exact name, direct children only), `folder_name` (how the BA finds it in Drive), `company` (the footer text before the first `\|`), `test_api` (the dev Swagger for test renders), `never_api` (the production address, never called), `log` (the rollout log). Leave it out when the project has no document templates. | set | not used |
 | `tools.confluence` | `space` and `parent` page for published pages. `{}` = not used. | not used | Northwind |
 | `briefs_dir`, `confluence_*`, `figma_*`, `briefs`, `brief_parents` | Settings for the `feature-brief` skill. | — | yes |
 

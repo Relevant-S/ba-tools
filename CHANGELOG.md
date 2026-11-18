@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.11.0 — 2026-11-18
+
+- **New skill `doc-templates`** (Vadim, 18 Nov 2026, from the Acme Lending page-number rollout, 11–16 Nov).
+  Change, test, roll out and roll back the `.docx` templates a document service fills in.
+  - `add_page_numbers.py --company "<name>"` — adds " | Page X of Y" after the company name in the footer,
+    repairs page fields a Google Docs save emptied, stops a later section restarting the count, restyles
+    list markers Docs left unstyled. Stops on a footer of another shape; running it twice changes nothing.
+  - `tracked_changes.py`, `insert_context.py`, `text_diff.py` — read a client's revised template: its
+    tracked changes, where each insert sits, and every untracked difference from the live one.
+  - Hard rules: never open a template in Google Docs, never convert, live changes only as a new Drive
+    version with the BA's yes and before the working day, tests on a renamed Drive copy through the dev
+    API, never the production API.
+- **Profile: new key `tools.doc_templates`** (`folder`, `folder_name`, `company`, `test_api`, `never_api`,
+  `log`). Set for Acme Lending; NWE has none. `profile_version` unchanged (the key is optional).
+
 ## 0.10.2 — 2026-11-17
 
 - **figma-build: three rules on edges and alignment** (Vadim, 17 Nov 2026, from the Hopline test project).

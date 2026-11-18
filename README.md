@@ -31,6 +31,7 @@ everywhere.
 | `skills/ba-dashboard/` | The project's BA dashboard, one page at one link with two tabs: **Map** (product → area → feature → items, coloured by stage) and **Board** (features by Jira release). Every feature with its clarification page, what is waiting on whom, your to-dos, the next call's agenda. Offered right after the project brief. |
 | `skills/data-dictionary/` | The data dictionary: every entity and field with type, required, min/max and screen label, generated from the code, plus the collisions that confuse people. |
 | `skills/messages/` | The messages catalogue: every email, in-app, push and SMS message the system sends, with trigger, recipients and content. |
+| `skills/doc-templates/` | The Word templates the document service fills in: "Page X of Y" footers, repair after a Google Docs save, compare a client's revised template with the live one, test on a Drive copy, go live as a new Drive version, roll back. |
 | `skills/jira/`, `skills/confluence/`, `skills/feature-brief/` | Jira helpers (comment, search, field edit, release folders), Confluence publishing, and client briefs on Confluence. |
 | `skills/ba-spec/` | Writes one spec in the template and takes it through the ready gate to its hand-off (Jira ticket or PRD). |
 | `skills/ba-spec/assets/spec-template.md` | The spec template — the only copy that is ever edited. |
