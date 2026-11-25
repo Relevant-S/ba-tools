@@ -1,6 +1,6 @@
 ---
 name: fetch-slack
-description: Pull recent threaded messages from a configured allowlist of Slack channels via the Slack Web API and write them as intake files at docs/BA/intake/YYYY-MM-DD-slack-<slug>.md for the /intake-and-triage skill to process. Channel-allowlist signal model — BA configures which channels carry client signal, skill pulls threaded conversations from those channels in a window. Companion to /fetch-fireflies and /fetch-gmail — same target folder, same intake-file shape, different source (`source: slack`).
+description: Pull recent threaded messages from a configured allowlist of Slack channels — through the BA's Slack connector (no token needed), or the Slack Web API script when the BA has a token — and write them as intake files at docs/BA/intake/YYYY-MM-DD-slack-<slug>.md for the /intake-and-triage skill to process. Channel-allowlist signal model — BA configures which channels carry client signal, skill pulls threaded conversations from those channels in a window. Companion to /fetch-fireflies and /fetch-gmail — same target folder, same intake-file shape, different source (`source: slack`).
 ---
 
 # Fetch Slack
@@ -16,7 +16,53 @@ Pulls threaded messages from a configured allowlist of Slack channels and writes
 - **Read the project profile** `docs/BA/specs/.ba-profile.yml`. Take `tools.slack.channels` and pass them to both `list` and `fetch` as `--channels <a,b>`. If `tools.slack` is `{}`, stop: this project has no client Slack channel.
   Never use a value from another project, and never guess one the profile does not have — send the BA
   to `ba-setup project` instead.
+- **Pick the route.** Both write the same intake file, so triage cannot tell them apart.
 
+  | Route | When | Why |
+  |---|---|---|
+  | **Script** (*Workflow* below) | `SLACK_USER_TOKEN` is set | the message text goes straight to the file and never through the chat |
+  | **Connector** (*Connector route* below) | otherwise — the normal case for a new BA | needs only the Slack connector: no token, no Slack app, no admin approval |
+
+  If the script stops with an auth error (`invalid_auth`, `missing_scope`, token not set), say so in one
+  line and carry on with the connector route. If neither works — no token and no Slack connector in the
+  session — send the BA to `ba-setup` (Connectors).
+
+## Connector route
+
+Uses the Slack connector's tools (`slack_search_channels`, `slack_read_channel`, `slack_read_thread`;
+load them with ToolSearch if they are deferred). Read only: never send, react or edit anything.
+
+1. **Find each channel's id.** For each name in `tools.slack.channels`: `slack_search_channels` with
+   `keywords: ["<name>"]`, `channel_types: "public_channel,private_channel"`, and take the result whose
+   name matches exactly. No match = the BA is not in that private channel (or the name is wrong): say
+   so and go on with the others.
+2. **List the threads.** `slack_read_channel` per channel with `oldest` = now minus the window (default
+   14 days) as a Unix timestamp, `response_format: "detailed"`, following `cursor`. Each message shows
+   its `Message TS` and, when it has replies, a `Thread: N replies` line. Keep top-level messages **with
+   at least one reply**, written by a person (not a bot or an integration) — the same
+   filter as the script; the BA may ask to include bots or messages without replies.
+3. **Mark the ones already fetched.** A thread is already imported when a file in `docs/BA/intake/`
+   starts with `<parent date>-slack-` and contains the last 8 digits of the parent's `ts` with the dot
+   removed. Files from either route match.
+4. **Show the list** exactly as in *Workflow* step 3 and ask which to fetch. Stop on `n`.
+5. **Fetch and write each picked thread.** `slack_read_thread` (`channel_id`, `message_ts` = the
+   parent's ts, `response_format: "detailed"`). Write
+   `docs/BA/intake/<parent date>-slack-<channel slug>-<subject slug>-<ts fragment>.md` with the Write
+   tool, in the *Output format* below:
+   - Every date and time **from the message's TS** (seconds since 1970, in UTC), never from the local
+     time the connector prints next to the name. `<parent date>` is the UTC date of the parent's TS.
+   - `<channel slug>`: the channel name; `<subject slug>`: the first 60 characters of the parent's text.
+     Both lower case, every run of other characters turned into `-`. `<ts fragment>`: the last 8 digits
+     of the parent's ts with the dot removed.
+   - `permalink`: `https://<workspace>.slack.com/archives/<channel id>/p<ts without the dot>` when the
+     connector gives the workspace; otherwise leave it out.
+   - `participants`: `'<name> (<user id>)'` for each person who wrote in the thread.
+   - Mentions as `@name`. Each message's text as it is — never shorten, summarise or reword it.
+   - Skip a thread whose file already exists, unless the BA asked to refresh it.
+6. **Summarise and offer triage** as in *Workflow* step 5.
+
+Long threads cost chat space on this route. When the BA picks more than about 20 threads, say so and
+offer to split the run.
 
 ## Why channel-allowlist?
 
@@ -29,9 +75,16 @@ A BA's Slack workspace is mostly noise. Pulling "all channels" is unusable. Inst
 
 The allowlist lives at `docs/BA/.fetch-slack-config.yaml` (project-scoped, git-trackable). The `project_slug` is read from `_bmad/<module>/config.yaml` and stored alongside the channels for traceability. One BA on multiple projects gets one config file per repo — zero cross-contamination.
 
-## Prerequisites
+## Prerequisites — script route only
+
+Not needed for the connector route. The token is worth it only for a BA who fetches a lot of Slack and
+wants the text kept out of the chat.
 
 ### One-time Slack app setup (~10 min, plus admin approval)
+
+**At Relevant, do not create a Slack app:** ask the lead BA to add you as a collaborator on the shared
+BA Intake app (see `ba-setup` → `references/me.md` → Slack). The steps below are for a workspace with no
+shared app.
 
 1. **Create a Slack app** at [api.slack.com/apps](https://api.slack.com/apps) → "From scratch" → name it (e.g. "BA Intake") → pick your workspace.
 2. **Add User Token Scopes** under OAuth & Permissions → User Token Scopes (NOT Bot Token Scopes):
@@ -195,14 +248,18 @@ Looking now. The retry timeout is set to 30s but the upstream is taking 45s on s
 | `Slack X error: missing_scope (needed scope: groups:history)` | Token lacks a required scope | Add the scope under User Token Scopes, reinstall the app, copy the fresh token |
 | `Slack X error: not_in_channel` | Token's user isn't a member of the private channel | Join the channel in Slack and retry |
 | `Slack X error: rate_limited` | Tier 3/4 rate limit hit (rare; ~50 req/min) | Wait ~1 min and retry |
+| Slack connector tools missing | the connector is off in this session, or not connected | `ba-setup` (Connectors) |
+| a channel is not found on the connector route | the BA is not a member of that private channel | join it in Slack, then run again |
 | `channel not found` (during init-project) | Name doesn't match any visible channel | Check spelling; for private channels, ensure your token's user is a member |
 | `project_slug not found in _bmad/*/config.yaml` | BMAD config missing the field | Add `project_slug: <slug>` to the config |
 | `.fetch-slack-config.yaml not found and init-project not run` | Project not initialized | Run `init-project` |
 
 ## Notes for colleagues sharing this skill
 
+- **Most BAs need nothing but the Slack connector** (Claude desktop app → Settings → Connectors → Slack).
+  The token below is optional.
 - The skill is installed per project from ba-tools; the token is personal (in `~/.claude/settings.json`).
 - The auth token is **user-level** (in `~/.claude/settings.json` env), tied to a single workspace + a single Slack identity.
 - The project config (`docs/BA/.fetch-slack-config.yaml`) is **per-project** and git-trackable. Channel allowlist + window are project-specific.
 - For multi-workspace BAs: only one workspace at a time per Slack app. To switch, re-install the app to the other workspace and update the token.
-- Setup per BA: ~10 min Slack app + admin approval wait. Per project: ~1 min `init-project` (pick channels, set window).
+- Setup per BA on the script route: ~10 min Slack app + admin approval wait. Per project: ~1 min `init-project` (pick channels, set window).

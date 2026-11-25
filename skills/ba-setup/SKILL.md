@@ -67,10 +67,11 @@ uv run --with pyyaml --with httpx --with jsonschema python "<this skill>/scripts
 
 ## Mode: check
 
-1. Run `check-me`, and `check-project <project root>` if the current folder is a project (it has a
-   `docs/` folder or a `.git`).
-2. Check the connectors yourself — the script cannot. See *Connectors* below. Pass what you found to
-   `check-me` as `--connectors`, so `defaults_installed` also counts the desktop names of the connector rules.
+1. Check the connectors first — the script cannot. See *Connectors* below.
+2. Run `check-me --connectors '<the connected ones>'`, and `check-project <project root>` if the current
+   folder is a project (it has a `docs/` folder or a `.git`). With the Gmail or Slack connector connected,
+   `check-me` shows that tool ✅ even without keys, because fetch-gmail and fetch-slack then work through the
+   connector. `--connectors` also lets `defaults_installed` count the desktop names of the connector rules.
    When the profile has `tools.portal`, `check-project` gives one row per Portal key ("Portal key: <product>",
    or "Portal key" with one product): ✅ when its `.env` variable is there, ❌ when it is missing. It reads only
    the variable names, never a key. For a missing key, "what to do" is: *ask an Admin for a connect code
@@ -96,7 +97,8 @@ rows with kind `connector`:
 |---|---|---|
 | Atlassian (listed as "Atlassian Rovo") | yes | filing Jira tickets and reading Confluence inside a skill |
 | Figma | yes | reading and building designs, screenshots for clarification pages |
-| Fireflies, Slack, Gmail | no — nice to have | asking Claude about one call, thread or email on the spot. The fetch skills do **not** use them: they use the keys, so the BA needs both |
+| Gmail, Slack | yes, unless the BA has the keys | fetch-gmail and fetch-slack work through them when there are no keys — the easy way for a new BA, with no shared app, sign-in script or admin approval |
+| Fireflies | no — nice to have | asking Claude about one call on the spot. fetch-fireflies uses the key: transcripts are too long to pass through the chat |
 
 | What the list shows | State | What to do |
 |---|---|---|
@@ -129,8 +131,10 @@ Follow `references/me.md`. In order:
    session: finish the other steps first, and check it there.
 2. **Connectors** — as in *Connectors* above. Switch on what is off (after a yes); send the BA to
    Settings → Connectors only for what needs their sign-in.
-3. **Keys** — only the tools `check-me` reported as missing or broken. For each, say what it is for and
-   where to get the value, click by click (`references/me.md`). Then, once for all of them:
+3. **Keys** — only the tools `check-me` reported as missing or broken. Gmail and Slack need no keys when
+   their connector is connected: do not offer them then, unless the BA asks (the keys keep long email and
+   Slack text out of the chat, worth it only for a BA who fetches a lot). For each key, say what it is for
+   and where to get the value, click by click (`references/me.md`). Then, once for all of them:
    1. Ask for the non-secret values in chat (the Jira site, the email they sign in with).
    2. Run `keys-add <tools> --set NAME=VALUE …`. It adds a line per missing key with a placeholder that
       starts `PASTE-` and says what goes there, keeps every value already there, and backs the file up.
@@ -139,7 +143,7 @@ Follow `references/me.md`. In order:
    4. When they say done, run `check-me` here: it reads the saved file, so it tests the keys now. A row
       still saying "placeholder" means one was missed. If `keys-add` says the file is not valid JSON, show
       the line number and help the BA fix it (most often a missing comma).
-4. **Gmail sign-in** — it needs the Gmail keys loaded, so it happens in the new session (step 7): there
+4. **Gmail sign-in** — only for a BA who set up the Gmail keys. It needs them loaded, so it happens in the new session (step 7): there
    `check` shows Gmail as "not signed in yet", and you offer to run the sign-in yourself
    (`references/me.md` → Gmail). A browser tab opens; the BA picks their work account and approves.
 5. **Starter defaults** — run `defaults-plan --connectors …` and show, in plain words:

@@ -1,7 +1,7 @@
 ---
 title: Spec template — designed backwards from the story a developer builds from
 status: approved      # approved by Vadim 2026-09-23 as the one spec template, after the trial in acme-docs docs/BA/drafts/template-trial/
-ba_tools_version: 0.11.0   # the ba-tools release this copy came from — a project copy must match it exactly
+ba_tools_version: 0.12.0   # the ba-tools release this copy came from — a project copy must match it exactly
 created: 2026-09-10
 updated: 2026-09-29   # 0.6.1: ticket template split out (assets/ticket-template.md); earlier — made universal in ba-tools: every project fact moved to the project profile (docs/BA/specs/.ba-profile.yml)
 decided:

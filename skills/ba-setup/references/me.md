@@ -25,7 +25,8 @@ ask them to install it with the default choices.
 |---|---|---|
 | Atlassian ("Atlassian Rovo") | yes | filing Jira tickets and reading Confluence from inside a skill |
 | Figma | yes | reading and building designs, screenshots for clarification pages |
-| Fireflies, Slack, Gmail | nice to have | asking Claude about one call, thread or email on the spot |
+| Gmail, Slack | yes, unless the BA has the keys | fetch-gmail and fetch-slack work through them when there are no keys |
+| Fireflies | nice to have | asking Claude about one call on the spot |
 
 **To connect one:** in the Claude desktop app, **Settings → Connectors → Browse connectors** → the
 connector → **Connect**, and sign in with the work account. It then shows up in every new session.
@@ -33,9 +34,14 @@ connector → **Connect**, and sign in with the work account. It then shows up i
 **Already connected but switched off for this session:** you can switch it on (`set_session_connector_enabled`,
 after a yes). The BA can do the same from the **+** button in the message box → **Connectors**.
 
-**The fetch skills do not use the connectors.** They run scripts that call each tool with the BA's key
-and write the result straight to a file. That keeps long transcripts and threads out of the chat. So
-Fireflies, Slack and Gmail need the key; the connector is an extra.
+**Which fetch skill uses what:**
+
+| Skill | Without a key | With a key |
+|---|---|---|
+| fetch-gmail, fetch-slack | works through the connector — the normal way for a new BA | a script writes the text straight to a file, keeping it out of the chat. Worth it only for a BA who fetches a lot |
+| fetch-fireflies | does not work: call transcripts are too long to pass through the chat | needed |
+
+So a new BA needs **no Gmail or Slack keys**. The *Gmail* and *Slack* sections below are optional.
 
 ## Keys
 
@@ -92,9 +98,9 @@ What it is for: pulling client call notes and transcripts.
 Fireflies only sees calls it recorded or that were shared with you. Which calls belong to which
 project is decided by the project's client email list, not here.
 
-### Gmail
+### Gmail (optional — the Gmail connector is enough)
 
-What it is for: pulling client email threads.
+What it is for: pulling client email threads without passing them through the chat. Only on request.
 
 **At Relevant, reuse the shared Google app — do not create one.**
 
@@ -111,9 +117,9 @@ What it is for: pulling client email threads.
 Gmail API → OAuth consent screen (Internal) → Credentials → OAuth client ID → Desktop app → copy the ID
 and secret, then steps 1–2.
 
-### Slack
+### Slack (optional — the Slack connector is enough)
 
-What it is for: pulling threads from the project's client channels.
+What it is for: pulling client channel threads without passing them through the chat. Only on request.
 
 **At Relevant, reuse the BA Intake Slack app — do not create one.**
 

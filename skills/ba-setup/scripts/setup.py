@@ -273,8 +273,20 @@ INSTALL = {   # Claude runs these for the BA, after a yes (winget ships with Win
 NEW_SESSION = "start a new session (New session in the sidebar): this one started before the change"
 
 
+def by_connector(r, connectors, name, what):
+    """fetch-gmail and fetch-slack work through the connector when there is no key. So with the connector
+    connected, a missing key is fine and a broken one is only a warning (the skill falls back by itself)."""
+    if name not in (connectors or {}) or r["state"] == "ok":
+        return r
+    if r["state"] == "missing":
+        return row(r["tool"], "ok", f"fetches through the {name} connector (keys are optional: {what})")
+    return row(r["tool"], "warn", f"{r['detail']} — fetches fall back to the {name} connector", r["fix"])
+
+
 def cmd_check_me(connectors=None):
-    rows = [check_jira(), check_confluence(), check_fireflies(), check_gmail(), check_slack(),
+    rows = [check_jira(), check_confluence(), check_fireflies(),
+            by_connector(check_gmail(), connectors, "Gmail", "they keep email text out of the chat"),
+            by_connector(check_slack(), connectors, "Slack", "it keeps message text out of the chat"),
             check_program("git", ["--version"], "needed", f"Claude can install it: {INSTALL['git']}"),
             check_program("node", ["--version"], "needed by the fetch scripts",
                           f"Claude can install it: {INSTALL['node']}"),

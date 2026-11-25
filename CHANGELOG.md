@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.12.0 — 2026-11-25
+
+- **Gmail and Slack through the connectors — no keys needed** (Vadim, 25 Nov 2026: two BAs could not
+  connect Gmail or Slack through the shared Google and Slack apps).
+  - `fetch-gmail` and `fetch-slack` gain a **connector route**: the same search, the same "already
+    imported" check and the same intake file, through the Gmail and Slack connectors. The scripts stay for
+    a BA with keys (they keep the text out of the chat); a script that fails to sign in falls back to the
+    connector.
+  - `ba-setup`: with the Gmail or Slack connector connected, `check-me --connectors` shows that tool ✅
+    without keys, and a broken key only ⚠️. `ba-setup me` no longer offers Gmail or Slack keys then.
+    Gmail and Slack become needed connectors; Fireflies keeps its key (transcripts are too long for the chat).
+  - Both skills' own setup text no longer tells a Relevant BA to create a Google or Slack app, and explains
+    the Google "test users" trap that blocks other accounts.
+  - `docs/new-ba-onboarding.md`: connect Gmail and Slack in step 4.1; the Gmail and Slack keys are optional.
+
 ## 0.11.0 — 2026-11-18
 
 - **New skill `doc-templates`** (Vadim, 18 Nov 2026, from the Acme Lending page-number rollout, 11–16 Nov).
