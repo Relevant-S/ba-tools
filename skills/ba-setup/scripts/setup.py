@@ -265,18 +265,39 @@ def check_plugins():
     return None
 
 
-INSTALL = {   # Claude runs these for the BA, after a yes (winget ships with Windows 11)
-    "git": "winget install --id Git.Git -e",
-    "node": "winget install --id OpenJS.NodeJS.LTS -e",
-    "uv": "winget install --id astral-sh.uv -e",
-}
+MAC = sys.platform == "darwin"
+if MAC:   # Claude runs these for the BA, after a yes (needs Homebrew: brew.sh)
+    INSTALL = {"git": "brew install git", "node": "brew install node@22", "uv": "brew install uv"}
+elif sys.platform == "win32":   # winget ships with Windows 11
+    INSTALL = {"git": "winget install --id Git.Git -e",
+               "node": "winget install --id OpenJS.NodeJS.LTS -e",
+               "uv": "winget install --id astral-sh.uv -e"}
+else:
+    INSTALL = {"git": "your package manager (apt, dnf …)", "node": "nodejs.org (LTS)", "uv": "docs.astral.sh/uv"}
 NEW_SESSION = "start a new session (New session in the sidebar): this one started before the change"
+
+
+def open_with(path):
+    """The command that opens a text file in the system's plain text editor."""
+    if MAC:
+        return f'open -e "{path}"'
+    if sys.platform == "win32":
+        return f'notepad "{path}"'
+    return f'xdg-open "{path}"'
 
 
 def by_connector(r, connectors, name, what):
     """fetch-gmail and fetch-slack work through the connector when there is no key. So with the connector
-    connected, a missing key is fine and a broken one is only a warning (the skill falls back by itself)."""
-    if name not in (connectors or {}) or r["state"] == "ok":
+    connected, a missing key is fine and a broken one is only a warning (the skill falls back by itself).
+    Without the connector and without keys, the fix is the connector — never the keys (they need a shared
+    app, admin approval and a sign-in; the connector needs one click)."""
+    if r["state"] == "ok":
+        return r
+    if name not in (connectors or {}):
+        if r["state"] == "missing" and not r["detail"].startswith("keys set"):
+            return row(r["tool"], "missing", f"the {name} connector is not connected",
+                       f"connect it: Claude app → Settings → Connectors → {name} → Connect, sign in with the "
+                       f"work account, then a new session. No keys needed")
         return r
     if r["state"] == "missing":
         return row(r["tool"], "ok", f"fetches through the {name} connector (keys are optional: {what})")
@@ -309,7 +330,15 @@ def cmd_keys_add(argv):
     p.add_argument("tools", nargs="+", choices=sorted(KEY_GROUPS))
     p.add_argument("--set", action="append", default=[], metavar="NAME=VALUE",
                    help="a site address or an email the BA gave (never a key or a token)")
+    p.add_argument("--ba-asked", action="store_true",
+                   help="the BA asked for Gmail or Slack keys by name (the connector is the normal way)")
     a = p.parse_args(argv)
+    by_hand = sorted({"gmail", "slack"} & set(a.tools))
+    if by_hand and not a.ba_asked:
+        out({"ok": False, "error": f"{' and '.join(by_hand)}: no keys needed — fetch-gmail and fetch-slack work "
+                                   "through the Gmail and Slack connectors. Connect those instead (Claude app → "
+                                   "Settings → Connectors). Add --ba-asked only if the BA asked for the keys."})
+        sys.exit(1)
     given = {}
     for item in a.set:
         name, _, value = item.partition("=")
@@ -348,7 +377,7 @@ def cmd_keys_add(argv):
     placeholders = sorted(n for n, v in block.items() if str(v).startswith(PLACEHOLDER))
     out({"ok": True, "settings_path": str(sp), "placeholders_added": added, "filled_from_chat": filled,
          "already_set": kept, "placeholders_left": placeholders, "backup": str(backup) if backup else None,
-         "open_with": f'notepad "{sp}"'})
+         "open_with": open_with(sp)})
 
 
 # ---------------------------------------------------------------- check-project

@@ -7,15 +7,16 @@ signs in, approves, and types their own keys into the settings file you open for
 
 ## Programs
 
-Ask, then run the install yourself. `winget` comes with Windows 11.
+Ask, then run the install yourself. `winget` comes with Windows 11. On a Mac use Homebrew; if `brew` is
+missing, the BA installs it first from brew.sh.
 
-| Program | What it is for | Install |
-|---|---|---|
-| Git | the specs live in git repos | `winget install --id Git.Git -e` |
-| Node (LTS, 22 or newer) | the fetch and Jira scripts | `winget install --id OpenJS.NodeJS.LTS -e` |
-| uv | BMad and ba-tools helper scripts | `winget install --id astral-sh.uv -e` |
+| Program | What it is for | Windows | Mac |
+|---|---|---|---|
+| Git | the specs live in git repos | `winget install --id Git.Git -e` | `brew install git` |
+| Node (LTS, 22 or newer) | the fetch and Jira scripts | `winget install --id OpenJS.NodeJS.LTS -e` | `brew install node@22` |
+| uv | BMad and ba-tools helper scripts | `winget install --id astral-sh.uv -e` | `brew install uv` |
 
-A program installed now is found only in a **new session**. If `winget` is missing or an install is
+A program installed now is found only in a **new session**. If the install tool is missing or an install is
 blocked by company policy, give the BA the download page (git-scm.com, nodejs.org, docs.astral.sh/uv) and
 ask them to install it with the default choices.
 
@@ -41,12 +42,14 @@ after a yes). The BA can do the same from the **+** button in the message box �
 | fetch-gmail, fetch-slack | works through the connector — the normal way for a new BA | a script writes the text straight to a file, keeping it out of the chat. Worth it only for a BA who fetches a lot |
 | fetch-fireflies | does not work: call transcripts are too long to pass through the chat | needed |
 
-So a new BA needs **no Gmail or Slack keys**. The *Gmail* and *Slack* sections below are optional.
+So a new BA needs **no Gmail or Slack keys**. If Gmail or Slack shows ❌, connect the connector — never
+start on the keys. The *Gmail* and *Slack* sections below are only for a BA who asks for keys by name
+(`keys-add gmail slack --ba-asked`).
 
 ## Keys
 
 **Where keys go:** the `env` block of `~/.claude/settings.json` (on Windows
-`C:\Users\<you>\.claude\settings.json`). Never in the chat, never in a repo.
+`C:\Users\<you>\.claude\settings.json`, on a Mac `/Users/<you>/.claude/settings.json`). Never in the chat, never in a repo.
 
 **How, in the desktop app:**
 
@@ -54,7 +57,7 @@ So a new BA needs **no Gmail or Slack keys**. The *Gmail* and *Slack* sections b
 2. Run `keys-add <tools> --set JIRA_BASE_URL=… --set JIRA_EMAIL=…`. It adds one line per missing key,
    with a placeholder that starts `PASTE-` and says what goes there. It keeps what is already there and
    backs the file up.
-3. Open the file with the `open_with` command it prints (Notepad).
+3. Open the file with the `open_with` command it prints (Notepad on Windows, TextEdit on a Mac).
 4. Tell the BA: *"Replace each PASTE-… text with the real value. Keep the quotes around it. Save and
    close Notepad, then tell me."*
 5. Run `check-me`. It reads the saved file, so it tests the new keys right away.

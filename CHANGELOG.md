@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.12.1 — 2026-11-25
+
+- **`ba-setup me` sends a BA to the Gmail and Slack connectors, never to the keys** (Vadim, 25 Nov 2026: a
+  BA whose connectors were not connected yet was walked into the Gmail and Slack keys).
+  - `check-me`: without the connector and without keys, Gmail and Slack now say "the … connector is not
+    connected", with the Settings → Connectors steps as the fix.
+  - `keys-add gmail` / `keys-add slack` refuse without `--ba-asked` (the BA asked for keys by name).
+  - The skill offers to remove `PASTE-…` lines left for Gmail or Slack by an earlier run.
+- **Mac:** `keys-add` opens the settings file with TextEdit (`open -e`), not Notepad; the program installs
+  use Homebrew on a Mac.
+
 ## 0.12.0 — 2026-11-25
 
 - **Gmail and Slack through the connectors — no keys needed** (Vadim, 25 Nov 2026: two BAs could not

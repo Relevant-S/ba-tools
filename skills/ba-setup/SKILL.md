@@ -127,19 +127,25 @@ on claude.ai, then a new `claude` session. Leave out `--connectors`.
 Follow `references/me.md`. In order:
 
 1. **Local programs** — Git, Node (LTS), uv. For each one `check-me` says is missing, ask, then run its
-   `winget` install yourself (the command is in the row). A program installed now is found only in a new
+   install yourself (the command is in the row: `winget` on Windows, `brew` on a Mac — if `brew` is
+   missing, send the BA to brew.sh first). A program installed now is found only in a new
    session: finish the other steps first, and check it there.
 2. **Connectors** — as in *Connectors* above. Switch on what is off (after a yes); send the BA to
-   Settings → Connectors only for what needs their sign-in.
-3. **Keys** — only the tools `check-me` reported as missing or broken. Gmail and Slack need no keys when
-   their connector is connected: do not offer them then, unless the BA asks (the keys keep long email and
-   Slack text out of the chat, worth it only for a BA who fetches a lot). For each key, say what it is for
+   Settings → Connectors only for what needs their sign-in. **Gmail and Slack are fixed here, by their
+   connectors — never by keys.** When `check-me` says "the Gmail connector is not connected", the fix is
+   Settings → Connectors → Gmail → Connect, then a new session.
+3. **Keys** — only for Jira, Confluence and Fireflies, and only the ones `check-me` reported as missing or
+   broken. **Never offer Gmail or Slack keys.** Add them only when the BA asks for them by name (the keys
+   keep long email and Slack text out of the chat, worth it only for a BA who fetches a lot); then pass
+   `--ba-asked` to `keys-add`, which refuses `gmail` and `slack` without it. If the settings file still has
+   `PASTE-…` lines for Gmail or Slack from an earlier run, offer to remove them (back the file up first):
+   a leftover Slack placeholder makes fetch-slack try the script first and print an error. For each key, say what it is for
    and where to get the value, click by click (`references/me.md`). Then, once for all of them:
    1. Ask for the non-secret values in chat (the Jira site, the email they sign in with).
    2. Run `keys-add <tools> --set NAME=VALUE …`. It adds a line per missing key with a placeholder that
       starts `PASTE-` and says what goes there, keeps every value already there, and backs the file up.
-   3. Open the file for them: run the `open_with` command it prints (Notepad). Tell the BA: *"Replace
-      each PASTE-… text with the real value, keep the quotes, save and close."*
+   3. Open the file for them: run the `open_with` command it prints (Notepad on Windows, TextEdit on a
+      Mac). Tell the BA: *"Replace each PASTE-… text with the real value, keep the quotes, save and close."*
    4. When they say done, run `check-me` here: it reads the saved file, so it tests the keys now. A row
       still saying "placeholder" means one was missed. If `keys-add` says the file is not valid JSON, show
       the line number and help the BA fix it (most often a missing comma).
