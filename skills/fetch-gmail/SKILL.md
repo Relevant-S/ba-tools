@@ -1,6 +1,6 @@
 ---
 name: fetch-gmail
-description: Pull email threads from Gmail via the Gmail API and write them as intake files at docs/BA/intake/YYYY-MM-DD-gmail-<thread-id>.md for the /intake-and-triage skill to process. Two-step flow — first run sets up tracked senders + applies a project-scoped label (BA-intake/{project_slug}); subsequent runs list labeled threads and let the BA pick which to fetch. Use when the BA wants email-channel signals from clients alongside meetings (/fetch-fireflies). Per-project namespacing via the BMAD config project_slug field; one BA can run on multiple projects without label collision.
+description: Pull email threads from Gmail — through the BA's Gmail connector (no keys needed), or the Gmail API script when the BA has its keys — and write them as intake files at docs/BA/intake/YYYY-MM-DD-gmail-<thread-id>.md for the /intake-and-triage skill to process. Two-step flow — first run sets up tracked senders + applies a project-scoped label (BA-intake/{project_slug}); subsequent runs list labeled threads and let the BA pick which to fetch. Use when the BA wants email-channel signals from clients alongside meetings (/fetch-fireflies). Per-project namespacing via the BMAD config project_slug field; one BA can run on multiple projects without label collision.
 ---
 
 # Fetch Gmail
@@ -16,7 +16,50 @@ Pulls email threads from Gmail and writes them as properly-formatted intake file
 - **Read the project profile** `docs/BA/specs/.ba-profile.yml`. Take `tools.client_emails.include` and `.exclude` and pass them to `list` as `--clients` and `--exclude` — no `init-project` and no Gmail label needed. (The label mode below still works for projects that already use it.)
   Never use a value from another project, and never guess one the profile does not have — send the BA
   to `ba-setup project` instead.
+- **Pick the route.** Both write the same intake file, so triage cannot tell them apart.
 
+  | Route | When | Why |
+  |---|---|---|
+  | **Script** (*Workflow* below) | `GMAIL_OAUTH_CLIENT_ID` and `GMAIL_OAUTH_CLIENT_SECRET` are set **and** `~/.claude/ba-tools/state/gmail-token.json` exists | the email text goes straight to the file and never through the chat |
+  | **Connector** (*Connector route* below) | otherwise — the normal case for a new BA | needs only the Gmail connector: no keys, no Google app, no sign-in script |
+
+  If the script stops with a sign-in error (401, `invalid_grant`, keys not set), say so in one line and
+  carry on with the connector route. If neither works — no keys and no Gmail connector in the session —
+  send the BA to `ba-setup` (Connectors).
+
+## Connector route
+
+Uses the Gmail connector's tools (`search_threads`, `get_thread`; load them with ToolSearch if they are
+deferred). Read only: never label, send, reply, forward or trash anything.
+
+1. **Find the threads.** `search_threads` with the same query the script builds:
+   `from:(<include joined with OR>) -from:(<exclude joined with OR>) newer_than:<window>` (window default
+   `14d`; the BA may give another). `view: THREAD_VIEW_MINIMAL`, `pageSize: 50`; follow `pageToken` up
+   to 100 threads.
+2. **Mark the ones already fetched.** A thread is already imported when a file in `docs/BA/intake/` has
+   `-gmail-` in its name and ends with the thread id's last 8 characters
+   (`…-<last 8>.md`). The connector's thread ids are the same as the Gmail API's, so files from either
+   route match.
+3. **Show the list** exactly as in *Workflow* step 3 (date, subject, sender, message count,
+   `[already imported]`) and ask which to fetch. Stop on `n`.
+4. **Fetch and write each picked thread.** `get_thread` with `messageFormat: PLAIN_TEXT`. Write
+   `docs/BA/intake/<last message date>-gmail-<slug>-<last 8 of thread id>.md` with the Write tool, in the
+   *Output format* below:
+   - `<slug>`: the subject, lower case, a leading `Re:`/`Fwd:`/`Fw:` dropped, every run of other
+     characters turned into `-`, cut to 60 characters.
+   - Dates in UTC (`YYYY-MM-DD HH:MM UTC` in the body, ISO in the front matter).
+   - Each message's text as it is, minus the quoted history: cut from an `On … wrote:` line (or a
+     `From:` header block) when the rest is mostly `>` lines, and drop trailing `>` lines. Never
+     shorten, summarise or reword what the client wrote — triage reads the words.
+   - `labels`: the thread's label ids as the connector gives them. `attachments`: name and type for each
+     attachment (the connector gives no size: leave `size_bytes` out, and write "size not known" in the
+     *Attachments referenced* list); never download one.
+   - `participants`: every address in From, To and Cc across the thread, once each.
+   - Skip a thread whose file already exists, unless the BA asked to refresh it.
+5. **Summarise and offer triage** as in *Workflow* step 5.
+
+Long threads cost chat space on this route. When the BA picks more than about 15 threads, or one thread
+has more than about 30 messages, say so and offer to split the run.
 
 ## Why two-step?
 
@@ -31,9 +74,18 @@ The Gmail label is hierarchical: `BA-intake/{project_slug}`. The slug comes from
 
 For Acme: `project_slug: acme` → `BA-intake/acme`.
 
-## Prerequisites
+## Prerequisites — script route only
+
+Not needed for the connector route. The keys are worth it only for a BA who fetches a lot of email and
+wants the text kept out of the chat.
 
 ### One-time Google Cloud setup (~15 min)
+
+**At Relevant, do not create a Google app:** ask the lead BA for the shared BA Intake app's client ID and
+secret, and to make sure your account may sign in to it (see `ba-setup` → `references/me.md` → Gmail).
+The steps below are for a company with no shared app. With an "External" app, Google lets only the
+listed test users sign in, and their sign-in stops working after 7 days while the app is in testing —
+choose "Internal" whenever the Google Workspace allows it.
 
 1. **Create / pick a Google Cloud project** at [console.cloud.google.com](https://console.cloud.google.com).
 2. **Enable Gmail API**: APIs & Services → Library → search "Gmail API" → Enable.
@@ -213,10 +265,14 @@ Triage doesn't care about the source — it ingests whatever's in `docs/BA/intak
 | `project_slug not found in _bmad/*/config.yaml` | BMAD config missing the field | Add `project_slug: <slug>` to the config |
 | `.fetch-gmail-config.yaml not found and init-project not run` | Project not initialized | Run `init-project` |
 | `Gmail API 429: rate limit` | Quota exceeded | Wait ~1 min, retry; quota is generous so this is rare |
+| Google: "Access blocked … has not completed the Google verification process" | the Google app is in testing and this account is not a test user | use the connector route; or ask the app's owner to add you as a test user, or to make the app Internal |
+| Gmail connector tools missing | the connector is off in this session, or not connected | `ba-setup` (Connectors) |
 
 ## Notes for colleagues sharing this skill
 
+- **Most BAs need nothing but the Gmail connector** (Claude desktop app → Settings → Connectors → Gmail).
+  The keys below are optional.
 - The skill is installed per project from ba-tools; the sign-in is **personal** and lives in `~/.claude/ba-tools/state/gmail-token.json`, never in the project.
 - The project config (`docs/BA/.fetch-gmail-config.yaml`) is **per-project** and git-trackable. Senders + window are project-specific.
 - The Gmail label (`BA-intake/{project_slug}`) is namespaced per project, so one BA on multiple projects has no cross-contamination.
-- Setup per BA: ~15 min Google Cloud setup + ~1 min consent flow. Per project: ~2 min `init-project` (pick senders, pick threads, apply label).
+- Setup per BA on the script route: ~15 min Google Cloud setup + ~1 min consent flow. Per project: ~2 min `init-project` (pick senders, pick threads, apply label).

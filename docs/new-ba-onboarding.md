@@ -12,7 +12,7 @@ in). Claude does the technical part; you only sign in and type your own keys. Th
 
 | Who | For what |
 |---|---|
-| **The lead BA** | the shared Gmail and Slack app settings (steps 4.4 and 4.5), and questions about the tools |
+| **The lead BA** | the shared Gmail and Slack app settings, only if you want keys (steps 4.4 and 4.5), and questions about the tools |
 | **admin@relevant.software** | anything that says *"needs admin approval"* or *"blocked by your organisation"* in a Relevant tool (Google, Slack, Figma) |
 
 ---
@@ -73,16 +73,20 @@ There are two kinds of connection:
 
 | Kind | What you do | Used by |
 |---|---|---|
-| **Connector** | click *Connect* in the Claude app and sign in. Once, for every session | Atlassian and Figma (needed); Fireflies, Slack and Gmail (nice to have, for quick questions) |
-| **Key** | type a secret code into your settings file, which Claude opens for you | the fetch scripts (Fireflies, Gmail, Slack) and the Jira and Confluence scripts |
+| **Connector** | click *Connect* in the Claude app and sign in. Once, for every session | Atlassian, Figma, **Gmail and Slack** (all needed); Fireflies (optional) |
+| **Key** | type a secret code into your settings file, which Claude opens for you | Jira and Confluence scripts, and Fireflies |
 
-Why both? The fetch skills write whole transcripts and threads straight to files. Doing that through a
-connector would push all that text through the chat, which is slow and costly. So they use keys.
+Why a key for Fireflies? Call transcripts are long. The Fireflies skill writes them straight to a file
+with a key, so they never pass through the chat. Email and Slack threads are short, so those skills just
+use the connectors.
 
 ### 4.1 Connectors — you can do this alone
 
 In the Claude desktop app: **Settings → Connectors → Browse connectors**. Connect **Atlassian** (sign in
-with the account you use for the client's Jira) and **Figma**. Fireflies, Slack and Gmail are optional.
+with the account you use for the client's Jira), **Figma**, **Gmail** (your Relevant account) and
+**Slack** (the workspace with the client channels). Fireflies is optional.
+
+For Slack: make sure you are a member of each client channel. Claude only sees channels you are in.
 
 A connector you connected is in every new session. If one shows as switched off, Claude can switch it on
 for you, or you can: the **+** button in the message box → **Connectors**.
@@ -114,19 +118,25 @@ If `ba-setup` says a Jira project is not visible, your access from step 1 has no
 
 Only calls you were invited to, or that were shared with you, will show up.
 
-### 4.4 Gmail — ask the lead BA for two values, then sign in once
+### 4.4 Gmail keys — skip this
+
+The Gmail connector from 4.1 is all you need. Keys only keep email text out of the chat, which matters
+just if you fetch a lot of email. If you ever want them:
 
 Relevant already has a Google app for this, so you do **not** create one.
 
 1. Ask the lead BA for the **BA Intake Gmail client ID and client secret** (shared privately — never in a
-   public channel). Put both into the file.
+   public channel), and to let your account sign in to the app. Put both into the file.
 2. In the new session, Claude offers to run the **Gmail sign-in**. A browser page opens; choose your
    Relevant account and approve. You stay signed in — you will not need to do this again.
 
 If Google says the app is blocked or *"needs admin approval"*, email **admin@relevant.software** with a
 screenshot.
 
-### 4.5 Slack — ask the lead BA to add you, then install for yourself
+### 4.5 Slack token — skip this
+
+The Slack connector from 4.1 is all you need. A token only keeps Slack text out of the chat. If you ever
+want one:
 
 Relevant already has a *BA Intake* Slack app, so you do **not** create one.
 
@@ -163,7 +173,9 @@ row stays red, its *what to do* column says why — and the table below covers t
 | Jira: project not visible | access not granted yet | chase the request from step 1 |
 | A key says "placeholder" | a `PASTE-…` text was not replaced | ask Claude to open the file again |
 | Fireflies: email differs | the email Fireflies has for you is different | give Claude the email the check shows |
-| Gmail: "not signed in yet" or "sign-in no longer works" | the sign-in is missing or was revoked | let Claude run the Gmail sign-in |
+| Gmail or Slack ❌ | the connector is not connected (and you have no keys) | connect it under Settings → Connectors (4.1) |
+| Google: "Access blocked … not completed verification" | you tried the Gmail keys, and the shared app does not list you | skip the keys: the Gmail connector is enough |
+| Gmail: "not signed in yet" or "sign-in no longer works" | only if you set up Gmail keys: the sign-in is missing or was revoked | let Claude run the Gmail sign-in |
 | Slack: "not a user token" | you copied the Bot token | copy the **User** OAuth Token (`xoxp-`) |
 | Slack: channel not found | you are not in that channel | join it in Slack |
 | A connector row is ❌ | not connected, switched off, or needs a new sign-in | Claude says which; connect it under Settings → Connectors, then a new session |
