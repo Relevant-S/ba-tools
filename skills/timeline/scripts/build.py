@@ -663,6 +663,20 @@ def main():
     for f in rows_by_id.values():
         if f.get("requests"):
             f["requests"].sort(key=lambda q: q["stages"][0]["from"] if q.get("stages") else "")
+    # `id_in_label: [TKT]` (Vadim, 12 Nov 2026): rows and items with these ids show the id before their name,
+    # "TKT-64 - Agenda sessions …", so the client finds its own ticket numbers on the page
+    id_pre = [str(x).upper() for x in tl.get("id_in_label") or []]
+    if id_pre:
+        def _named(it, key):
+            m = re.fullmatch(r"(?:chg-)?([a-z]+)(\d+)", str(it.get("id") or ""))
+            if m and m.group(1).upper() in id_pre and it.get(key):
+                code = "%s-%02d" % (m.group(1).upper(), int(m.group(2)))
+                if not it[key].startswith(code):
+                    it[key] = "%s - %s" % (code, it[key])
+        for f in rows_by_id.values():
+            _named(f, "label")
+            for q in f.get("requests") or []:
+                _named(q, "title")
     pins.sort(key=lambda m: (m["date"], m["kind"]))
 
     # released releases, and the dated ones still to come (they draw after today)

@@ -53,6 +53,15 @@ product:
   intake_skip: 'gmail-.*agreement'   # optional: leave out intake files whose name matches (another product's)
 ```
 
+**Ticket ids in the row names** (optional, at the top level of the data file, Vadim, 12 Nov 2026):
+
+```yaml
+id_in_label: [TKT]   # rows and changes whose id is tkt64 or chg-tkt64 show as "TKT-64 - Agenda sessions …"
+```
+
+So the client finds its own ticket numbers on the page. Each entry is an id prefix, any case; ids with
+another prefix keep their plain name. A name that already starts with the id is left as it is.
+
 ## Items from specs (`items: specs` in the data file — NWE since 11 Nov 2026)
 
 Every row and every change or bug is a **spec item**; the project is the source of truth. Design:
