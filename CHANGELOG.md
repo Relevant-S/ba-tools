@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.2 — 2026-11-26
+
+- **timeline: `id_in_label`** (Vadim, 12 Nov 2026; saved into ba-tools 26 Nov after the 0.12.0 install
+  removed it from NWE, where it had been copied by hand). `id_in_label: [TKT]` in the data file shows the
+  ticket id before the name of each row and change with that prefix, "TKT-64 - Agenda sessions …", so the
+  client finds its own ticket numbers on the page.
+
 ## 0.12.1 — 2026-11-25
 
 - **`ba-setup me` sends a BA to the Gmail and Slack connectors, never to the keys** (Vadim, 25 Nov 2026: a
