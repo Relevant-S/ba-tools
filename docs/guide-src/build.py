@@ -245,7 +245,7 @@ slide("newproject",
       f'<div style="width:560px; display:flex; flex-direction:column; gap:16px; background:{NAVY}; border-radius:24px; padding:40px">'
       f'<p style="font-size:24px; font-weight:500; letter-spacing:1px; text-transform:uppercase; color:{ORANGE}">On a live product too</p>'
       f'<p style="font-size:26px; line-height:1.45; color:{ONDARK_BODY}">Same shape: one PRD per phase, combined from that phase\'s ready specs. Small fixes can still go straight to a Jira ticket. Nobody keeps one big PRD up to date.</p></div></div>',
-      "Dark boxes are ours, white boxes are BMad or the developers. Acme Lending's old whole-system PRD is frozen at release 6.0.")
+      "Dark boxes are ours, white boxes are BMad or the developers. A long-running project's old whole-system PRD stays frozen at its last release.")
 
 # 10b ── where the answers live
 truth = [
@@ -352,13 +352,13 @@ ev = [
     (PURPLE, "29 → 5", "candidate features, then specs, from the same two calls once triaged"),
     (PURPLE, "5", "specs already filed with open questions, before the ready gate"),
     (BLUE, "6 of 50", "recent calls kept by the client filter in a live test"),
-    (GREEN, "206 → 242", "requirements in the Acme Lending PRD after catching up on what shipped"),
+    (GREEN, "206 → 242", "requirements in one product's PRD after catching up on what shipped"),
 ]
 evc = "".join(card(f'<p style="font-size:72px; font-weight:700; line-height:1.1; color:{c}">{num}</p>' + t(d, 26, 400, BODY, "line-height:1.4"), pad="32px 36px") for c, num, d in ev)
 slide("evidence",
       head("From our own projects", "Why we work this way") +
       f'<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px">{evc}</div>' +
-      t("Every number comes from our work on Acme Lending, the Bond Portal and NWE — none is borrowed.", 26, 500, MUTED),
+      t("Every number comes from our own client projects (names left out) — none is borrowed.", 26, 500, MUTED),
       "The first two numbers are why the edge-case list exists. The next two are why triage and the gate exist.")
 
 # 16 ── pitfalls

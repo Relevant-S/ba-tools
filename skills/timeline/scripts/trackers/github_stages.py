@@ -32,20 +32,36 @@ def _git(repo, *a):
     return subprocess.run(["git", "-C", str(repo), *a], capture_output=True, text=True, encoding="utf-8")
 
 
+# The id kinds a spec key can have. FR is always one; a project adds its own (for example the client's ticket
+# prefix) through the data file: `github.id_kinds`, else `id_in_label`, else `github.change_prefix`.
+KINDS = ["FR"]
+
+
+def set_kinds(extra):
+    """Add the project's own id kinds ("CHG", "chg-", …) after FR."""
+    KINDS[:] = ["FR"] + [k for k in (str(x).strip("-").upper() for x in extra or []) if k and k != "FR"]
+
+
+def kinds_re():
+    """The id kinds as a regex alternation: 'FR|CHG'."""
+    return "|".join(KINDS)
+
+
 def norm_key(s):
-    """'FR-127' / 'FR127' / 'NWE-FR-127' -> 'FR-127'; 'TKT-8' / 'TKT-08' -> 'TKT-08'."""
-    m = re.search(r"(FR|TKT)-?(\d+)", s or "", re.I)
+    """'FR-127' / 'FR127' / 'APP-FR-127' -> 'FR-127'; with CHG a kind, 'CHG-8' / 'CHG-08' -> 'CHG-08'."""
+    m = re.search(r"(%s)-?(\d+)" % kinds_re(), s or "", re.I)
     if not m:
         return None
-    return "TKT-%02d" % int(m.group(2)) if m.group(1).upper() == "TKT" else "FR-%d" % int(m.group(2))
+    kind = m.group(1).upper()
+    return "FR-%d" % int(m.group(2)) if kind == "FR" else "%s-%02d" % (kind, int(m.group(2)))
 
 
 def fid_of(key):
-    """'FR-127' -> 'fr127', 'TKT-08' -> 'tkt08' (the dashboard's feature ids)."""
+    """'FR-127' -> 'fr127', 'CHG-08' -> 'chg08' (the dashboard's feature ids)."""
     return key.replace("-", "").lower()
 
 
-def specs_info(docs_repo, spec_dir, prefix="NWE-"):
+def specs_info(docs_repo, spec_dir, prefix):
     """{key: {title, status, opened, specDay, readyDay, file}} for every BA spec; dates from the file's git history."""
     out = {}
     for p in sorted(spec_dir.rglob(prefix + "*.md")):
@@ -68,7 +84,7 @@ def specs_info(docs_repo, spec_dir, prefix="NWE-"):
         status = field("status").split()[0] if field("status") else ""
         if status == "ready" and not ready:
             ready = first
-        covers = [norm_key(k) for k in re.findall(r"(?:FR|TKT)-?\d+", field("covers"))]
+        covers = [norm_key(k) for k in re.findall(r"(?:%s)-?\d+" % kinds_re(), field("covers"))]
         out[key] = {"title": item.pop("_title", None) or field("title"), "status": status, "opened": field("opened") or first, "covers": covers,
                     "specDay": min(x for x in (field("opened"), first) if x) if (field("opened") or first) else None,
                     "readyDay": ready, "file": rel, **item}
@@ -162,13 +178,13 @@ def _read_phases(docs_repo, ref):
             eps = set()
             for c in cells[1:4]:
                 eps |= set(re.findall(r"Epic\s*(\d+)", c))
-            for k in re.findall(r"\b(?:FR|TKT)-?\d+", cells[0]):
+            for k in re.findall(r"\b(?:%s)-?\d+" % kinds_re(), cells[0]):
                 cov[norm_key(k)] |= eps
         status_path = "%s/sprint-status.yaml" % base
         cur = _git(docs_repo, "show", "%s:%s" % (ref, status_path)).stdout
         # the phase line names the phase's features, e.g. "# Phase 2.3 — Partners full experience (FR-75 + FR-76)."
         hm = re.search(r"^#\s*Phase [\d.]+.*$", cur, re.M)
-        header = sorted({norm_key(k) for k in re.findall(r"\b(?:FR|TKT)-?\d+", hm.group(0))}) if hm else []
+        header = sorted({norm_key(k) for k in re.findall(r"\b(?:%s)-?\d+" % kinds_re(), hm.group(0))}) if hm else []
         stories = {}
         for m in re.finditer(r"^\s+((\d+)-(\d+[a-z]?)-[\w-]+):\s*\"?([\w-]+)\"?(.*)$", cur, re.M):
             sha = re.search(r"\bapp\s+([0-9a-f]{7,40})\b", m.group(5))
@@ -198,7 +214,7 @@ def _read_phases(docs_repo, ref):
                     continue
                 _, path, text = l.split(":", 2)          # "origin/main:<path>:<line>"
                 sk = path.rsplit("/", 1)[-1][:-3]
-                for k in re.findall(r"\b(?:FR|TKT)-?\d+", text):
+                for k in re.findall(r"\b(?:%s)-?\d+" % kinds_re(), text):
                     own[sk].add(norm_key(k))
         out[ph] = {"cov": cov, "header": header, "stories": stories, "own": own}
     return out

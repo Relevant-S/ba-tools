@@ -1,4 +1,4 @@
-"""Tracker plug-in: Jira. Moved here from Acme Lending's docs/BA/timeline/build.py on 6 Nov 2026.
+"""Tracker plug-in: Jira. Moved here from a project's docs/BA/timeline/build.py on 6 Nov 2026.
 
 Stage dates come from the status history of each feature's Jira tickets (the dashboard links the tickets):
 the first day any ticket reached each stage; Done only when every ticket is done. Stories created before the
@@ -8,10 +8,10 @@ timeline start (`earlier_work:` in the data file) are rows of their own, placed 
 Read only. Uses JIRA_BASE_URL, JIRA_EMAIL and JIRA_API_TOKEN when set; otherwise, and when Jira cannot be
 reached, the caches next to the data file (jira-history.json, jira-earlier-stories.json).
 
-The data file: `product.work_link` (default https://example.atlassian.net/browse/), `jira_project` (default
-ACME), `jira: false` to skip the earlier stories, `earlier_work: {epic_areas, fallback_area, issue_types, until}`.
+The data file: `product.work_link` (default JIRA_BASE_URL + /browse/), `jira_project` (default the project of
+most tickets on the dashboard), `jira: false` to skip the earlier stories, `earlier_work: {epic_areas, fallback_area, issue_types, until}`.
 `issue_types` (default [Story]) and `until` (default the start date; `all` = every one) widen the rows for a
-project whose work lives mostly in Jira tasks (the Bond Portal).
+project whose work lives mostly in Jira tasks.
 """
 import base64, datetime as dt, json, os, re, urllib.request
 
@@ -68,7 +68,8 @@ class Tracker(Base):
 
     def __init__(self, ctx):
         super().__init__(ctx)
-        self.work_link = ctx.product.get("work_link") or "https://example.atlassian.net/browse/"
+        base = (os.environ.get("JIRA_BASE_URL") or "").rstrip("/")
+        self.work_link = ctx.product.get("work_link") or (base + "/browse/" if base else "")
         self.hist_cache = ctx.here / "jira-history.json"
         self.earlier_cache = ctx.here / "jira-earlier-stories.json"
         self.login = [os.environ.get(k) for k in ("JIRA_BASE_URL", "JIRA_EMAIL", "JIRA_API_TOKEN")]
@@ -157,7 +158,10 @@ class Tracker(Base):
             until = ew.get("until", self.ctx.start)
             until = None if str(until) == "all" else str(until)
             self.until = until
-            self.earlier = [s for s in self._earlier_stories(tl.get("jira_project", "ACME"), until, tuple(ew.get("issue_types") or ["Story"]))
+            # the Jira project: as set, else the one most of the dashboard's tickets belong to
+            keys = [k.split("-")[0] for k in on_dashboard if "-" in k]
+            project = tl.get("jira_project") or (max(set(keys), key=keys.count) if keys else None)
+            self.earlier = [s for s in (self._earlier_stories(project, until, tuple(ew.get("issue_types") or ["Story"])) if project else [])
                             if s["key"] not in on_dashboard]
         all_keys = [t["key"] for e in self.ctx.data["epics"] for f in e.get("features", []) for t in (f.get("tickets") or [])]
         self.hist = self._history(all_keys + [s["key"] for s in self.earlier])

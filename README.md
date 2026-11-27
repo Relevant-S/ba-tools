@@ -35,7 +35,7 @@ everywhere.
 | `skills/jira/`, `skills/confluence/`, `skills/feature-brief/` | Jira helpers (comment, search, field edit, release folders), Confluence publishing, and client briefs on Confluence. |
 | `skills/ba-spec/` | Writes one spec in the template and takes it through the ready gate to its hand-off (Jira ticket or PRD). |
 | `skills/ba-spec/assets/spec-template.md` | The spec template — the only copy that is ever edited. |
-| `profile/` | The profile layout, a blank example, the real project profiles for Acme Lending and NWE, and their design profiles (`examples/design/`). |
+| `profile/` | The profile layout, a blank example, two invented project profiles (Acme Lending, with Jira; Northwind, with a PRD and several client voices) and their design profiles (`examples/design/`). |
 | `docs/` | How the BA work runs: the guide (`our-ba-approach.pdf`, built from `guide-src/`), the setup manual, a new project, and the day-to-day loop. |
 | `scripts/install.py` | Installs or updates every skill and the template in a project. |
 
@@ -60,6 +60,17 @@ Read [`docs/new-ba-onboarding.md`](docs/new-ba-onboarding.md). In short:
 3. `git status` in the project, then commit.
 
 `ba-setup check` tells you when a project is behind your ba-tools clone, and prints the command.
+
+## No client data in here
+
+**This repo is public.** It holds generic tools and invented examples only: Acme Lending, Bond Portal,
+Northwind, `@example.com` emails, `SampleFileKey…` Figma keys. A real client name, email, Slack channel,
+Jira site, Figma file or page link belongs in that project's own repo (its profile, design profile and
+data files), never here.
+
+`scripts/check_no_client_data.py` checks every push on GitHub. Switch the same check on before each
+commit, once per clone: `git config core.hooksPath .githooks`. To refuse your own clients' names too, list
+them in `~/.claude/ba-tools/denylist.txt` (one per line; that file stays on your machine).
 
 ## Changing something
 

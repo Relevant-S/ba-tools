@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.13.0 — 2026-11-27
+
+- **No client data in ba-tools** (Vadim, 27 Nov 2026: the repo is public, and other BAs use it on their own
+  projects). Every real client and project detail is replaced by one invented world: Acme Lending and the
+  Bond Portal (Jira projects ACME and BOND), Northwind (NWE, ticket prefix TKT), `@example.com` emails,
+  `SampleFileKey…` Figma keys, example Slack ids and page links. The example profiles are now
+  `profile/examples/acme.ba-profile.yml` and `nwe.ba-profile.yml` (design profiles: `acme`, `bond-portal`,
+  `nwe`). Earlier entries below use the same invented names.
+- **Code no longer has a project built in.** What each project needs comes from its own files:
+  - `jira` `refresh-specs` and `fetch-jira-backlog` need `--projects KEY=folder,…` (from `products[]` in the
+    profile); they stop with a clear message without it. The skills already pass it.
+  - timeline, Jira tracker: the ticket link defaults to `JIRA_BASE_URL` + `/browse/`, and the project for the
+    earlier stories to the one most dashboard tickets belong to (or `jira_project` in the data file).
+  - timeline, GitHub tracker: id kinds besides FR come from `github.id_kinds`, else `id_in_label`, else
+    `github.change_prefix`. A project with `id_in_label: [<prefix>]` needs no change.
+  - Checked: both real timelines that use these trackers build exactly as before.
+- **A check keeps it that way:** `scripts/check_no_client_data.py` runs on every push (GitHub Actions) and,
+  once switched on per clone (`git config core.hooksPath .githooks`), before each commit. It looks for shapes
+  (real emails, Jira sites, Figma keys, Slack ids, Drive folders, page links), plus your own words in
+  `~/.claude/ba-tools/denylist.txt`, which stays on your machine.
+- The guide PDF is rebuilt: its numbers page no longer names a project.
+
 ## 0.12.2 — 2026-11-26
 
 - **timeline: `id_in_label`** (Vadim, 12 Nov 2026; saved into ba-tools 26 Nov after the 0.12.0 install
