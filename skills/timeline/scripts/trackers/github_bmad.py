@@ -42,6 +42,8 @@ class Tracker(Base):
         self.work_link = url + "/blob/main/" if url else ""
         self.spec_url = url + "/blob/%s/" % (self.ghc.get("spec_branch") or "docs") if url else ""
         self.prefix = self.ghc.get("spec_prefix") or (str(ctx.product["clarifications"]).upper() + "-")
+        gs.set_kinds(self.ghc.get("id_kinds") or ctx.tl.get("id_in_label")
+                     or ([self.ghc["change_prefix"]] if self.ghc.get("change_prefix") else []))
         self.alias = {v: k for k, v in (self.ghc.get("aliases") or {}).items()}     # dashboard id -> spec key
         self.app_repo = (ctx.repo / ctx.tl["code_repo"]).resolve() if ctx.tl.get("code_repo") else None
 
@@ -97,7 +99,7 @@ class Tracker(Base):
     def key_of(self, fid):
         if fid in self.alias:
             return self.alias[fid]
-        return gs.norm_key(fid) if re.fullmatch(r"(?:fr|tkt)\d+", fid or "") else None
+        return gs.norm_key(fid) if re.fullmatch(r"(?:%s)\d+" % gs.kinds_re().lower(), fid or "") else None
 
     def item_of(self, fid):
         """The spec item behind a row id (fr56, tkt08, a dashboard alias), or None."""

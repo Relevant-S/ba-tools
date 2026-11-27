@@ -26,8 +26,8 @@ const auth = 'Basic ' + Buffer.from(EMAIL + ':' + TOKEN).toString('base64');
 const headers = { Authorization: auth, Accept: 'application/json', 'Content-Type': 'application/json' };
 
 // --projects KEY=folder,KEY=folder — from the project profile (products[].jira_project → products[].key).
-// Acme Lending passes ACME=acme,BOND=bond-portal. Without the flag the old Acme Lending mapping is used.
-const PROJ_ARG = (() => { const i = process.argv.indexOf('--projects'); return i >= 0 ? process.argv[i + 1] : 'ACME=acme,BOND=bond-portal'; })();
+// For example --projects APP=app,PORTAL=portal, built from products[] in the project profile. Required.
+const PROJ_ARG = (() => { const i = process.argv.indexOf('--projects'); return i >= 0 ? process.argv[i + 1] : ''; })();
 const PROJECT_FOLDER = Object.fromEntries(PROJ_ARG.split(',').map(p => p.split('=').map(x => x.trim())).filter(p => p[0] && p[1]));
 const DEFAULT_JQL = `project in (${Object.keys(PROJECT_FOLDER).join(', ')}) AND statusCategory != Done ORDER BY updated DESC`;
 const DEFAULT_LIMIT = 50;
@@ -536,6 +536,10 @@ const [, , sub, ...rest] = process.argv;
 if (!sub || !SUBCOMMANDS[sub]) {
   console.error('Usage: fetch.mjs <subcommand> [args]');
   console.error('Subcommands: list, fetch');
+  process.exit(1);
+}
+if (!Object.keys(PROJECT_FOLDER).length) {
+  console.error('Pass --projects KEY=folder,… built from products[] in the project profile.');
   process.exit(1);
 }
 try {

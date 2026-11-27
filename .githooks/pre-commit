@@ -1,0 +1,8 @@
+#!/bin/sh
+# Refuse a commit that adds real client or project details (ba-tools is public).
+# Switch on once per clone:  git config core.hooksPath .githooks
+check="$(git rev-parse --show-toplevel)/scripts/check_no_client_data.py"
+if command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
+  exec python -I "$check" --staged
+fi
+exec uv run -q python -I "$check" --staged

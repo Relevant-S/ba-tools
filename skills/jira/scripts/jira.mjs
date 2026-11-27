@@ -399,7 +399,7 @@ async function fileSpec(args) {
     throw new Error('Spec frontmatter missing jira_fixversion. Every JIRA ticket needs a fixVersion at creation; rule from memory feedback_jira_fixversion.md');
   }
   if (!frontmatter.jira_project) {
-    throw new Error('Spec frontmatter missing jira_project (e.g. ACME or BOND).');
+    throw new Error('Spec frontmatter missing jira_project (the Jira project key, e.g. APP).');
   }
   if (!frontmatter.title) {
     throw new Error('Spec frontmatter missing title (used as JIRA summary).');
@@ -466,11 +466,12 @@ async function refreshSpecs(args) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-  // --projects KEY=folder,KEY=folder — from the project profile. Default: the Acme Lending mapping.
+  // --projects KEY=folder,KEY=folder — from the project profile (products[]). Required.
   const pi = args.indexOf('--projects');
-  const projArg = pi >= 0 ? args[pi + 1] : 'ACME=acme,BOND=bond-portal';
+  const projArg = pi >= 0 ? args[pi + 1] : '';
   const projects = projArg.split(',').map(p => p.split('=').map(x => x.trim())).filter(p => p[0] && p[1])
     .map(([key, folder]) => ({ key, folder, label: `${folder} (${key})` }));
+  if (!projects.length) throw new Error('Pass --projects KEY=folder,… built from products[] in the project profile.');
 
   await mkdir(specsDir, { recursive: true });
   const summary = [];
